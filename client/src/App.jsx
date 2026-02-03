@@ -3,27 +3,41 @@ import { useEffect, useState } from "react";
 function App() {
   const [name, setName] = useState("");
   const [latest, setLatest] = useState(null);
-  const API = "https://ubiquitous-acorn-x56pq7p4p5wjc9vrq-10000.app.github.dev";
 
+  const API = "https://mern-media4-server.onrender.com";
 
   const loadLatest = async () => {
-    const res = await fetch(`${API}/api/names/latest`);
-    const data = await res.json();
-    setLatest(data);
+    try {
+      const res = await fetch(`${API}/api/names/latest`);
+      const data = await res.json();
+      setLatest(data);
+    } catch (err) {
+      console.error("loadLatest error:", err);
+    }
   };
 
   const saveName = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    await fetch(`${API}/api/names`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
+    try {
+      const res = await fetch(`${API}/api/names`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
 
-    setName("");
-    loadLatest();
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt);
+      }
+
+      setName("");
+      loadLatest();
+    } catch (err) {
+      console.error("saveName error:", err);
+      alert("Erreur API (regarde la console)");
+    }
   };
 
   useEffect(() => {
@@ -45,7 +59,7 @@ function App() {
 
       <div style={{ marginTop: 16 }}>
         <strong>Dernier en DB :</strong>{" "}
-        {latest?.value ? latest.value : "Aucun pour l’instant"}
+        {latest?.name ? latest.name : "Aucun pour l’instant"}
       </div>
     </div>
   );

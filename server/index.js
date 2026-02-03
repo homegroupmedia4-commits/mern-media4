@@ -4,39 +4,25 @@ const cors = require("cors");
 
 const app = express();
 
-/**
- * Middlewares
- */
-app.use(
-  cors({
-    origin: "*", // OK pour test / MVP — on pourra restreindre ensuite
-  })
-);
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-/**
- * Mongo model
- */
 const NameSchema = new mongoose.Schema(
-  {
-    value: { type: String, required: true },
-  },
+  { value: { type: String, required: true } },
   { timestamps: true }
 );
 
 const Name = mongoose.model("Name", NameSchema);
 
-/**
- * Routes
- */
+app.get("/", (req, res) => res.send("OK API is running ✅"));
+app.get("/health", (req, res) => res.json({ ok: true }));
+
 app.post("/api/names", async (req, res) => {
   try {
     const { name } = req.body;
-    if (!name?.trim()) {
-      return res.status(400).json({ error: "name required" });
-    }
+    if (!name?.trim()) return res.status(400).json({ error: "name required" });
 
-    const saved = await Name.create({ value: name });
+    const saved = await Name.create({ value: name.trim() });
     res.json(saved);
   } catch (err) {
     console.error("POST /api/names error:", err);
@@ -47,25 +33,26 @@ app.post("/api/names", async (req, res) => {
 app.get("/api/names/latest", async (req, res) => {
   try {
     const latest = await Name.findOne().sort({ createdAt: -1 });
-    res.json(latest); // 🔥 cohérent avec le front (latest.value)
+    res.json(latest); // { value: "...", ...}
   } catch (err) {
     console.error("GET /api/names/latest error:", err);
     res.status(500).json({ error: "server error" });
   }
 });
 
-/**
- * Server
- */
 const PORT = process.env.PORT || 10000;
+const MONGO = process.env.MONGODB_URI || process.env.MONGO_URI;
+
+if (!MONGO) {
+  console.error("❌ Missing Mongo URI env var (MONGODB_URI or MONGO_URI)");
+  process.exit(1);
+}
 
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(MONGO)
   .then(() => {
     console.log("✅ MongoDB connecté");
-    app.listen(PORT, () =>
-      console.log(`🚀 API ready on port ${PORT}`)
-    );
+    app.listen(PORT, () => console.log(`🚀 API ready on port ${PORT}`));
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err);
