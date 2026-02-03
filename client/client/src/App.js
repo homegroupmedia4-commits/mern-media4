@@ -4,28 +4,38 @@ function App() {
   const [name, setName] = useState("");
   const [latest, setLatest] = useState(null);
 
-  // IMPORTANT : depuis TON navigateur, "localhost" = TON PC, pas Codespaces.
-  // Donc on utilise l'URL publique du backend (port 10000).
-  const API = "https://ubiquitous-acorn-x56pq7p4p5wjc9vrq-10000.app.github.dev";
+  const API = import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com";
+  console.log("API =", API);
 
   const loadLatest = async () => {
-    const res = await fetch(`${API}/api/names/latest`);
-    const data = await res.json();
-    setLatest(data);
+    try {
+      const res = await fetch(`${API}/api/names/latest`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setLatest(data);
+    } catch (err) {
+      console.error("loadLatest error:", err);
+    }
   };
 
   const saveName = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    await fetch(`${API}/api/names`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
+    try {
+      const res = await fetch(`${API}/api/names`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error(await res.text());
 
-    setName("");
-    loadLatest();
+      setName("");
+      loadLatest();
+    } catch (err) {
+      console.error("saveName error:", err);
+      alert("Erreur API (regarde la console)");
+    }
   };
 
   useEffect(() => {
@@ -34,7 +44,7 @@ function App() {
 
   return (
     <div style={{ fontFamily: "Arial", padding: 24 }}>
-      <h1>Test API Mongo ✅</h1>
+      <h1>Test API Mongo</h1>
 
       <form onSubmit={saveName} style={{ display: "flex", gap: 8 }}>
         <input
@@ -47,7 +57,7 @@ function App() {
 
       <div style={{ marginTop: 16 }}>
         <strong>Dernier en DB :</strong>{" "}
-        {latest?.value ? latest.value : "Aucun pour l’instant"}
+        {latest?.name ? latest.name : "Aucun pour l’instant"}
       </div>
     </div>
   );
