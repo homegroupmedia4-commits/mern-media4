@@ -3,30 +3,60 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
-app.use(cors());
-app.use(express.json());
-npm start
 
+/**
+ * Middlewares
+ */
+app.use(
+  cors({
+    origin: "*", // OK pour test / MVP — on pourra restreindre ensuite
+  })
+);
+app.use(express.json());
+
+/**
+ * Mongo model
+ */
 const NameSchema = new mongoose.Schema(
-  { value: { type: String, required: true } },
+  {
+    value: { type: String, required: true },
+  },
   { timestamps: true }
 );
 
 const Name = mongoose.model("Name", NameSchema);
 
+/**
+ * Routes
+ */
 app.post("/api/names", async (req, res) => {
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: "name required" });
+  try {
+    const { name } = req.body;
+    if (!name?.trim()) {
+      return res.status(400).json({ error: "name required" });
+    }
 
-  const saved = await Name.create({ value: name });
-  res.json(saved);
+    const saved = await Name.create({ value: name });
+    res.json(saved);
+  } catch (err) {
+    console.error("POST /api/names error:", err);
+    res.status(500).json({ error: "server error" });
+  }
 });
 
 app.get("/api/names/latest", async (req, res) => {
-  const latest = await Name.findOne().sort({ createdAt: -1 });
-  res.json({ name: latest?.value || null });
+  try {
+    const latest = await Name.findOne().sort({ createdAt: -1 });
+    res.json(latest); // 🔥 cohérent avec le front (latest.value)
+  } catch (err) {
+    console.error("GET /api/names/latest error:", err);
+    res.status(500).json({ error: "server error" });
+  }
 });
 
+/**
+ * Server
+ */
 const PORT = process.env.PORT || 10000;
 
 mongoose
@@ -34,7 +64,10 @@ mongoose
   .then(() => {
     console.log("✅ MongoDB connecté");
     app.listen(PORT, () =>
-      console.log(`✅ Serveur lancé sur http://localhost:${PORT}`)
+      console.log(`🚀 API ready on port ${PORT}`)
     );
   })
-  .catch(console.error);
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
