@@ -3,16 +3,23 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const namesRouter = require("./routes/names");
-
 const app = express();
 
-app.use(cors({ origin: "*" }));
+// ✅ CORS béton (préflight inclus)
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.options("*", cors()); // 👈 important pour preflight
+
 app.use(express.json());
 
 app.get("/", (req, res) => res.send("OK API is running ✅"));
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-// routes
 app.use("/api/names", namesRouter);
 
 const PORT = process.env.PORT || 10000;

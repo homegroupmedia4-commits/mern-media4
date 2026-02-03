@@ -4,40 +4,29 @@ function App() {
   const [name, setName] = useState("");
   const [latest, setLatest] = useState(null);
 
-  const API = "https://mern-media4-server.onrender.com";
+  // ✅ Vite: variable d'env build-time
+  const API = import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com";
 
   const loadLatest = async () => {
-    try {
-      const res = await fetch(`${API}/api/names/latest`);
-      const data = await res.json();
-      setLatest(data);
-    } catch (err) {
-      console.error("loadLatest error:", err);
-    }
+    const res = await fetch(`${API}/api/names/latest`);
+    const data = await res.json();
+    setLatest(data);
   };
 
   const saveName = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    try {
-      const res = await fetch(`${API}/api/names`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
+    const res = await fetch(`${API}/api/names`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
 
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt);
-      }
+    if (!res.ok) throw new Error(await res.text());
 
-      setName("");
-      loadLatest();
-    } catch (err) {
-      console.error("saveName error:", err);
-      alert("Erreur API (regarde la console)");
-    }
+    setName("");
+    loadLatest();
   };
 
   useEffect(() => {
