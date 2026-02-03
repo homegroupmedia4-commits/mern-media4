@@ -22,7 +22,8 @@ router.post("/", async (req, res) => {
 router.get("/hello", async (req, res) => {
   try {
     const latest = await Name.findOne().sort({ createdAt: -1 });
-    const who = latest?.value || "…";
+   const who = latest?.name || "…";
+
     res.json({ message: `Bonjour ${who}` });
   } catch (e) {
     console.error(e);
