@@ -31,6 +31,65 @@ const DEFAULT_STATIC = normalizeStaticVals({
   prix_instal: 500,
 });
 
+
+const [savingDevis, setSavingDevis] = useState(false);
+
+const handleValider = async () => {
+  setError("");
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return navigate("/agent/login");
+
+  setSavingDevis(true);
+  try {
+    // 1) Save devis in DB
+    const saveRes = await fetch(`${API}/api/agents/devis`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        client,
+        pitchInstances, // ✅ on envoie les pitchs choisis
+        // optionnel:
+        validityDays: 30,
+        // finalType (si tu veux le calculer: achat/location_evenementiel/location_maintenance)
+        finalType: "location_maintenance",
+      }),
+    });
+
+    if (!saveRes.ok) throw new Error(await saveRes.text());
+    const saveData = await saveRes.json();
+    const devisId = saveData.devisId;
+
+    // 2) Generate colored PDF
+    const pdfRes = await fetch(`${API}/api/agents/devis/${devisId}/pdf`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!pdfRes.ok) throw new Error(await pdfRes.text());
+    const pdfData = await pdfRes.json();
+
+    // 3) Download/open PDF (comme ton ancien submitPdf)
+    const fileRes = await fetch(`${API}${pdfData.pdfUrl}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!fileRes.ok) throw new Error(await fileRes.text());
+
+    const blob = await fileRes.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    setPdfUrl(blobUrl);
+    window.open(blobUrl, "_blank", "noopener,noreferrer");
+  } catch (e) {
+    console.error(e);
+    setError("Impossible d'enregistrer / générer le PDF. Réessaie.");
+  } finally {
+    setSavingDevis(false);
+  }
+};
+
+
+
 export default function AgentHome() {
   const navigate = useNavigate();
 
@@ -970,22 +1029,21 @@ export default function AgentHome() {
           </div>
 
           <div className="agenthome-clientActions">
-            <button className="agenthome-btn agenthome-btn--green" type="button">
-              Valider
-            </button>
-          </div>
+  <button
+    className="agenthome-btn agenthome-btn--green"
+    type="button"
+    onClick={handleValider}
+    disabled={savingDevis}
+  >
+    {savingDevis ? "Enregistrement..." : "Valider"}
+  </button>
+</div>
+
         </div>
 
         {/* --------- PDF --------- */}
         <div className="agenthome-block">
-          <label className="agenthome-label">Ton texte</label>
-          <textarea
-            className="agenthome-textarea"
-            value={texte}
-            onChange={(e) => setTexte(e.target.value)}
-            placeholder="Écris ton texte ici…"
-            rows={4}
-          />
+       
 
           <button
             className="agenthome-btn"
