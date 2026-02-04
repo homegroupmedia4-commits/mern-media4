@@ -1,7 +1,7 @@
 .agenthome-page{
   min-height:100vh;
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:center;
   background:#f6f7fb;
   padding:24px;
@@ -14,6 +14,10 @@
   border:1px solid #e6e8ef;
   border-radius:14px;
   padding:22px;
+}
+
+.agenthome-card--wide{
+  width: 760px;
 }
 
 .agenthome-title{
@@ -32,9 +36,15 @@
   margin-bottom: 16px;
 }
 
+.agenthome-muted{
+  font-size: 13px;
+  color:#6b7280;
+}
+
 .agenthome-actions{
   display:flex;
   gap: 10px;
+  margin-top: 10px;
 }
 
 .agenthome-btn{
@@ -48,6 +58,17 @@
   cursor:pointer;
 }
 
+.agenthome-btn:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
+
+.agenthome-btn--green{
+  background:#7cc32e;
+  color:#111;
+  font-weight:700;
+}
+
 .agenthome-link{
   height: 40px;
   padding: 0 16px;
@@ -59,6 +80,7 @@
   text-decoration:none;
   font-weight:600;
 }
+
 .agenthome-block{
   margin-top: 14px;
   margin-bottom: 14px;
@@ -105,4 +127,230 @@
   font-size: 13px;
   color: #c43131;
   font-weight: 600;
+}
+
+/* --------- blocs “devis” --------- */
+.agenthome-section{
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding:16px;
+  margin: 14px 0;
+  background:#fff;
+}
+
+.agenthome-section--client{
+  padding:18px;
+}
+
+.agenthome-sectionTitle{
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color:#111;
+}
+
+.agenthome-products{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px 18px;
+}
+
+.agenthome-check{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:14px;
+  color:#111;
+}
+
+.agenthome-check input{
+  width:16px;
+  height:16px;
+}
+
+.agenthome-check--pitch{
+  padding:6px 0;
+}
+
+.agenthome-pitchLabel{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.agenthome-pitchSub{
+  font-size: 12px;
+  color:#6b7280;
+  font-style: normal;
+}
+
+.agenthome-selectRow{
+  display:flex;
+  gap:10px;
+}
+
+.agenthome-select{
+  width:100%;
+  height:44px;
+  border:1px solid #e6e8ef;
+  border-radius:12px;
+  padding:0 12px;
+  outline:none;
+  background:#fff;
+  font-size:14px;
+}
+
+.agenthome-select:focus{
+  border-color:#111;
+}
+
+.agenthome-subcard{
+  margin-top: 12px;
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding:14px;
+  background:#fbfcff;
+}
+
+.agenthome-subcardTitle{
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.agenthome-pitchList{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+/* --------- pitch card --------- */
+.agenthome-pitchCard{
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding:14px;
+  margin: 12px 0;
+  background:#fff;
+}
+
+.agenthome-pitchHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom: 10px;
+}
+
+.agenthome-pitchHeaderLeft{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.agenthome-pitchTitleLine{
+  font-size: 14px;
+  color:#111;
+}
+
+.agenthome-pillBtn{
+  height:34px;
+  padding:0 14px;
+  border-radius:10px;
+  border:1px solid #e6e8ef;
+  background:#fff;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.agenthome-subsection{
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding:12px;
+  margin-top: 10px;
+  background:#fff;
+}
+
+.agenthome-subsectionTitle{
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.agenthome-grid2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px 14px;
+}
+
+.agenthome-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.agenthome-field label{
+  font-size: 13px;
+  font-weight: 700;
+  color:#111;
+}
+
+.agenthome-field--full{
+  grid-column: 1 / -1;
+}
+
+.agenthome-input{
+  height:40px;
+  border:1px solid #e6e8ef;
+  border-radius:10px;
+  padding:0 10px;
+  font-size:14px;
+  outline:none;
+}
+
+.agenthome-input:focus{
+  border-color:#111;
+}
+
+.agenthome-input--readonly{
+  background:#f6f7fb;
+}
+
+.agenthome-radioGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px 12px;
+}
+
+.agenthome-radio{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:14px;
+  font-weight:700;
+  color:#111;
+}
+
+.agenthome-dupBtn{
+  margin-top: 12px;
+  height:34px;
+  padding:0 14px;
+  border-radius:8px;
+  border:1px solid #111;
+  background:#fff;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.agenthome-offers{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px 22px;
+  margin: 12px 0;
+}
+
+.agenthome-clientActions{
+  margin-top: 12px;
+  display:flex;
+  justify-content:flex-start;
 }
