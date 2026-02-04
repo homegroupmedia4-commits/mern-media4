@@ -1,6 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 
-const PRODUCTS = ["Totems", "Ecrans muraux", "Kiosques"];
+const [products, setProducts] = useState([]);
+const [loadingProducts, setLoadingProducts] = useState(true);
+
+const loadProducts = async () => {
+  setLoadingProducts(true);
+  try {
+    const res = await fetch(`${API}/api/products`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    // tu peux choisir d’afficher que les actifs :
+    const activeOnly = (Array.isArray(data) ? data : []).filter((p) => p.isActive);
+    setProducts(activeOnly);
+  } catch (e) {
+    console.error(e);
+    setError("Impossible de charger les produits (Admin > Produits).");
+  } finally {
+    setLoadingProducts(false);
+  }
+};
+
 
 export default function TaillesEcrans({ API }) {
   // 4 sous-pages
@@ -96,6 +115,8 @@ export default function TaillesEcrans({ API }) {
     loadDurations();
     loadOthers();
     loadMem();
+    loadProducts();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -338,14 +359,22 @@ export default function TaillesEcrans({ API }) {
 
             <div className="page-actions" style={{ flexWrap: "wrap" }}>
               <input className="input" type="number" placeholder="Ex : 32" value={sizeInches} onChange={(e) => setSizeInches(e.target.value)} />
-              <select className="input" value={product} onChange={(e) => setProduct(e.target.value)}>
-                <option value="">-- Produit --</option>
-                {PRODUCTS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <select
+  className="input"
+  value={product}
+  onChange={(e) => setProduct(e.target.value)}
+  disabled={loadingProducts}
+>
+  <option value="">
+    {loadingProducts ? "Chargement..." : "-- Produit --"}
+  </option>
+  {products.map((p) => (
+    <option key={p._id} value={p.name}>
+      {p.name}
+    </option>
+  ))}
+</select>
+
 
               <select
                 className="input"

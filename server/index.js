@@ -11,6 +11,10 @@ const staticValuesRouter = require("./routes/staticValues");
 const otherProductSizesRouter = require("./routes/otherProductSizes");
 const memoryOptionsRouter = require("./routes/memoryOptions");
 const agentsRouter = require("./routes/agents");
+const productsRouter = require("./routes/products");
+const finishesRouter = require("./routes/finishes");
+const fixationsRouter = require("./routes/fixations");
+
 
 
 
@@ -36,6 +40,10 @@ app.use("/api/static-values", staticValuesRouter);
 app.use("/api/other-product-sizes", otherProductSizesRouter);
 app.use("/api/memory-options", memoryOptionsRouter);
 app.use("/api/agents", agentsRouter);
+app.use("/api/products", productsRouter);
+app.use("/api/finishes", finishesRouter);
+app.use("/api/fixations", fixationsRouter);
+
 
 
 

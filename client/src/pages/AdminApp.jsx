@@ -6,6 +6,10 @@ import PitchManager from "./PitchManager";
 import ValeursStatiques from "./ValeursStatiques";
 import TaillesEcrans from "./TaillesEcrans";
 import AdminAgents from "./AdminAgents";
+import AdminProduits from "./AdminProduits";
+import AdminFinition from "./AdminFinition";
+import AdminFixation from "./AdminFixation";
+
 
 
 const ADMIN_PASSWORD = "Homegroup91?";
@@ -18,6 +22,10 @@ const SIDEBAR_ITEMS = [
   { key: "valeurs_statiques", label: "Valeurs Statiques" },
   { key: "tailles_ecrans", label: "Tailles Écrans Muraux" },
   { key: "agents", label: "Agents" },
+  { key: "produits", label: "Produits" },
+{ key: "finition", label: "Finition" },
+{ key: "fixation", label: "Fixation" },
+
 ];
 
 export default function AdminApp() {
@@ -121,6 +129,15 @@ export default function AdminApp() {
     <ValeursStatiques API={API} />
   ) : activeKey === "tailles_ecrans" ? (
     <TaillesEcrans API={API} />
+
+    ) : activeKey === "produits" ? (
+  <AdminProduits API={API} />
+) : activeKey === "finition" ? (
+  <AdminFinition API={API} />
+) : activeKey === "fixation" ? (
+  <AdminFixation API={API} />
+) : activeKey === "agents" ? (
+  <AdminAgents API={API} />
   ) : activeKey === "agents" ? (
     <AdminAgents API={API} />
   ) : (
