@@ -10,6 +10,31 @@ const AgentPdf = require("../models/AgentPdf");
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 const TOKEN_TTL = "7d";
 
+async function requireAgentAuth(req, res, next) {
+  try {
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+    if (!token) return res.status(401).json({ message: "Non autorisé." });
+
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ message: "Token invalide." });
+    }
+
+    const agent = await Agent.findById(payload.agentId).select("_id nom prenom email role");
+    if (!agent) return res.status(404).json({ message: "Agent introuvable." });
+
+    req.agent = agent;
+    next();
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
+}
+
+
 function generate5PagePdfBuffer({ texte, agent }) {
   return new Promise((resolve, reject) => {
     try {
@@ -54,14 +79,9 @@ function generate5PagePdfBuffer({ texte, agent }) {
   });
 }
 
-
-// ✅ POST /api/agents/pdfs
-router.post("/pdfs", async (req, res) => {
+router.post("/pdfs", requireAgentAuth, async (req, res) => {
   try {
-    // ---- AUTH : adapte selon ton code existant (/me) ----
-    // Exemple si tu as déjà req.agent:
-    const agent = req.agent || req.user; 
-    if (!agent?._id) return res.status(401).json({ message: "Unauthorized" });
+    const agent = req.agent;
 
     const { texte } = req.body || {};
     if (!texte || String(texte).trim().length < 1) {
@@ -88,28 +108,27 @@ router.post("/pdfs", async (req, res) => {
   }
 });
 
-// ✅ GET /api/agents/pdfs/:id
-router.get("/pdfs/:id", async (req, res) => {
+
+router.get("/pdfs/:id", requireAgentAuth, async (req, res) => {
   try {
-    // ---- AUTH : même protection que /me si besoin ----
-    const agent = req.agent || req.user;
-    if (!agent?._id) return res.status(401).send("Unauthorized");
+    const agent = req.agent;
 
     const doc = await AgentPdf.findById(req.params.id);
     if (!doc) return res.status(404).send("Not found");
 
-    // sécurité : l’agent ne peut lire que ses docs
     if (String(doc.agentId) !== String(agent._id)) return res.status(403).send("Forbidden");
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `inline; filename="agent-${agent._id}-doc-${doc._id}.pdf"`);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="agent-${agent._id}-doc-${doc._id}.pdf"`
+    );
     return res.send(doc.pdfBuffer);
   } catch (e) {
     console.error(e);
     return res.status(500).send("Server error");
   }
 });
-
 
 
 
