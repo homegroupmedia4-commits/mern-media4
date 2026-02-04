@@ -433,6 +433,88 @@ function generate5PagePdfBuffer({ texte, agent }) {
   });
 }
 
+
+// ✅ POST /api/agents/devis  (enregistrer devis JSON)
+router.post("/devis", requireAgentAuth, async (req, res) => {
+  try {
+    const agent = req.agent;
+
+    const { client = {}, pitchInstances = [], validityDays = 30, finalType = "location_maintenance" } = req.body || {};
+
+    if (!Array.isArray(pitchInstances) || pitchInstances.length === 0) {
+      return res.status(400).json({ message: "Aucun pitch sélectionné." });
+    }
+
+    const { lines, totals, devisMentions } = buildLinesAndTotals({
+      pitchInstances,
+      client,
+      finalType,
+    });
+
+    const devisNumber = `DE${Date.now()}`;
+
+    const saved = await AgentPdf.create({
+      agentId: agent._id,
+      client,
+      devisNumber,
+      validityDays,
+      lines,
+      totals,
+      devisMentions,
+      pages: 1,
+    });
+
+    return res.json({ ok: true, devisId: saved._id });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur save devis." });
+  }
+});
+
+// ✅ POST /api/agents/devis/:id/pdf  (génère pdf couleur et stocke)
+router.post("/devis/:id/pdf", requireAgentAuth, async (req, res) => {
+  try {
+    const agent = req.agent;
+    const docData = await AgentPdf.findById(req.params.id);
+    if (!docData) return res.status(404).json({ message: "Devis introuvable." });
+    if (String(docData.agentId) !== String(agent._id)) return res.status(403).json({ message: "Forbidden" });
+
+    const pdfBuffer = await generateColoredDevisPdfBuffer({ docData, agent });
+
+    docData.pdfBuffer = pdfBuffer;
+    docData.contentType = "application/pdf";
+    docData.pages = 1;
+    await docData.save();
+
+    return res.json({
+      ok: true,
+      pdfUrl: `/api/agents/devis/${docData._id}/pdf`,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur génération PDF." });
+  }
+});
+
+// ✅ GET /api/agents/devis/:id/pdf  (serve le PDF)
+router.get("/devis/:id/pdf", requireAgentAuth, async (req, res) => {
+  try {
+    const agent = req.agent;
+    const doc = await AgentPdf.findById(req.params.id);
+    if (!doc) return res.status(404).send("Not found");
+    if (String(doc.agentId) !== String(agent._id)) return res.status(403).send("Forbidden");
+    if (!doc.pdfBuffer) return res.status(400).send("PDF not generated");
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="devis-${doc.devisNumber || doc._id}.pdf"`);
+    return res.send(doc.pdfBuffer);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).send("Server error");
+  }
+});
+
+
 /**
  * POST /api/agents/pdfs
  * body: { texte }
