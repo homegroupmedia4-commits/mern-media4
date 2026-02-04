@@ -1,0 +1,61 @@
+.agenthome-page{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#f6f7fb;
+  padding:24px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.agenthome-card{
+  width: 420px;
+  background:#fff;
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding:22px;
+}
+
+.agenthome-title{
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.agenthome-text{
+  font-size: 14px;
+  font-weight: 400;
+  color:#111;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom: 16px;
+}
+
+.agenthome-actions{
+  display:flex;
+  gap: 10px;
+}
+
+.agenthome-btn{
+  height: 40px;
+  padding: 0 16px;
+  border:none;
+  border-radius:8px;
+  background:#111;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.agenthome-link{
+  height: 40px;
+  padding: 0 16px;
+  display:flex;
+  align-items:center;
+  border-radius:8px;
+  background:#e9ecf6;
+  color:#111;
+  text-decoration:none;
+  font-weight:600;
+}

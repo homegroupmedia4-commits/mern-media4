@@ -10,6 +10,8 @@ const leasingDurationsRouter = require("./routes/leasingDurations");
 const staticValuesRouter = require("./routes/staticValues");
 const otherProductSizesRouter = require("./routes/otherProductSizes");
 const memoryOptionsRouter = require("./routes/memoryOptions");
+const agentsRouter = require("./routes/agents");
+
 
 
 
@@ -33,6 +35,8 @@ app.use("/api/leasing-durations", leasingDurationsRouter);
 app.use("/api/static-values", staticValuesRouter);
 app.use("/api/other-product-sizes", otherProductSizesRouter);
 app.use("/api/memory-options", memoryOptionsRouter);
+app.use("/api/agents", agentsRouter);
+
 
 
 
