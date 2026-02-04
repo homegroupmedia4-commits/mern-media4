@@ -5,10 +5,18 @@ const Pitch = require("../models/Pitch");
 const PitchCategory = require("../models/PitchCategory");
 
 // GET /api/pitches -> liste (avec catégorie)
+// GET /api/pitches?categoryId=...&productId=...
 router.get("/", async (req, res) => {
   try {
-    const list = await Pitch.find()
+    const { categoryId, productId } = req.query;
+
+    const filter = {};
+    if (categoryId) filter.categoryId = categoryId;
+    if (productId) filter.productId = productId;
+
+    const list = await Pitch.find(filter)
       .populate("categoryId", "name isActive")
+      .populate("productId", "name isActive")
       .sort({ createdAt: -1 });
 
     res.json(list);
@@ -18,10 +26,13 @@ router.get("/", async (req, res) => {
   }
 });
 
+
 // POST /api/pitches -> créer
 router.post("/", async (req, res) => {
   try {
-    const { name, codeProduit, dimensions, luminosite, price, categoryId } = req.body;
+const { name, codeProduit, dimensions, luminosite, price, categoryId, productId } = req.body;
+if (!productId) return res.status(400).json({ message: "Le champ 'productId' est requis." });
+
 
     const n = String(name || "").trim();
     const c = String(codeProduit || "").trim();
@@ -46,6 +57,7 @@ router.post("/", async (req, res) => {
       luminosite: l,
       price: p,
       categoryId,
+        productId,
       isActive: true,
     });
 

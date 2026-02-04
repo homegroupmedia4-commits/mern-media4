@@ -5,8 +5,8 @@ import "./AgentHome.css";
 const TOKEN_KEY = "agent_token_v1";
 const USER_KEY = "agent_user_v1";
 
-// ✅ Le productId qui déclenche l’affichage "Type d’écrans"
-const WALL_LEDS_PRODUCT_ID = "6983232e25214ca3b9573999";
+
+
 
 function safeJsonParse(str, fallback = null) {
   try {
@@ -57,6 +57,19 @@ export default function AgentHome() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
 
+const wallLedsProductId = useMemo(() => {
+  const p = products.find(
+    (x) => (x?.name || "").toLowerCase().trim() === "murs leds"
+  );
+  return p?._id || p?.id || "";
+}, [products]);
+
+const showWalleds =
+  !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
+
+
+
+
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -68,6 +81,9 @@ export default function AgentHome() {
   const [pitchInstances, setPitchInstances] = useState([]);
   // pitchId coché (pour afficher/masquer)
   const [selectedPitchIds, setSelectedPitchIds] = useState([]);
+
+
+  
 
   // --- Infos client/prospect
   const [client, setClient] = useState({
@@ -156,7 +172,9 @@ export default function AgentHome() {
   // (affiché seulement si le productId spécial est coché)
   // ---------------------------
   useEffect(() => {
-    const shouldShow = selectedProductIds.includes(WALL_LEDS_PRODUCT_ID);
+ const shouldShow =
+  !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
+
     if (!shouldShow) {
       setSelectedCategoryId("");
       setCategories([]);
@@ -183,7 +201,7 @@ export default function AgentHome() {
         setLoadingCategories(false);
       }
     })();
-  }, [API, selectedProductIds]);
+}, [API, selectedProductIds, wallLedsProductId]);
 
   // ---------------------------
   // LOAD: Pitches par catégorie
@@ -219,7 +237,9 @@ export default function AgentHome() {
   };
 
   useEffect(() => {
-    const shouldShow = selectedProductIds.includes(WALL_LEDS_PRODUCT_ID);
+    const shouldShow =
+  !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
+
     if (!shouldShow) return;
     if (!selectedCategoryId) {
       setPitches([]);
@@ -234,7 +254,8 @@ export default function AgentHome() {
       try {
         const list = await loadPitchesByCategory({
           categoryId: selectedCategoryId,
-          productId: WALL_LEDS_PRODUCT_ID,
+          productId: wallLedsProductId,
+
         });
 
         // option: ne garder que actifs si la donnée existe
@@ -261,7 +282,9 @@ export default function AgentHome() {
   const [loadingRefs, setLoadingRefs] = useState(false);
 
   useEffect(() => {
-    const shouldShow = selectedProductIds.includes(WALL_LEDS_PRODUCT_ID);
+ const shouldShow =
+  !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
+
     if (!shouldShow) return;
 
     (async () => {
@@ -291,7 +314,7 @@ export default function AgentHome() {
         setLoadingRefs(false);
       }
     })();
-  }, [API, selectedProductIds]);
+  }, [API, selectedProductIds ,wallLedsProductId]);
 
   // ---------------------------
   // PITCH selection + instance creation
@@ -411,7 +434,7 @@ export default function AgentHome() {
       const next = has ? prev.filter((x) => x !== productId) : [...prev, productId];
 
       // si on décoche le product spécial -> reset section
-      if (has && productId === WALL_LEDS_PRODUCT_ID) {
+      if (has && productId === wallLedsProductId) {
         setSelectedCategoryId("");
         setCategories([]);
         setPitches([]);
@@ -472,7 +495,7 @@ export default function AgentHome() {
     }
   };
 
-  const showWalleds = selectedProductIds.includes(WALL_LEDS_PRODUCT_ID);
+ 
 
   return (
     <div className="agenthome-page">
