@@ -534,3 +534,66 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   gap:10px;
   flex-wrap:wrap;
 }
+
+/* ---- Pitch Manager subtabs ---- */
+.subtabs{
+  display:flex;
+  gap:10px;
+}
+
+.subtab{
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  color: rgba(0,0,0,0.75);
+}
+
+.subtab.active{
+  background:#0f1418;
+  border-color:#0f1418;
+  color:#fff;
+}
+
+/* ---- Pitch Manager form layout ---- */
+.pm-form{
+  max-width: 720px;
+  display:flex;
+  flex-direction:column;
+  gap: 16px;
+  padding-top: 6px;
+}
+
+.pm-row{
+  display:grid;
+  grid-template-columns: 220px 1fr;
+  align-items:center;
+  gap: 16px;
+}
+
+.pm-label{
+  font-weight: 800;
+  color: rgba(0,0,0,0.75);
+}
+
+.pm-input{
+  min-width: 100%;
+}
+
+/* Table plus large */
+.table-wide td, .table-wide th{
+  white-space: nowrap;
+}
+
+.table-wide td:nth-child(7), .table-wide th:nth-child(7){
+  white-space: normal;
+}
+
+/* Bouton danger (désactiver) */
+.btn-danger{
+  background: #e74c3c;
+  color: #fff;
+  border-color: #e74c3c;
+}

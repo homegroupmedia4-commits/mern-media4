@@ -5,6 +5,8 @@ const cors = require("cors");
 const namesRouter = require("./routes/names");
 const app = express();
 const pitchCategoriesRouter = require("./routes/pitchCategories");
+const pitchesRouter = require("./routes/pitches");
+
 
 
 
@@ -20,6 +22,8 @@ app.use(express.json());
 
 
 app.use("/api/pitch-categories", pitchCategoriesRouter);
+app.use("/api/pitches", pitchesRouter);
+
 
 
 app.get("/", (req, res) => res.send("OK API is running ✅"));

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
 import CategoriesPitch from "./pages/CategoriesPitch";
+import PitchManager from "./pages/PitchManager";
+
 
 const ADMIN_PASSWORD = "Homegroup91?";
 const STORAGE_KEY = "m4_admin_authed_v1";
@@ -117,18 +119,19 @@ function App() {
         </div>
 
         {/* Zone de contenu (pages dédiées) */}
-        <div className="dash-content">
-          {activeKey === "categories_pitch" ? (
-            <CategoriesPitch API={API} />
-          ) : (
-            <div className="card">
-              <div className="card-title">Section : {activeLabel}</div>
-              <div className="card-text">
-                Page à construire. Clique sur “Catégories de pitch” pour voir l’exemple complet.
-              </div>
-            </div>
-          )}
-        </div>
+     <div className="dash-content">
+  {activeKey === "categories_pitch" ? (
+    <CategoriesPitch API={API} />
+  ) : activeKey === "pitch_manager" ? (
+    <PitchManager API={API} />
+  ) : (
+    <div className="card">
+      <div className="card-title">Section : {activeLabel}</div>
+      <div className="card-text">Page à construire.</div>
+    </div>
+  )}
+</div>
+
       </main>
     </div>
   );
