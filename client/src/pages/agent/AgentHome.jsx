@@ -52,6 +52,7 @@ export default function AgentHome() {
   const [texte, setTexte] = useState("");
   const [savingPdf, setSavingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
+    const [savingDevis, setSavingDevis] = useState(false);
 
   // --- UI "devis" (products)
   const [products, setProducts] = useState([]);
@@ -106,6 +107,61 @@ export default function AgentHome() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     navigate("/agent/login");
+  };
+
+  // ✅ HANDLE VALIDER (dans le composant)
+  const handleValider = async () => {
+    setError("");
+    setPdfUrl("");
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return navigate("/agent/login");
+
+    setSavingDevis(true);
+    try {
+      // 1) Save devis in DB
+      const saveRes = await fetch(`${API}/api/agents/devis`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          client,
+          pitchInstances,
+          validityDays: 30,
+          finalType: "location_maintenance",
+        }),
+      });
+
+      if (!saveRes.ok) throw new Error(await saveRes.text());
+      const saveData = await saveRes.json();
+      const devisId = saveData.devisId;
+
+      // 2) Generate colored PDF
+      const pdfRes = await fetch(`${API}/api/agents/devis/${devisId}/pdf`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!pdfRes.ok) throw new Error(await pdfRes.text());
+      const pdfData = await pdfRes.json();
+
+      // 3) Open PDF
+      const fileRes = await fetch(`${API}${pdfData.pdfUrl}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!fileRes.ok) throw new Error(await fileRes.text());
+
+      const blob = await fileRes.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      setPdfUrl(blobUrl);
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      console.error(e);
+      setError("Impossible d'enregistrer / générer le PDF. Réessaie.");
+    } finally {
+      setSavingDevis(false);
+    }
   };
 
   // ---------------------------
