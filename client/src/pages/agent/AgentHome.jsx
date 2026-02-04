@@ -55,49 +55,55 @@ export default function AgentHome() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+const submitPdf = async () => {
+  setError("");
+  setPdfUrl("");
 
-  // ✅ NEW: submit PDF
-  const submitPdf = async () => {
-    setError("");
-    setPdfUrl("");
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return navigate("/agent/login");
 
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return navigate("/agent/login");
+  if (!texte.trim()) {
+    setError("Merci d’écrire un texte avant de valider.");
+    return;
+  }
 
-    if (!texte.trim()) {
-      setError("Merci d’écrire un texte avant de valider.");
-      return;
-    }
+  setSavingPdf(true);
 
-    setSavingPdf(true);
-    try {
-      const res = await fetch(`${API}/api/agents/pdfs`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ texte }),
-      });
+  try {
+    // 1) Crée le doc en DB
+    const res = await fetch(`${API}/api/agents/pdfs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ texte }),
+    });
 
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
 
-    const token = localStorage.getItem(TOKEN_KEY);
+    // 2) Télécharge le PDF en BLOB (avec Authorization)
+    const pdfRes = await fetch(`${API}${data.pdfUrl}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-const base = data?.pdfUrl?.startsWith("http") ? data.pdfUrl : `${API}${data.pdfUrl}`;
-const withToken = `${base}?token=${encodeURIComponent(token)}`;
+    if (!pdfRes.ok) throw new Error(await pdfRes.text());
 
-setPdfUrl(withToken);
-window.open(withToken, "_blank", "noopener,noreferrer");
+    const blob = await pdfRes.blob();
+    const blobUrl = URL.createObjectURL(blob);
 
-    } catch (e) {
-      console.error(e);
-      setError("Impossible de générer le PDF. Réessaie.");
-    } finally {
-      setSavingPdf(false);
-    }
-  };
+    // 3) Ouvre le PDF (aucun 401 possible)
+    setPdfUrl(blobUrl);
+    window.open(blobUrl, "_blank", "noopener,noreferrer");
+  } catch (e) {
+    console.error(e);
+    setError("Impossible de générer le PDF. Réessaie.");
+  } finally {
+    setSavingPdf(false);
+  }
+};
+
 
   return (
     <div className="agenthome-page">
