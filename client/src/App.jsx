@@ -3,6 +3,8 @@ import "./App.css";
 
 import CategoriesPitch from "./pages/CategoriesPitch";
 import PitchManager from "./pages/PitchManager";
+import ValeursStatiques from "./pages/ValeursStatiques";
+
 
 
 const ADMIN_PASSWORD = "Homegroup91?";
@@ -124,13 +126,18 @@ function App() {
     <CategoriesPitch API={API} />
   ) : activeKey === "pitch_manager" ? (
     <PitchManager API={API} />
+  ) : activeKey === "valeurs_statiques" ? (
+    <ValeursStatiques API={API} />
   ) : (
     <div className="card">
       <div className="card-title">Section : {activeLabel}</div>
-      <div className="card-text">Page à construire.</div>
+      <div className="card-text">
+        Page à construire.
+      </div>
     </div>
   )}
 </div>
+
 
       </main>
     </div>

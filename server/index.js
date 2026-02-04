@@ -6,6 +6,9 @@ const namesRouter = require("./routes/names");
 const app = express();
 const pitchCategoriesRouter = require("./routes/pitchCategories");
 const pitchesRouter = require("./routes/pitches");
+const leasingDurationsRouter = require("./routes/leasingDurations");
+const staticValuesRouter = require("./routes/staticValues");
+
 
 
 
@@ -23,6 +26,9 @@ app.use(express.json());
 
 app.use("/api/pitch-categories", pitchCategoriesRouter);
 app.use("/api/pitches", pitchesRouter);
+app.use("/api/leasing-durations", leasingDurationsRouter);
+app.use("/api/static-values", staticValuesRouter);
+
 
 
 
