@@ -1,64 +1,129 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import "./App.css";
+
+const ADMIN_PASSWORD = "Homegroup91?";
+const STORAGE_KEY = "m4_admin_authed_v1";
+
+const SIDEBAR_ITEMS = [
+  { key: "pitch_manager", label: "Pitch Manager" },
+  { key: "nos_devis", label: "Nos devis" },
+  { key: "categories_pitch", label: "Catégories de pitch" },
+  { key: "valeurs_statiques", label: "Valeurs Statiques" },
+  { key: "tailles_ecrans", label: "Tailles Écrans Muraux" },
+];
 
 function App() {
-  const [name, setName] = useState("");
-  const [latest, setLatest] = useState(null);
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [activeKey, setActiveKey] = useState(SIDEBAR_ITEMS[0].key);
 
-  const API = import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com";
-  console.log("API =", API);
-
-  const loadLatest = async () => {
-    try {
-      const res = await fetch(`${API}/api/names/latest`);
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setLatest(data);
-    } catch (err) {
-      console.error("loadLatest error:", err);
-    }
-  };
-
-  const saveName = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
-    try {
-      const res = await fetch(`${API}/api/names`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-
-      setName("");
-      loadLatest();
-    } catch (err) {
-      console.error("saveName error:", err);
-      alert("Erreur API (regarde la console)");
-    }
-  };
+  // (optionnel) garde la constante API si tu veux réutiliser plus tard
+  const API = useMemo(
+    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
+    []
+  );
 
   useEffect(() => {
-    loadLatest();
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "1") setIsAuthed(true);
   }, []);
 
-  return (
-    <div style={{ fontFamily: "Arial", padding: 24 }}>
-      <h1>Test API Mongo</h1>
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setError("");
 
-      <form onSubmit={saveName} style={{ display: "flex", gap: 8 }}>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Tape un prénom (ex: Kevin)"
-        />
-        <button type="submit">Envoyer</button>
-      </form>
+    if (password === ADMIN_PASSWORD) {
+      localStorage.setItem(STORAGE_KEY, "1");
+      setIsAuthed(true);
+      setPassword("");
+      return;
+    }
 
-      <div style={{ marginTop: 16 }}>
-        <strong>Dernier en DB :</strong>{" "}
-        {latest?.name ? latest.name : "Aucun pour l’instant"}
+    setError("Mot de passe incorrect.");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setIsAuthed(false);
+    setActiveKey(SIDEBAR_ITEMS[0].key);
+  };
+
+  // ---------- VIEW: LOGIN ----------
+  if (!isAuthed) {
+    return (
+      <div className="login-page">
+        <div className="login-card">
+          <div className="login-title">Connexion Admin</div>
+          <div className="login-subtitle">Accès réservé</div>
+
+          <form onSubmit={handleLogin} className="login-form">
+            <label className="login-label">Mot de passe</label>
+            <input
+              className="login-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••"
+              autoFocus
+            />
+
+            {error ? <div className="login-error">{error}</div> : null}
+
+            <button className="login-btn" type="submit">
+              Se connecter
+            </button>
+
+            <div className="login-hint">
+              API: <span className="mono">{API}</span>
+            </div>
+          </form>
+        </div>
       </div>
+    );
+  }
+
+  // ---------- VIEW: DASHBOARD ----------
+  const activeLabel =
+    SIDEBAR_ITEMS.find((i) => i.key === activeKey)?.label || "Tableau de bord";
+
+  return (
+    <div className="dash-shell">
+      <aside className="sidebar">
+        <div className="sidebar-inner">
+          <nav className="sidebar-nav">
+            {SIDEBAR_ITEMS.map((item) => (
+              <button
+                key={item.key}
+                className={`sidebar-item ${activeKey === item.key ? "active" : ""}`}
+                onClick={() => setActiveKey(item.key)}
+                type="button"
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <button className="sidebar-logout" onClick={handleLogout} type="button">
+            Déconnexion
+          </button>
+        </div>
+      </aside>
+
+      <main className="dash-main">
+        <div className="dash-topbar">
+          <h1 className="dash-title">{activeLabel}</h1>
+        </div>
+
+        <div className="dash-content">
+          <div className="card">
+            <div className="card-title">Section : {activeLabel}</div>
+            <div className="card-text">
+              Ici tu peux afficher le contenu réel (tableaux, formulaires, stats, etc.).
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
