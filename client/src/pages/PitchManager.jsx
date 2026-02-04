@@ -19,6 +19,7 @@ export default function PitchManager({ API }) {
     luminosite: "",
     price: "",
     categoryId: "",
+      productId: "",
   });
 
   const [saving, setSaving] = useState(false);
@@ -28,6 +29,27 @@ export default function PitchManager({ API }) {
   const [editingValue, setEditingValue] = useState("");
 
   const activeCats = useMemo(() => cats.filter((c) => c.isActive), [cats]);
+
+  const [products, setProducts] = useState([]);
+const [productsLoading, setProductsLoading] = useState(true);
+
+const loadProducts = async () => {
+  setProductsLoading(true);
+  try {
+    const res = await fetch(`${API}/api/products`);
+    const data = await res.json();
+    setProducts(Array.isArray(data) ? data : []);
+  } finally {
+    setProductsLoading(false);
+  }
+};
+
+useEffect(() => {
+  loadProducts();
+  loadCategories();
+  loadPitches();
+}, []);
+
 
   const loadCategories = async () => {
     setCatsError("");
@@ -81,6 +103,7 @@ export default function PitchManager({ API }) {
       luminosite: form.luminosite.trim(),
       price: Number(form.price),
       categoryId: form.categoryId,
+        productId: form.productId,
     };
 
     if (!payload.name || !payload.codeProduit || !payload.dimensions || !payload.luminosite) {
@@ -241,6 +264,26 @@ export default function PitchManager({ API }) {
               onChange={onChange("price")}
             />
           </div>
+
+          <div className="pm-row">
+  <label className="pm-label">Produit</label>
+  <select
+    className="input pm-input"
+    value={form.productId}
+    onChange={onChange("productId")}
+    disabled={productsLoading}
+  >
+    <option value="">{productsLoading ? "Chargement..." : "-- Choisir un produit --"}</option>
+    {products
+      .filter((p) => p?.isActive !== false)
+      .map((p) => (
+        <option key={p._id} value={p._id}>
+          {p.name}
+        </option>
+      ))}
+  </select>
+</div>
+
 
           <div className="pm-row">
             <label className="pm-label">Groupe (catégorie)</label>
