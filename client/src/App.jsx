@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
+import CategoriesPitch from "./pages/CategoriesPitch";
+
 const ADMIN_PASSWORD = "Homegroup91?";
 const STORAGE_KEY = "m4_admin_authed_v1";
 
@@ -18,7 +20,6 @@ function App() {
   const [error, setError] = useState("");
   const [activeKey, setActiveKey] = useState(SIDEBAR_ITEMS[0].key);
 
-  // (optionnel) garde la constante API si tu veux réutiliser plus tard
   const API = useMemo(
     () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
     []
@@ -49,7 +50,7 @@ function App() {
     setActiveKey(SIDEBAR_ITEMS[0].key);
   };
 
-  // ---------- VIEW: LOGIN ----------
+  // ------- LOGIN -------
   if (!isAuthed) {
     return (
       <div className="login-page">
@@ -83,7 +84,7 @@ function App() {
     );
   }
 
-  // ---------- VIEW: DASHBOARD ----------
+  // ------- LAYOUT -------
   const activeLabel =
     SIDEBAR_ITEMS.find((i) => i.key === activeKey)?.label || "Tableau de bord";
 
@@ -115,13 +116,18 @@ function App() {
           <h1 className="dash-title">{activeLabel}</h1>
         </div>
 
+        {/* Zone de contenu (pages dédiées) */}
         <div className="dash-content">
-          <div className="card">
-            <div className="card-title">Section : {activeLabel}</div>
-            <div className="card-text">
-              Ici tu peux afficher le contenu réel (tableaux, formulaires, stats, etc.).
+          {activeKey === "categories_pitch" ? (
+            <CategoriesPitch API={API} />
+          ) : (
+            <div className="card">
+              <div className="card-title">Section : {activeLabel}</div>
+              <div className="card-text">
+                Page à construire. Clique sur “Catégories de pitch” pour voir l’exemple complet.
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>
