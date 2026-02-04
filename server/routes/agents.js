@@ -15,6 +15,20 @@ const TOKEN_TTL = "7d";
  * - accepte aussi ?token=... (utile pour ouvrir un PDF dans un nouvel onglet)
  */
 
+async function generateDevisNumber4() {
+  // 4 chiffres: 1000 → 9999
+  for (let i = 0; i < 20; i++) {
+    const n = String(Math.floor(1000 + Math.random() * 9000));
+    const exists = await AgentPdf.findOne({ devisNumber: n }).select("_id").lean();
+    if (!exists) return n;
+  }
+  // fallback ultra rare
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+
+
+
 function fmt2(n) {
   const x = Number(n);
   return Number.isFinite(x) ? x.toFixed(2) : "0.00";
@@ -61,7 +75,7 @@ function buildLinesAndTotals({ pitchInstances = [], client = {}, finalType = "lo
     const code = pi.codeProduit || pi.code || "—";
     const descParts = [];
     if (pi.pitchLabel) descParts.push(pi.pitchLabel);
-    if (pi.longueur && pi.hauteur) descParts.push(`${pi.longueur}x${pi.hauteur}m`);
+  if (pi.largeurM && pi.hauteurM) descParts.push(`${pi.largeurM}x${pi.hauteurM}m`);
     if (pi.largeurM && pi.hauteurM) descParts.push(`${pi.largeurM}x${pi.hauteurM}m`);
     if (pi.largeurPx && pi.hauteurPx) descParts.push(`${pi.largeurPx}x${pi.hauteurPx}px`);
     if (pi.categorieName) descParts.push(`Écran ${pi.categorieName}`);
@@ -451,12 +465,14 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
       finalType,
     });
 
-    const devisNumber = `DE${Date.now()}`;
+   const devisNumber = await generateDevisNumber4();
+
 
     const saved = await AgentPdf.create({
       agentId: agent._id,
       client,
       devisNumber,
+        pitchInstances,
       validityDays,
       lines,
       totals,
