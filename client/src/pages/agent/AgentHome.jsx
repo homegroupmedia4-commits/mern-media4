@@ -1,109 +1,35 @@
+// src/pages/agent/AgentHome.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./AgentHome.css";
 
-const TOKEN_KEY = "agent_token_v1";
-const USER_KEY = "agent_user_v1";
+import {
+  TOKEN_KEY,
+  USER_KEY,
+  normalizeStaticVals,
+  safeJsonParse,
+  computePitchQuote,
+  getWallLedsProductId,
+  createDefaultPitchInstance,
+  loadPitchesByCategory,
+} from "./agentHome.helpers";
 
-function toNum(v, def = 0) {
-  const n = Number(String(v ?? "").replace(",", "."));
-  return Number.isFinite(n) ? n : def;
-}
-
-function roundDimLikeCF7(n) {
-  if (!Number.isFinite(n)) return 0;
-  const frac = n - Math.floor(n);
-  return frac >= 0.51 ? Math.ceil(n) : Math.floor(n);
-}
-
-function truncIntLikeCF7(n) {
-  if (!Number.isFinite(n)) return "";
-  if (n === 0 || Object.is(n, -0)) return 0;
-  return Math.trunc(n);
-}
-
-function parsePitchMmFromLabel(label) {
-  const raw = String(label || "");
-  const m = raw.match(/P\s*([0-9]*\.?[0-9]+)/i);
-  return m ? toNum(m[1], 0) : 0;
-}
-
-/**
- * Normalise les clés DB vers les clés CF7 utilisées dans tes calculs.
- * (Supporte les deux nomenclatures: ancienne (fixation_finition_eur_ml, etc.)
- *  et CF7 (option_ecran, option_tirage...))
- */
-function normalizeStaticVals(db = {}) {
-  const get = (...keys) => {
-    for (const k of keys) {
-      if (db?.[k] !== undefined && db?.[k] !== null) return db[k];
-    }
-    return undefined;
-  };
-
-  return {
-    accessoires_players: toNum(get("accessoires_players"), 800),
-    cout_locaux_chine_france: toNum(get("cout_locaux_chine_france"), 1000),
-    cout_leasing: toNum(get("cout_leasing", "coeff_leasing"), 0.7),
-    marge_catalogue: toNum(get("marge_catalogue"), 0.7),
-    droits_de_douanes: toNum(get("droits_de_douanes", "droits_douane"), 1.14),
-    euros_dollars: toNum(get("euros_dollars", "taux_eur_usd"), 1.07),
-
-    // CF7: option_ecran (€/ml) ; ancienne UI: fixation_finition_eur_ml
-    option_ecran: toNum(get("option_ecran", "fixation_finition_eur_ml"), 100),
-
-    // CF7: option_tirage (€/m²) ; ancienne UI: tirage_cable_eur_m2
-    option_tirage: toNum(get("option_tirage", "tirage_cable_eur_m2"), 80),
-
-    // CF7: option_peinture (€/m²) ; ancienne UI: reprise_peinture_eur_m2
-    option_peinture: toNum(get("option_peinture", "reprise_peinture_eur_m2"), 100),
-
-    // CF7: option_coffrage (€/m²) ; ancienne UI: coffrage_placo_eur_m2
-    option_coffrage: toNum(get("option_coffrage", "coffrage_placo_eur_m2"), 75),
-
-    // CF7: option_raccordement (€/m²) ; ancienne UI: raccordement_eur_m2
-    option_raccordement: toNum(get("option_raccordement", "raccordement_eur_m2"), 75),
-
-    // CF7: option_livraison (€/m²) ; ancienne UI: livraison_eur_m2
-    option_livraison: toNum(get("option_livraison", "livraison_eur_m2"), 150),
-
-    // CF7: prix_container (€/m²) ; ancienne UI: prix_container_eur_m2
-    prix_container: toNum(get("prix_container", "prix_container_eur_m2"), 150),
-
-    // CF7: prix_instal (€/m²) ; ancienne UI: installation_eur_m2
-    prix_instal: toNum(get("prix_instal", "installation_eur_m2"), 500),
-  };
-}
-
-
-
-function safeJsonParse(str, fallback = null) {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return fallback;
-  }
-}
-
-function num(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function round2(n) {
-  return Math.round(n * 100) / 100;
-}
-
-function computeDiagonalCm(widthM, heightM) {
-  const w = num(widthM);
-  const h = num(heightM);
-  const diagM = Math.sqrt(w * w + h * h);
-  return round2(diagM * 100); // m -> cm
-}
-
-function cmToInches(cm) {
-  return round2(num(cm) / 2.54);
-}
+const DEFAULT_STATIC = normalizeStaticVals({
+  accessoires_players: 800,
+  cout_locaux_chine_france: 1000,
+  cout_leasing: 0.7,
+  marge_catalogue: 0.7,
+  droits_de_douanes: 1.14,
+  euros_dollars: 1.07,
+  option_ecran: 100,
+  option_tirage: 80,
+  option_peinture: 100,
+  option_coffrage: 75,
+  option_raccordement: 75,
+  option_livraison: 150,
+  prix_container: 150,
+  prix_instal: 500,
+});
 
 export default function AgentHome() {
   const navigate = useNavigate();
@@ -113,25 +39,7 @@ export default function AgentHome() {
     []
   );
 
-  const [staticVals, setStaticVals] = useState(() =>
-  normalizeStaticVals({
-    accessoires_players: 800,
-    cout_locaux_chine_france: 1000,
-    cout_leasing: 0.7,
-    marge_catalogue: 0.7,
-    droits_de_douanes: 1.14,
-    euros_dollars: 1.07,
-    option_ecran: 100,
-    option_tirage: 80,
-    option_peinture: 100,
-    option_coffrage: 75,
-    option_raccordement: 75,
-    option_livraison: 150,
-    prix_container: 150,
-    prix_instal: 500,
-  })
-);
-
+  const [staticVals, setStaticVals] = useState(() => DEFAULT_STATIC);
 
   const [agent, setAgent] = useState(null);
   const [error, setError] = useState("");
@@ -141,23 +49,18 @@ export default function AgentHome() {
   const [savingPdf, setSavingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
 
-  // --- UI "devis" (images)
+  // --- UI "devis" (products)
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
 
-const wallLedsProductId = useMemo(() => {
-  const p = products.find(
-    (x) => (x?.name || "").toLowerCase().trim() === "murs leds"
+  const wallLedsProductId = useMemo(
+    () => getWallLedsProductId(products),
+    [products]
   );
-  return p?._id || p?.id || "";
-}, [products]);
 
-const showWalleds =
-  !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
-
-
-
+  const showWalleds =
+    !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
 
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
@@ -171,8 +74,11 @@ const showWalleds =
   // pitchId coché (pour afficher/masquer)
   const [selectedPitchIds, setSelectedPitchIds] = useState([]);
 
-
-  
+  // --- refs
+  const [finishes, setFinishes] = useState([]);
+  const [fixations, setFixations] = useState([]);
+  const [durations, setDurations] = useState([]);
+  const [loadingRefs, setLoadingRefs] = useState(false);
 
   // --- Infos client/prospect
   const [client, setClient] = useState({
@@ -199,28 +105,27 @@ const showWalleds =
   };
 
   // ---------------------------
+  // STATIC VALUES (uniquement si showWalleds)
+  // ---------------------------
+  useEffect(() => {
+    if (!showWalleds) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/static-values`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        setStaticVals(normalizeStaticVals(data || {}));
+      } catch (e) {
+        console.warn("STATIC VALUES: defaults utilisés", e);
+        setStaticVals(DEFAULT_STATIC);
+      }
+    })();
+  }, [API, showWalleds]);
+
+  // ---------------------------
   // AUTH + ME
   // ---------------------------
-
-  useEffect(() => {
-  const shouldShow = !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
-  if (!shouldShow) return;
-
-  (async () => {
-    try {
-      const res = await fetch(`${API}/api/static-values`);
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setStaticVals(normalizeStaticVals(data || {}));
-    } catch (e) {
-      // pas bloquant : on garde les defaults
-      console.warn("STATIC VALUES: defaults utilisés", e);
-    }
-  })();
-}, [API, selectedProductIds, wallLedsProductId]);
-
-
-
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     const cached = localStorage.getItem(USER_KEY);
@@ -241,7 +146,6 @@ const showWalleds =
         const me = await res.json();
         setAgent(me);
 
-        // prefill votreEmail (comme capture)
         setClient((prev) => ({ ...prev, votreEmail: me?.email || prev.votreEmail }));
       } catch (e) {
         console.error(e);
@@ -264,7 +168,6 @@ const showWalleds =
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
-        // option: afficher seulement actifs
         const active = list.filter((p) => p?.isActive !== false);
         setProducts(active);
       } catch (e) {
@@ -277,14 +180,10 @@ const showWalleds =
   }, [API]);
 
   // ---------------------------
-  // LOAD: Categories (select)
-  // (affiché seulement si le productId spécial est coché)
+  // LOAD: Categories (select) (si showWalleds)
   // ---------------------------
   useEffect(() => {
- const shouldShow =
-  !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
-
-    if (!shouldShow) {
+    if (!showWalleds) {
       setSelectedCategoryId("");
       setCategories([]);
       setPitches([]);
@@ -310,46 +209,14 @@ const showWalleds =
         setLoadingCategories(false);
       }
     })();
-}, [API, selectedProductIds, wallLedsProductId]);
+  }, [API, showWalleds]);
 
   // ---------------------------
   // LOAD: Pitches par catégorie
-  // ⚠️ endpoints "probables" -> on en essaye plusieurs
   // ---------------------------
-  const loadPitchesByCategory = async ({ categoryId, productId }) => {
-    const tries = [
-      // le plus courant
-      `${API}/api/pitches?categoryId=${encodeURIComponent(categoryId)}&productId=${encodeURIComponent(productId)}`,
-      `${API}/api/pitches?category=${encodeURIComponent(categoryId)}&productId=${encodeURIComponent(productId)}`,
-      `${API}/api/pitches?pitchCategoryId=${encodeURIComponent(categoryId)}&productId=${encodeURIComponent(productId)}`,
-      // fallback: sans productId
-      `${API}/api/pitches?categoryId=${encodeURIComponent(categoryId)}`,
-      `${API}/api/pitches?category=${encodeURIComponent(categoryId)}`,
-    ];
-
-    let lastErr = null;
-
-    for (const url of tries) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data?.items || []);
-        return Array.isArray(list) ? list : [];
-      } catch (e) {
-        lastErr = e;
-      }
-    }
-
-    console.error(lastErr);
-    throw new Error("Aucun endpoint pitches n’a répondu correctement.");
-  };
-
   useEffect(() => {
-    const shouldShow =
-  !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
+    if (!showWalleds) return;
 
-    if (!shouldShow) return;
     if (!selectedCategoryId) {
       setPitches([]);
       setPitchInstances([]);
@@ -362,39 +229,28 @@ const showWalleds =
       setError("");
       try {
         const list = await loadPitchesByCategory({
+          API,
           categoryId: selectedCategoryId,
           productId: wallLedsProductId,
-
         });
 
-        // option: ne garder que actifs si la donnée existe
         const active = list.filter((p) => p?.isActive !== false);
         setPitches(active);
       } catch (e) {
         console.error(e);
-        setError(
-          "Impossible de charger les pitches (vérifie ton endpoint /api/pitches)."
-        );
+        setError("Impossible de charger les pitches (vérifie ton endpoint /api/pitches).");
         setPitches([]);
       } finally {
         setLoadingPitches(false);
       }
     })();
-  }, [API, selectedCategoryId, selectedProductIds]);
+  }, [API, showWalleds, selectedCategoryId, wallLedsProductId]);
 
   // ---------------------------
   // LOAD: finishes + fixations + durations
   // ---------------------------
-  const [finishes, setFinishes] = useState([]);
-  const [fixations, setFixations] = useState([]);
-  const [durations, setDurations] = useState([]);
-  const [loadingRefs, setLoadingRefs] = useState(false);
-
   useEffect(() => {
- const shouldShow =
-  !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
-
-    if (!shouldShow) return;
+    if (!showWalleds) return;
 
     (async () => {
       setLoadingRefs(true);
@@ -418,233 +274,11 @@ const showWalleds =
         );
       } catch (e) {
         console.error(e);
-        // pas bloquant, on peut quand même afficher
       } finally {
         setLoadingRefs(false);
       }
     })();
-  }, [API, selectedProductIds ,wallLedsProductId]);
-
-  // ---------------------------
-  // PITCH selection + instance creation
-  // ---------------------------
-  const togglePitch = (pitch) => {
-    const id = pitch?._id || pitch?.id;
-    if (!id) return;
-
-    setSelectedPitchIds((prev) => {
-      const has = prev.includes(id);
-      const next = has ? prev.filter((x) => x !== id) : [...prev, id];
-
-      // si on décoche -> remove toutes instances de ce pitch
-      if (has) {
-        setPitchInstances((inst) => inst.filter((pi) => pi.pitchId !== id));
-      } else {
-        // si on coche -> créer 1 instance par défaut
-        setPitchInstances((inst) => [
-          ...inst,
-          {
-            instanceId: `${id}_${Date.now()}`,
-            pitchId: id,
-            pitchLabel:
-              pitch?.label ||
-              pitch?.name ||
-              pitch?.titre ||
-              pitch?.code ||
-              "Pitch",
-            resolutionLabel:
-              pitch?.resolutionLabel ||
-              pitch?.resolution ||
-              pitch?.categoryName ||
-              "",
-            collapsed: false,
-
-            // Dimensions
-           
-
-            // Finition / Fixation
-            finitionId: "",
-            fixationId: "",
-            metreLineaire: "5",
-
-            // Financement
-            typeFinancement: "location_maintenance", // achat | location_evenementiel | location_maintenance
-            financementMonths: durations?.[0]?.months ? String(durations[0].months) : "63",
-
-            // Résultat
-            prixTotalHtMois: "97",
-            quantite: "1",
-            montantHt: "97.00",
-          },
-        ]);
-      }
-
-      return next;
-    });
-  };
-
-
-
-function computePitchQuote({
-  largeurM,
-  hauteurM,
-  lineaireRaw,
-  pitchLabel,
-  prixPitch,          // pitch.price Mongo (€/m²)
-  dureeMonths,
-  typeFinancement,    // location_maintenance | location_evenementiel | achat
-  quantite,
-  staticVals,
-  categorieName,
-}) {
-  const L = toNum(largeurM, 0);
-  const H = toNum(hauteurM, 0);
-  const surface = L * H;
-
-  const diagonale = Math.sqrt(L * L + H * H) * 100; // cm
-  const pouces = diagonale / 2.54;
-
-  // pitch mm depuis label "P2.6"
-  const pitchMm = parsePitchMmFromLabel(pitchLabel);
-  const largeurPx = pitchMm > 0 && L > 0 ? Math.floor((L * 1000) / pitchMm) : "";
-  const hauteurPx = pitchMm > 0 && H > 0 ? Math.floor((H * 1000) / pitchMm) : "";
-
-  // minLineaire (comme ton CF7)
-  const minLineaire = categorieName === SPECIAL_GROUP ? 5 : 2.5;
-
-  let lineaireRawN = toNum(lineaireRaw, 0);
-  const lineaire = Math.max(minLineaire, lineaireRawN);
-
-  // container = lineaire * 2 * option_ecran
-  const container = lineaire * 2 * (staticVals.option_ecran ?? 100);
-
-  const duree = Math.max(1, parseInt(String(dureeMonths || "1"), 10) || 1);
-
-  // Coeffs
-  const accessoires_players = staticVals.accessoires_players ?? 800;
-  const cout_locaux = staticVals.cout_locaux_chine_france ?? 1000;
-  const cout_leasing = staticVals.cout_leasing ?? 0.7;
-  const marge = staticVals.marge_catalogue ?? 0.7;
-  const douanes = staticVals.droits_de_douanes ?? 1.14;
-  const taux_conversion = staticVals.euros_dollars ?? 1.07;
-
-  const tirage_unit = staticVals.option_tirage ?? 80;
-  const livraison_unit = staticVals.option_livraison ?? 150;
-  const install_unit = staticVals.prix_instal ?? 500;
-
-  // EXACTEMENT comme ton CF7 (mêmes max)
-  const tirage = Math.max(tirage_unit * surface, 250);
-  const livraison = Math.max(livraison_unit * surface, 300);
-  const install = Math.max(surface * install_unit, 750);
-
-  const total_accessoires = accessoires_players + cout_locaux;
-  const total_pieces = surface * 0.1 * toNum(prixPitch, 0) * douanes;
-  const total_ecran = (toNum(prixPitch, 0) + container) * surface;
-  const total_brut = total_ecran + total_accessoires + total_pieces;
-
-  const total_eur =
-    total_brut / taux_conversion +
-    install +
-    (staticVals.option_ecran ?? 100) * surface +
-    livraison +
-    tirage;
-
-  const step1 = cout_leasing ? total_eur / cout_leasing : 0;
-  const step2 = marge ? step1 / marge : 0;
-
-  const prix_mensuel = duree ? step2 / duree : 0;
-  const prix_achat = step2 * 0.6;
-
-  const prix_total_affiche = typeFinancement === "achat" ? prix_achat : prix_mensuel;
-
-  // Comme CF7 : total = Math.round(...)
-  const totalArrondi = Number.isFinite(prix_total_affiche) ? Math.round(prix_total_affiche) : 0;
-
-  const q = Math.max(1, parseInt(String(quantite || "1"), 10) || 1);
-  const montant = q * totalArrondi;
-
-  return {
-    surfaceM2: Number.isFinite(surface) ? Number(surface.toFixed(2)) : 0,
-    diagonaleCm: roundDimLikeCF7(diagonale),
-    pouces: roundDimLikeCF7(pouces),
-    largeurPx,
-    hauteurPx,
-    minLineaire,
-    lineaireUsed: lineaire,
-    container: Number.isFinite(container) ? container.toFixed(2) : "0.00",
-    total: String(totalArrondi),
-    montant: Number.isFinite(montant) ? montant.toFixed(2) : "0.00",
-  };
-}
-
-const updatePitchInstance = (instanceId, patch) => {
-  setPitchInstances((prev) =>
-    prev.map((p) => {
-      if (p.instanceId !== instanceId) return p;
-      const next = { ...p, ...patch };
-
-      // catégorie affichée = catégorie sélectionnée dans le select
-      const categorieName =
-        categories.find((c) => c._id === selectedCategoryId)?.name || "";
-
-      // prixPitch = champ "price" dans Mongo (comme capture)
-      const pitchObj = pitches.find((x) => (x._id || x.id) === next.pitchId);
-      const prixPitch = pitchObj?.price ?? 0;
-
-      const quote = computePitchQuote({
-        largeurM: next.largeurM,
-        hauteurM: next.hauteurM,
-        lineaireRaw: next.metreLineaire,
-        pitchLabel: next.pitchLabel,
-        prixPitch,
-        dureeMonths: next.financementMonths,
-        typeFinancement: next.typeFinancement,
-        quantite: next.quantite,
-        staticVals,
-        categorieName,
-      });
-
-      // applique les sorties CF7
-      next.surfaceM2 = quote.surfaceM2;
-      next.diagonaleCm = quote.diagonaleCm;
-      next.pouces = quote.pouces;
-      next.largeurPx = quote.largeurPx;
-      next.hauteurPx = quote.hauteurPx;
-
-      // lineaire clamp + container auto
-      next.metreLineaire = String(quote.lineaireUsed);
-      next.container = quote.container;
-
-      // total + montant
-      next.prixTotalHtMois = quote.total;
-      next.montantHt = quote.montant;
-
-      return next;
-    })
-  );
-};
-
-
-  const duplicatePitchInstance = (instanceId) => {
-    setPitchInstances((prev) => {
-      const found = prev.find((x) => x.instanceId === instanceId);
-      if (!found) return prev;
-      const copy = {
-        ...found,
-        instanceId: `${found.pitchId}_${Date.now()}`,
-        collapsed: false,
-      };
-      return [...prev, copy];
-    });
-  };
-
-  const toggleCollapseInstance = (instanceId) => {
-    setPitchInstances((prev) =>
-      prev.map((p) =>
-        p.instanceId === instanceId ? { ...p, collapsed: !p.collapsed } : p
-      )
-    );
-  };
+  }, [API, showWalleds]);
 
   // ---------------------------
   // Products selection
@@ -654,7 +288,6 @@ const updatePitchInstance = (instanceId, patch) => {
       const has = prev.includes(productId);
       const next = has ? prev.filter((x) => x !== productId) : [...prev, productId];
 
-      // si on décoche le product spécial -> reset section
       if (has && productId === wallLedsProductId) {
         setSelectedCategoryId("");
         setCategories([]);
@@ -662,9 +295,91 @@ const updatePitchInstance = (instanceId, patch) => {
         setPitchInstances([]);
         setSelectedPitchIds([]);
       }
-
       return next;
     });
+  };
+
+  // ---------------------------
+  // Pitch selection + instance creation
+  // ---------------------------
+  const togglePitch = (pitch) => {
+    const id = pitch?._id || pitch?.id;
+    if (!id) return;
+
+    setSelectedPitchIds((prev) => {
+      const has = prev.includes(id);
+      const next = has ? prev.filter((x) => x !== id) : [...prev, id];
+
+      if (has) {
+        setPitchInstances((inst) => inst.filter((pi) => pi.pitchId !== id));
+      } else {
+        setPitchInstances((inst) => [
+          ...inst,
+          createDefaultPitchInstance({ pitch, durations }),
+        ]);
+      }
+      return next;
+    });
+  };
+
+  const updatePitchInstance = (instanceId, patch) => {
+    setPitchInstances((prev) =>
+      prev.map((p) => {
+        if (p.instanceId !== instanceId) return p;
+        const next = { ...p, ...patch };
+
+        const categorieName =
+          categories.find((c) => c._id === selectedCategoryId)?.name || "";
+
+        const pitchObj = pitches.find((x) => (x._id || x.id) === next.pitchId);
+        const prixPitch = pitchObj?.price ?? 0;
+
+        const quote = computePitchQuote({
+          largeurM: next.largeurM,
+          hauteurM: next.hauteurM,
+          lineaireRaw: next.metreLineaire,
+          pitchLabel: next.pitchLabel,
+          prixPitch,
+          dureeMonths: next.financementMonths,
+          typeFinancement: next.typeFinancement,
+          quantite: next.quantite,
+          staticVals,
+          categorieName,
+        });
+
+        return {
+          ...next,
+          surfaceM2: quote.surfaceM2,
+          diagonaleCm: quote.diagonaleCm,
+          pouces: quote.pouces,
+          largeurPx: quote.largeurPx,
+          hauteurPx: quote.hauteurPx,
+          metreLineaire: String(quote.lineaireUsed),
+          container: quote.container,
+          prixTotalHtMois: quote.total,
+          montantHt: quote.montant,
+        };
+      })
+    );
+  };
+
+  const duplicatePitchInstance = (instanceId) => {
+    setPitchInstances((prev) => {
+      const found = prev.find((x) => x.instanceId === instanceId);
+      if (!found) return prev;
+      return [
+        ...prev,
+        { ...found, instanceId: `${found.pitchId}_${Date.now()}`, collapsed: false },
+      ];
+    });
+  };
+
+  const toggleCollapseInstance = (instanceId) => {
+    setPitchInstances((prev) =>
+      prev.map((p) =>
+        p.instanceId === instanceId ? { ...p, collapsed: !p.collapsed } : p
+      )
+    );
   };
 
   // ---------------------------
@@ -700,7 +415,6 @@ const updatePitchInstance = (instanceId, patch) => {
       const pdfRes = await fetch(`${API}${data.pdfUrl}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!pdfRes.ok) throw new Error(await pdfRes.text());
 
       const blob = await pdfRes.blob();
@@ -715,8 +429,6 @@ const updatePitchInstance = (instanceId, patch) => {
       setSavingPdf(false);
     }
   };
-
- 
 
   return (
     <div className="agenthome-page">
@@ -736,7 +448,7 @@ const updatePitchInstance = (instanceId, patch) => {
           <div className="agenthome-text">Chargement...</div>
         )}
 
-        {/* --------- BLOC: Sélectionnez les produits --------- */}
+        {/* --------- Produits --------- */}
         <div className="agenthome-section">
           <div className="agenthome-sectionTitle">Sélectionnez les produits :</div>
 
@@ -766,7 +478,7 @@ const updatePitchInstance = (instanceId, patch) => {
           )}
         </div>
 
-        {/* --------- BLOC: Type d’écrans (si productId spécial) --------- */}
+        {/* --------- Walleds --------- */}
         {showWalleds ? (
           <div className="agenthome-section">
             <div className="agenthome-sectionTitle">Type d’écrans :</div>
@@ -789,7 +501,6 @@ const updatePitchInstance = (instanceId, patch) => {
               </select>
             </div>
 
-            {/* --------- BLOC: Liste pitches (checkbox) --------- */}
             {selectedCategoryId ? (
               <div className="agenthome-subcard">
                 <div className="agenthome-subcardTitle">
@@ -842,9 +553,12 @@ const updatePitchInstance = (instanceId, patch) => {
           </div>
         ) : null}
 
-        {/* --------- PITCH INSTANCES (dimensions / finition / fixation / financement / résultat) --------- */}
+        {/* --------- PITCH INSTANCES --------- */}
         {pitchInstances.map((pi) => {
-          const priceLabel = pi.typeFinancement === "achat" ? "Prix total HT (achat) :" : "Prix total HT (/mois) :";
+          const priceLabel =
+            pi.typeFinancement === "achat"
+              ? "Prix total HT (achat) :"
+              : "Prix total HT (/mois) :";
 
           return (
             <div key={pi.instanceId} className="agenthome-pitchCard">
@@ -898,12 +612,20 @@ const updatePitchInstance = (instanceId, patch) => {
 
                       <div className="agenthome-field">
                         <label>Diagonale (cm) :</label>
-                        <input value={pi.diagonaleCm} readOnly className="agenthome-input agenthome-input--readonly" />
+                        <input
+                          value={pi.diagonaleCm}
+                          readOnly
+                          className="agenthome-input agenthome-input--readonly"
+                        />
                       </div>
 
                       <div className="agenthome-field">
                         <label>Pouces :</label>
-                        <input value={pi.pouces} readOnly className="agenthome-input agenthome-input--readonly" />
+                        <input
+                          value={pi.pouces}
+                          readOnly
+                          className="agenthome-input agenthome-input--readonly"
+                        />
                       </div>
 
                       <div className="agenthome-field">
@@ -930,7 +652,11 @@ const updatePitchInstance = (instanceId, patch) => {
 
                       <div className="agenthome-field agenthome-field--full">
                         <label>Surface (m²) :</label>
-                        <input value={pi.surfaceM2} readOnly className="agenthome-input agenthome-input--readonly" />
+                        <input
+                          value={pi.surfaceM2}
+                          readOnly
+                          className="agenthome-input agenthome-input--readonly"
+                        />
                       </div>
                     </div>
                   </div>
@@ -940,20 +666,21 @@ const updatePitchInstance = (instanceId, patch) => {
                     <div className="agenthome-subsectionTitle">Finition :</div>
 
                     <div className="agenthome-radioGrid">
-                      {(finishes.length ? finishes : [
-                        { _id: "sans", name: "Sans" },
-                        { _id: "brut", name: "Brut" },
-                        { _id: "blanc", name: "Blanc" },
-                        { _id: "autre", name: "Autre couleur" },
-                      ]).map((f) => (
+                      {(finishes.length
+                        ? finishes
+                        : [
+                            { _id: "sans", name: "Sans" },
+                            { _id: "brut", name: "Brut" },
+                            { _id: "blanc", name: "Blanc" },
+                            { _id: "autre", name: "Autre couleur" },
+                          ]
+                      ).map((f) => (
                         <label key={f._id} className="agenthome-radio">
                           <input
                             type="radio"
                             name={`finition_${pi.instanceId}`}
                             checked={pi.finitionId === f._id}
-                            onChange={() =>
-                              updatePitchInstance(pi.instanceId, { finitionId: f._id })
-                            }
+                            onChange={() => updatePitchInstance(pi.instanceId, { finitionId: f._id })}
                           />
                           <span>{f.name}</span>
                         </label>
@@ -966,19 +693,20 @@ const updatePitchInstance = (instanceId, patch) => {
                     <div className="agenthome-subsectionTitle">Fixation :</div>
 
                     <div className="agenthome-radioGrid">
-                      {(fixations.length ? fixations : [
-                        { _id: "plafond", name: "Support plafond" },
-                        { _id: "fixe", name: "Support fixe" },
-                        { _id: "special", name: "Support spécial" },
-                      ]).map((f) => (
+                      {(fixations.length
+                        ? fixations
+                        : [
+                            { _id: "plafond", name: "Support plafond" },
+                            { _id: "fixe", name: "Support fixe" },
+                            { _id: "special", name: "Support spécial" },
+                          ]
+                      ).map((f) => (
                         <label key={f._id} className="agenthome-radio">
                           <input
                             type="radio"
                             name={`fixation_${pi.instanceId}`}
                             checked={pi.fixationId === f._id}
-                            onChange={() =>
-                              updatePitchInstance(pi.instanceId, { fixationId: f._id })
-                            }
+                            onChange={() => updatePitchInstance(pi.instanceId, { fixationId: f._id })}
                           />
                           <span>{f.name}</span>
                         </label>
@@ -1016,7 +744,7 @@ const updatePitchInstance = (instanceId, patch) => {
                     </div>
                   </div>
 
-                  {/* Financement */}
+                  {/* Durée */}
                   <div className="agenthome-subsection">
                     <div className="agenthome-subsectionTitle">Financement :</div>
 
@@ -1028,11 +756,13 @@ const updatePitchInstance = (instanceId, patch) => {
                           updatePitchInstance(pi.instanceId, { financementMonths: e.target.value })
                         }
                       >
-                        {(durations.length ? durations : [{ months: 63 }, { months: 48 }, { months: 36 }]).map((d) => (
-                          <option key={d._id || d.months} value={String(d.months)}>
-                            {d.months} mois
-                          </option>
-                        ))}
+                        {(durations.length ? durations : [{ months: 63 }, { months: 48 }, { months: 36 }]).map(
+                          (d) => (
+                            <option key={d._id || d.months} value={String(d.months)}>
+                              {d.months} mois
+                            </option>
+                          )
+                        )}
                       </select>
                     </div>
                   </div>
@@ -1088,7 +818,7 @@ const updatePitchInstance = (instanceId, patch) => {
           );
         })}
 
-        {/* --------- INFOS CLIENT / PROSPECT --------- */}
+        {/* --------- INFOS CLIENT --------- */}
         <div className="agenthome-section agenthome-section--client">
           <div className="agenthome-sectionTitle">Informations du client/prospect</div>
 
@@ -1235,9 +965,7 @@ const updatePitchInstance = (instanceId, patch) => {
               placeholder="Commentaire figurant dans le pdf"
               rows={6}
               value={client.commentaires}
-              onChange={(e) =>
-                setClient((p) => ({ ...p, commentaires: e.target.value }))
-              }
+              onChange={(e) => setClient((p) => ({ ...p, commentaires: e.target.value }))}
             />
           </div>
 
@@ -1248,7 +976,7 @@ const updatePitchInstance = (instanceId, patch) => {
           </div>
         </div>
 
-        {/* ✅ Ton ancien bloc PDF (tu peux le garder où tu veux) */}
+        {/* --------- PDF --------- */}
         <div className="agenthome-block">
           <label className="agenthome-label">Ton texte</label>
           <textarea
@@ -1277,7 +1005,6 @@ const updatePitchInstance = (instanceId, patch) => {
 
         {error ? <div className="agenthome-error">{error}</div> : null}
 
-        {/* ✅ AVANT ce bloc: tu voulais placer les infos en image -> c’est fait au-dessus */}
         <div className="agenthome-actions">
           <button className="agenthome-btn" type="button" onClick={logout}>
             Déconnexion
