@@ -1,10 +1,12 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import AdminApp from "./pages/AdminApp";
+import AgentHome from "./pages/agent/AgentHome";
+
 
 // ✅ Tes pages agent (ajuste les chemins selon ton arborescence réelle)
 import AgentRegister from "./pages/agent/AgentRegister";
 import AgentLogin from "./pages/agent/AgentLogin";
-import AgentHome from "./pages/agent/AgentHome";
+
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
       <Route path="/agent/register" element={<AgentRegister />} />
       <Route path="/agent/login" element={<AgentLogin />} />
       <Route path="/agent/home" element={<AgentHome />} />
+  
+
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -59,3 +59,50 @@
   text-decoration:none;
   font-weight:600;
 }
+.agenthome-block{
+  margin-top: 14px;
+  margin-bottom: 14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.agenthome-label{
+  font-size: 13px;
+  font-weight: 700;
+  color:#111;
+}
+
+.agenthome-textarea{
+  width:100%;
+  border:1px solid #e6e8ef;
+  border-radius:10px;
+  padding:10px;
+  font-size:14px;
+  outline:none;
+  resize: vertical;
+}
+
+.agenthome-textarea:focus{
+  border-color:#111;
+}
+
+.agenthome-pdf{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:40px;
+  padding:0 16px;
+  border-radius:8px;
+  background:#e9ecf6;
+  color:#111;
+  text-decoration:none;
+  font-weight:600;
+}
+
+.agenthome-error{
+  margin-top: 10px;
+  font-size: 13px;
+  color: #c43131;
+  font-weight: 600;
+}

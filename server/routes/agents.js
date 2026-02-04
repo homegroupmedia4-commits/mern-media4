@@ -3,9 +3,115 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Agent = require("../models/Agent");
+const PDFDocument = require("pdfkit");
+const AgentPdf = require("../models/AgentPdf");
+
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 const TOKEN_TTL = "7d";
+
+function generate5PagePdfBuffer({ texte, agent }) {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      const chunks = [];
+
+      doc.on("data", (c) => chunks.push(c));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+
+      const fullName = agent?.prenom && agent?.nom ? `${agent.prenom} ${agent.nom}` : "Agent";
+      const email = agent?.email || "";
+
+      for (let i = 1; i <= 5; i++) {
+        if (i > 1) doc.addPage();
+
+        doc
+          .fontSize(18)
+          .text("Document Agent", { align: "left" })
+          .moveDown(0.3);
+
+        doc.fontSize(11).text(`Agent : ${fullName}`);
+        doc.fontSize(11).text(`Email : ${email}`);
+        doc.fontSize(11).text(`Page : ${i}/5`);
+        doc.moveDown(1);
+
+        doc.fontSize(13).text("Texte saisi :", { underline: true });
+        doc.moveDown(0.5);
+
+        doc.fontSize(12).text(texte, {
+          align: "left",
+          lineGap: 4,
+        });
+
+        doc.moveDown(2);
+        doc.fontSize(10).text("— Généré automatiquement —", { align: "center" });
+      }
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+
+// ✅ POST /api/agents/pdfs
+router.post("/pdfs", async (req, res) => {
+  try {
+    // ---- AUTH : adapte selon ton code existant (/me) ----
+    // Exemple si tu as déjà req.agent:
+    const agent = req.agent || req.user; 
+    if (!agent?._id) return res.status(401).json({ message: "Unauthorized" });
+
+    const { texte } = req.body || {};
+    if (!texte || String(texte).trim().length < 1) {
+      return res.status(400).json({ message: "Texte obligatoire." });
+    }
+
+    const pdfBuffer = await generate5PagePdfBuffer({ texte: String(texte), agent });
+
+    const saved = await AgentPdf.create({
+      agentId: agent._id,
+      texte: String(texte),
+      pdfBuffer,
+      pages: 5,
+    });
+
+    return res.json({
+      ok: true,
+      id: saved._id,
+      pdfUrl: `/api/agents/pdfs/${saved._id}`,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur génération PDF." });
+  }
+});
+
+// ✅ GET /api/agents/pdfs/:id
+router.get("/pdfs/:id", async (req, res) => {
+  try {
+    // ---- AUTH : même protection que /me si besoin ----
+    const agent = req.agent || req.user;
+    if (!agent?._id) return res.status(401).send("Unauthorized");
+
+    const doc = await AgentPdf.findById(req.params.id);
+    if (!doc) return res.status(404).send("Not found");
+
+    // sécurité : l’agent ne peut lire que ses docs
+    if (String(doc.agentId) !== String(agent._id)) return res.status(403).send("Forbidden");
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="agent-${agent._id}-doc-${doc._id}.pdf"`);
+    return res.send(doc.pdfBuffer);
+  } catch (e) {
+    console.error(e);
+    return res.status(500).send("Server error");
+  }
+});
+
+
+
 
 // GET /api/agents/parrains -> liste des parrains (tous les agents existants)
 router.get("/parrains", async (req, res) => {
@@ -19,6 +125,7 @@ router.get("/parrains", async (req, res) => {
     res.status(500).json({ message: "Erreur serveur." });
   }
 });
+
 
 // POST /api/agents/register
 router.post("/register", async (req, res) => {
