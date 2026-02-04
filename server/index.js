@@ -8,6 +8,9 @@ const pitchCategoriesRouter = require("./routes/pitchCategories");
 const pitchesRouter = require("./routes/pitches");
 const leasingDurationsRouter = require("./routes/leasingDurations");
 const staticValuesRouter = require("./routes/staticValues");
+const otherProductSizesRouter = require("./routes/otherProductSizes");
+const memoryOptionsRouter = require("./routes/memoryOptions");
+
 
 
 
@@ -28,6 +31,9 @@ app.use("/api/pitch-categories", pitchCategoriesRouter);
 app.use("/api/pitches", pitchesRouter);
 app.use("/api/leasing-durations", leasingDurationsRouter);
 app.use("/api/static-values", staticValuesRouter);
+app.use("/api/other-product-sizes", otherProductSizesRouter);
+app.use("/api/memory-options", memoryOptionsRouter);
+
 
 
 

@@ -646,3 +646,8 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   color: #c0392b;
   font-weight: 800;
 }
+
+.input-inline{
+  width: 100%;
+  max-width: 360px;
+}
