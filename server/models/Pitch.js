@@ -8,6 +8,13 @@ const pitchSchema = new mongoose.Schema(
     luminosite: { type: String, required: true, trim: true, maxlength: 60 },
     price: { type: Number, required: true, min: 0 },
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "PitchCategory", required: true },
+
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true
+    },
+
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
