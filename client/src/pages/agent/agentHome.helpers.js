@@ -86,7 +86,8 @@ export function createDefaultPitchInstance({ pitch, durations }) {
     // Finition / Fixation
     finitionId: "",
     fixationId: "",
-    metreLineaire: "5",
+   metreLineaire: "2.5",
+
 
     // Financement
     typeFinancement: "location_maintenance",
