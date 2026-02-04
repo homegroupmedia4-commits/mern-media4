@@ -2,12 +2,17 @@ const express = require("express");
 const router = express.Router();
 const StaticValues = require("../models/StaticValues");
 
-// helper: get or create singleton document
 async function getOrCreate() {
   let doc = await StaticValues.findOne();
-  if (!doc) doc = await StaticValues.create({});
+  if (!doc) {
+    doc = await StaticValues.create({});
+  } else {
+    // ✅ s’assure que les defaults existent si jamais le doc est ancien/incomplet
+    doc = await StaticValues.findByIdAndUpdate(doc._id, {}, { new: true, setDefaultsOnInsert: true });
+  }
   return doc;
 }
+
 
 // GET /api/static-values
 router.get("/", async (req, res) => {

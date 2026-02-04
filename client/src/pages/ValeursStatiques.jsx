@@ -52,21 +52,43 @@ export default function ValeursStatiques({ API }) {
     }
   };
 
-  const loadValues = async () => {
-    setError("");
-    setLoadingVals(true);
-    try {
-      const լին = await fetch(`${API}/api/static-values`);
-      if (!לִן.ok) throw new Error(await לִן.text());
-      const data = await לִן.json();
-      setValues(data || {});
-    } catch (e) {
-      console.error(e);
-      setError("Impossible de charger les valeurs statiques.");
-    } finally {
-      setLoadingVals(false);
-    }
-  };
+const DEFAULT_STATIC_VALUES = {
+  accessoires_players: 800,
+  cout_locaux_chine_france: 1000,
+  coeff_leasing: 0.7,
+  marge_catalogue: 0.7,
+  droits_douane: 1.14,
+  taux_eur_usd: 1.07,
+  fixation_finition_eur_ml: 100,
+  tirage_cable_eur_m2: 80,
+  reprise_peinture_eur_m2: 100,
+  coffrage_placo_eur_m2: 75,
+  raccordement_eur_m2: 75,
+  livraison_eur_m2: 150,
+  prix_container_eur_m2: 150,
+  installation_eur_m2: 500,
+};
+
+const loadValues = async () => {
+  setError("");
+  setLoadingVals(true);
+  try {
+    const res = await fetch(`${API}/api/static-values`);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    // ✅ merge: defaults + DB values
+    setValues({ ...DEFAULT_STATIC_VALUES, ...(data || {}) });
+  } catch (e) {
+    console.error(e);
+    // ✅ même en erreur: afficher defaults
+    setValues({ ...DEFAULT_STATIC_VALUES });
+    setError("Impossible de charger les valeurs statiques (defaults affichés).");
+  } finally {
+    setLoadingVals(false);
+  }
+};
+
 
   useEffect(() => {
     loadDurations();
@@ -126,9 +148,12 @@ export default function ValeursStatiques({ API }) {
     try {
       // convert en numbers
       const payload = {};
-      for (const f of FIELDS) {
-        payload[f.key] = Number(values[f.key]);
-      }
+     for (const f of FIELDS) {
+  const raw = values?.[f.key];
+  const n = Number(raw);
+  payload[f.key] = Number.isFinite(n) ? n : DEFAULT_STATIC_VALUES[f.key];
+}
+
 
       const res = await fetch(`${API}/api/static-values`, {
         method: "PATCH",
@@ -242,7 +267,8 @@ export default function ValeursStatiques({ API }) {
                         className="input vs-input"
                         type="number"
                         step="0.01"
-                        value={values?.[f.key] ?? ""}
+                        value={values?.[f.key] ?? DEFAULT_STATIC_VALUES[f.key] ?? ""}
+
                         onChange={onValueChange(f.key)}
                       />
                     </div>
