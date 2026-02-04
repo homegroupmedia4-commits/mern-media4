@@ -5,6 +5,8 @@ import CategoriesPitch from "./CategoriesPitch";
 import PitchManager from "./PitchManager";
 import ValeursStatiques from "./ValeursStatiques";
 import TaillesEcrans from "./TaillesEcrans";
+import AdminAgents from "./AdminAgents";
+
 
 const ADMIN_PASSWORD = "Homegroup91?";
 const STORAGE_KEY = "m4_admin_authed_v1";
@@ -15,6 +17,7 @@ const SIDEBAR_ITEMS = [
   { key: "categories_pitch", label: "Catégories de pitch" },
   { key: "valeurs_statiques", label: "Valeurs Statiques" },
   { key: "tailles_ecrans", label: "Tailles Écrans Muraux" },
+  { key: "agents", label: "Agents" },
 ];
 
 export default function AdminApp() {
@@ -109,22 +112,25 @@ export default function AdminApp() {
           <h1 className="dash-title">{activeLabel}</h1>
         </div>
 
-        <div className="dash-content">
-          {activeKey === "categories_pitch" ? (
-            <CategoriesPitch API={API} />
-          ) : activeKey === "pitch_manager" ? (
-            <PitchManager API={API} />
-          ) : activeKey === "valeurs_statiques" ? (
-            <ValeursStatiques API={API} />
-          ) : activeKey === "tailles_ecrans" ? (
-            <TaillesEcrans API={API} />
-          ) : (
-            <div className="card">
-              <div className="card-title">Section : {activeLabel}</div>
-              <div className="card-text">Page à construire.</div>
-            </div>
-          )}
-        </div>
+    <div className="dash-content">
+  {activeKey === "categories_pitch" ? (
+    <CategoriesPitch API={API} />
+  ) : activeKey === "pitch_manager" ? (
+    <PitchManager API={API} />
+  ) : activeKey === "valeurs_statiques" ? (
+    <ValeursStatiques API={API} />
+  ) : activeKey === "tailles_ecrans" ? (
+    <TaillesEcrans API={API} />
+  ) : activeKey === "agents" ? (
+    <AdminAgents API={API} />
+  ) : (
+    <div className="card">
+      <div className="card-title">Section : {activeLabel}</div>
+      <div className="card-text">Page à construire.</div>
+    </div>
+  )}
+</div>
+
       </main>
     </div>
   );

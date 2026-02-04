@@ -291,4 +291,23 @@ router.get("/me", requireAgentAuth, async (req, res) => {
   res.json(req.agent);
 });
 
+// ✅ GET /api/agents/admin/list
+// Retourne tous les agents inscrits (pour l’admin UI)
+router.get("/admin/list", async (req, res) => {
+  try {
+    const agents = await Agent.find()
+      .sort({ createdAt: -1 })
+      .select(
+        "_id nom prenom email role societe siret adresse codePostal ville telephonePortable telephoneFixe pays parrainId createdAt"
+      )
+      .lean();
+
+    res.json(agents);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+
 module.exports = router;
