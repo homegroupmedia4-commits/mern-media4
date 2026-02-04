@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export default function AdminFinition({ API }) {
+export default function AdminFixation({ API }) {
   const [name, setName] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +17,7 @@ export default function AdminFinition({ API }) {
       setRows(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
-      setError("Impossible de charger les finitions.");
+      setError("Impossible de charger les fixations.");
     } finally {
       setLoading(false);
     }

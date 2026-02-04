@@ -1,31 +1,14 @@
+// client/src/pages/TaillesEcrans.jsx
 import { useEffect, useMemo, useState } from "react";
-
-const [products, setProducts] = useState([]);
-const [loadingProducts, setLoadingProducts] = useState(true);
-
-const loadProducts = async () => {
-  setLoadingProducts(true);
-  try {
-    const res = await fetch(`${API}/api/products`);
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-    // tu peux choisir d’afficher que les actifs :
-    const activeOnly = (Array.isArray(data) ? data : []).filter((p) => p.isActive);
-    setProducts(activeOnly);
-  } catch (e) {
-    console.error(e);
-    setError("Impossible de charger les produits (Admin > Produits).");
-  } finally {
-    setLoadingProducts(false);
-  }
-};
-
 
 export default function TaillesEcrans({ API }) {
   // 4 sous-pages
   const [tab, setTab] = useState("autres_form"); // autres_form | autres_list | mem_form | mem_list
-
   const [error, setError] = useState("");
+
+  // ✅ produits (dynamiques depuis Admin > Produits)
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
   // leasing durations (déjà en DB via Valeurs Statiques)
   const [durations, setDurations] = useState([]);
@@ -64,6 +47,23 @@ export default function TaillesEcrans({ API }) {
     () => durations.slice().sort((a, b) => a.months - b.months),
     [durations]
   );
+
+  // ---------- LOAD PRODUCTS ----------
+  const loadProducts = async () => {
+    setLoadingProducts(true);
+    try {
+      const res = await fetch(`${API}/api/products`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      const activeOnly = (Array.isArray(data) ? data : []).filter((p) => p.isActive);
+      setProducts(activeOnly);
+    } catch (e) {
+      console.error(e);
+      setError("Impossible de charger les produits (Admin > Produits).");
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
 
   const loadDurations = async () => {
     setLoadingDur(true);
@@ -112,11 +112,10 @@ export default function TaillesEcrans({ API }) {
 
   useEffect(() => {
     setError("");
+    loadProducts();
     loadDurations();
     loadOthers();
     loadMem();
-    loadProducts();
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -334,16 +333,32 @@ export default function TaillesEcrans({ API }) {
         <h2 className="page-title">Tailles Écrans Muraux</h2>
 
         <div className="subtabs">
-          <button className={`subtab ${tab === "autres_form" ? "active" : ""}`} type="button" onClick={() => setTab("autres_form")}>
+          <button
+            className={`subtab ${tab === "autres_form" ? "active" : ""}`}
+            type="button"
+            onClick={() => setTab("autres_form")}
+          >
             Autres produits
           </button>
-          <button className={`subtab ${tab === "autres_list" ? "active" : ""}`} type="button" onClick={() => setTab("autres_list")}>
+          <button
+            className={`subtab ${tab === "autres_list" ? "active" : ""}`}
+            type="button"
+            onClick={() => setTab("autres_list")}
+          >
             Tableau autres produits
           </button>
-          <button className={`subtab ${tab === "mem_form" ? "active" : ""}`} type="button" onClick={() => setTab("mem_form")}>
+          <button
+            className={`subtab ${tab === "mem_form" ? "active" : ""}`}
+            type="button"
+            onClick={() => setTab("mem_form")}
+          >
             Mémoires disponibles
           </button>
-          <button className={`subtab ${tab === "mem_list" ? "active" : ""}`} type="button" onClick={() => setTab("mem_list")}>
+          <button
+            className={`subtab ${tab === "mem_list" ? "active" : ""}`}
+            type="button"
+            onClick={() => setTab("mem_list")}
+          >
             Tableau mémoires
           </button>
         </div>
@@ -358,23 +373,29 @@ export default function TaillesEcrans({ API }) {
             <div className="vs-card-title">Gérer les tailles (pouces)</div>
 
             <div className="page-actions" style={{ flexWrap: "wrap" }}>
-              <input className="input" type="number" placeholder="Ex : 32" value={sizeInches} onChange={(e) => setSizeInches(e.target.value)} />
-              <select
-  className="input"
-  value={product}
-  onChange={(e) => setProduct(e.target.value)}
-  disabled={loadingProducts}
->
-  <option value="">
-    {loadingProducts ? "Chargement..." : "-- Produit --"}
-  </option>
-  {products.map((p) => (
-    <option key={p._id} value={p.name}>
-      {p.name}
-    </option>
-  ))}
-</select>
+              <input
+                className="input"
+                type="number"
+                placeholder="Ex : 32"
+                value={sizeInches}
+                onChange={(e) => setSizeInches(e.target.value)}
+              />
 
+              <select
+                className="input"
+                value={product}
+                onChange={(e) => setProduct(e.target.value)}
+                disabled={loadingProducts}
+              >
+                <option value="">
+                  {loadingProducts ? "Chargement..." : "-- Produit --"}
+                </option>
+                {products.map((p) => (
+                  <option key={p._id} value={p.name}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
 
               <select
                 className="input"
@@ -382,7 +403,9 @@ export default function TaillesEcrans({ API }) {
                 onChange={(e) => setLeasingMonths(e.target.value)}
                 disabled={loadingDur}
               >
-                <option value="">{loadingDur ? "Chargement..." : "-- Durée de leasing --"}</option>
+                <option value="">
+                  {loadingDur ? "Chargement..." : "-- Durée de leasing --"}
+                </option>
                 {durationOptions.map((d) => (
                   <option key={d._id} value={d.months}>
                     {d.months} mois
@@ -390,10 +413,28 @@ export default function TaillesEcrans({ API }) {
                 ))}
               </select>
 
-              <input className="input" type="number" placeholder="Prix €" value={price} onChange={(e) => setPrice(e.target.value)} />
-              <input className="input" type="text" placeholder="Code produit (ex : ABC123)" value={productCode} onChange={(e) => setProductCode(e.target.value)} />
+              <input
+                className="input"
+                type="number"
+                placeholder="Prix €"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
 
-              <button className="btn btn-dark" type="button" onClick={addOther} disabled={savingOther}>
+              <input
+                className="input"
+                type="text"
+                placeholder="Code produit (ex : ABC123)"
+                value={productCode}
+                onChange={(e) => setProductCode(e.target.value)}
+              />
+
+              <button
+                className="btn btn-dark"
+                type="button"
+                onClick={addOther}
+                disabled={savingOther}
+              >
                 {savingOther ? "Ajout..." : "Ajouter"}
               </button>
             </div>
@@ -438,9 +479,21 @@ export default function TaillesEcrans({ API }) {
 
                           <td>
                             {isEditing ? (
-                              <select className="input input-inline" value={editDraft.product} onChange={(e) => setEditDraft((p) => ({ ...p, product: e.target.value }))}>
-                                {PRODUCTS.map((p) => (
-                                  <option key={p} value={p}>{p}</option>
+                              <select
+                                className="input input-inline"
+                                value={editDraft.product}
+                                onChange={(e) =>
+                                  setEditDraft((p) => ({ ...p, product: e.target.value }))
+                                }
+                                disabled={loadingProducts}
+                              >
+                                <option value="">
+                                  {loadingProducts ? "Chargement..." : "-- Produit --"}
+                                </option>
+                                {products.map((p) => (
+                                  <option key={p._id} value={p.name}>
+                                    {p.name}
+                                  </option>
                                 ))}
                               </select>
                             ) : (
@@ -450,7 +503,14 @@ export default function TaillesEcrans({ API }) {
 
                           <td>
                             {isEditing ? (
-                              <input className="input input-inline" type="number" value={editDraft.sizeInches} onChange={(e) => setEditDraft((p) => ({ ...p, sizeInches: e.target.value }))} />
+                              <input
+                                className="input input-inline"
+                                type="number"
+                                value={editDraft.sizeInches}
+                                onChange={(e) =>
+                                  setEditDraft((p) => ({ ...p, sizeInches: e.target.value }))
+                                }
+                              />
                             ) : (
                               `${row.sizeInches} pouces`
                             )}
@@ -458,9 +518,17 @@ export default function TaillesEcrans({ API }) {
 
                           <td>
                             {isEditing ? (
-                              <select className="input input-inline" value={editDraft.leasingMonths} onChange={(e) => setEditDraft((p) => ({ ...p, leasingMonths: e.target.value }))}>
+                              <select
+                                className="input input-inline"
+                                value={editDraft.leasingMonths}
+                                onChange={(e) =>
+                                  setEditDraft((p) => ({ ...p, leasingMonths: e.target.value }))
+                                }
+                              >
                                 {durationOptions.map((d) => (
-                                  <option key={d._id} value={d.months}>{d.months} mois</option>
+                                  <option key={d._id} value={d.months}>
+                                    {d.months} mois
+                                  </option>
                                 ))}
                               </select>
                             ) : (
@@ -470,7 +538,14 @@ export default function TaillesEcrans({ API }) {
 
                           <td>
                             {isEditing ? (
-                              <input className="input input-inline" type="number" value={editDraft.price} onChange={(e) => setEditDraft((p) => ({ ...p, price: e.target.value }))} />
+                              <input
+                                className="input input-inline"
+                                type="number"
+                                value={editDraft.price}
+                                onChange={(e) =>
+                                  setEditDraft((p) => ({ ...p, price: e.target.value }))
+                                }
+                              />
                             ) : (
                               `${Number(row.price).toFixed(2)} €`
                             )}
@@ -478,30 +553,66 @@ export default function TaillesEcrans({ API }) {
 
                           <td>
                             {isEditing ? (
-                              <input className="input input-inline" value={editDraft.productCode} onChange={(e) => setEditDraft((p) => ({ ...p, productCode: e.target.value }))} />
+                              <input
+                                className="input input-inline"
+                                value={editDraft.productCode}
+                                onChange={(e) =>
+                                  setEditDraft((p) => ({ ...p, productCode: e.target.value }))
+                                }
+                              />
                             ) : (
                               row.productCode
                             )}
                           </td>
 
                           <td>
-                            <span className={`badge ${row.isActive ? "on" : "off"}`}>{row.isActive ? "Actif" : "Inactif"}</span>
+                            <span className={`badge ${row.isActive ? "on" : "off"}`}>
+                              {row.isActive ? "Actif" : "Inactif"}
+                            </span>
                           </td>
 
                           <td>
                             <div className="actions">
                               {isEditing ? (
                                 <>
-                                  <button className="btn btn-outline" type="button" onClick={() => saveEdit(row._id)}>Enregistrer</button>
-                                  <button className="btn btn-outline" type="button" onClick={cancelEdit}>Annuler</button>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={() => saveEdit(row._id)}
+                                  >
+                                    Enregistrer
+                                  </button>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={cancelEdit}
+                                  >
+                                    Annuler
+                                  </button>
                                 </>
                               ) : (
                                 <>
-                                  <button className="btn btn-outline" type="button" onClick={() => startEdit(row)}>Modifier</button>
-                                  <button className={`btn ${row.isActive ? "btn-dark" : "btn-outline"}`} type="button" onClick={() => toggleOther(row)}>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={() => startEdit(row)}
+                                  >
+                                    Modifier
+                                  </button>
+                                  <button
+                                    className={`btn ${row.isActive ? "btn-dark" : "btn-outline"}`}
+                                    type="button"
+                                    onClick={() => toggleOther(row)}
+                                  >
                                     {row.isActive ? "Désactiver" : "Activer"}
                                   </button>
-                                  <button className="btn btn-outline" type="button" onClick={() => deleteOther(row)}>Supprimer</button>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={() => deleteOther(row)}
+                                  >
+                                    Supprimer
+                                  </button>
                                 </>
                               )}
                             </div>
@@ -512,7 +623,9 @@ export default function TaillesEcrans({ API }) {
 
                     {rows.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="muted">Aucune taille enregistrée.</td>
+                        <td colSpan={8} className="muted">
+                          Aucune taille enregistrée.
+                        </td>
                       </tr>
                     ) : null}
                   </tbody>
@@ -530,9 +643,25 @@ export default function TaillesEcrans({ API }) {
             <div className="vs-card-title">Mémoires disponibles</div>
 
             <div className="page-actions" style={{ flexWrap: "wrap" }}>
-              <input className="input" placeholder="Ex : 8GO+64GO" value={memName} onChange={(e) => setMemName(e.target.value)} />
-              <input className="input" type="number" placeholder="Ex : 10" value={memPrice} onChange={(e) => setMemPrice(e.target.value)} />
-              <button className="btn btn-dark" type="button" onClick={addMem} disabled={savingMem}>
+              <input
+                className="input"
+                placeholder="Ex : 8GO+64GO"
+                value={memName}
+                onChange={(e) => setMemName(e.target.value)}
+              />
+              <input
+                className="input"
+                type="number"
+                placeholder="Ex : 10"
+                value={memPrice}
+                onChange={(e) => setMemPrice(e.target.value)}
+              />
+              <button
+                className="btn btn-dark"
+                type="button"
+                onClick={addMem}
+                disabled={savingMem}
+              >
                 {savingMem ? "Ajout..." : "Ajouter"}
               </button>
             </div>
@@ -570,7 +699,13 @@ export default function TaillesEcrans({ API }) {
 
                           <td>
                             {isEditing ? (
-                              <input className="input input-inline" value={memEditDraft.name} onChange={(e) => setMemEditDraft((p) => ({ ...p, name: e.target.value }))} />
+                              <input
+                                className="input input-inline"
+                                value={memEditDraft.name}
+                                onChange={(e) =>
+                                  setMemEditDraft((p) => ({ ...p, name: e.target.value }))
+                                }
+                              />
                             ) : (
                               row.name
                             )}
@@ -578,30 +713,67 @@ export default function TaillesEcrans({ API }) {
 
                           <td>
                             {isEditing ? (
-                              <input className="input input-inline" type="number" value={memEditDraft.price} onChange={(e) => setMemEditDraft((p) => ({ ...p, price: e.target.value }))} />
+                              <input
+                                className="input input-inline"
+                                type="number"
+                                value={memEditDraft.price}
+                                onChange={(e) =>
+                                  setMemEditDraft((p) => ({ ...p, price: e.target.value }))
+                                }
+                              />
                             ) : (
                               `${Number(row.price).toFixed(2)} €`
                             )}
                           </td>
 
                           <td>
-                            <span className={`badge ${row.isActive ? "on" : "off"}`}>{row.isActive ? "Actif" : "Inactif"}</span>
+                            <span className={`badge ${row.isActive ? "on" : "off"}`}>
+                              {row.isActive ? "Actif" : "Inactif"}
+                            </span>
                           </td>
 
                           <td>
                             <div className="actions">
                               {isEditing ? (
                                 <>
-                                  <button className="btn btn-outline" type="button" onClick={() => saveMemEdit(row._id)}>Enregistrer</button>
-                                  <button className="btn btn-outline" type="button" onClick={cancelMemEdit}>Annuler</button>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={() => saveMemEdit(row._id)}
+                                  >
+                                    Enregistrer
+                                  </button>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={cancelMemEdit}
+                                  >
+                                    Annuler
+                                  </button>
                                 </>
                               ) : (
                                 <>
-                                  <button className="btn btn-outline" type="button" onClick={() => startMemEdit(row)}>Modifier</button>
-                                  <button className={`btn ${row.isActive ? "btn-dark" : "btn-outline"}`} type="button" onClick={() => toggleMem(row)}>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={() => startMemEdit(row)}
+                                  >
+                                    Modifier
+                                  </button>
+                                  <button
+                                    className={`btn ${row.isActive ? "btn-dark" : "btn-outline"}`}
+                                    type="button"
+                                    onClick={() => toggleMem(row)}
+                                  >
                                     {row.isActive ? "Désactiver" : "Activer"}
                                   </button>
-                                  <button className="btn btn-outline" type="button" onClick={() => deleteMem(row)}>Supprimer</button>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={() => deleteMem(row)}
+                                  >
+                                    Supprimer
+                                  </button>
                                 </>
                               )}
                             </div>
@@ -612,7 +784,9 @@ export default function TaillesEcrans({ API }) {
 
                     {memRows.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="muted">Aucune mémoire enregistrée.</td>
+                        <td colSpan={5} className="muted">
+                          Aucune mémoire enregistrée.
+                        </td>
                       </tr>
                     ) : null}
                   </tbody>

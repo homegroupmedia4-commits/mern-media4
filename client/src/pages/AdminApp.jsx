@@ -136,8 +136,6 @@ export default function AdminApp() {
   <AdminFinition API={API} />
 ) : activeKey === "fixation" ? (
   <AdminFixation API={API} />
-) : activeKey === "agents" ? (
-  <AdminAgents API={API} />
   ) : activeKey === "agents" ? (
     <AdminAgents API={API} />
   ) : (
