@@ -83,11 +83,14 @@ export default function AgentHome() {
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
 
-      const full = data?.pdfUrl?.startsWith("http") ? data.pdfUrl : `${API}${data.pdfUrl}`;
-      setPdfUrl(full);
+    const token = localStorage.getItem(TOKEN_KEY);
 
-      // ouvre direct le PDF
-      window.open(full, "_blank", "noopener,noreferrer");
+const base = data?.pdfUrl?.startsWith("http") ? data.pdfUrl : `${API}${data.pdfUrl}`;
+const withToken = `${base}?token=${encodeURIComponent(token)}`;
+
+setPdfUrl(withToken);
+window.open(withToken, "_blank", "noopener,noreferrer");
+
     } catch (e) {
       console.error(e);
       setError("Impossible de générer le PDF. Réessaie.");
