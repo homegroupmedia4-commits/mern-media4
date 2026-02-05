@@ -1,0 +1,106 @@
+.agentdevis-page{
+  min-height: calc(100vh - 64px);
+  background:#f6f7fb;
+  padding:24px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.agentdevis-wrap{
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.agentdevis-title{
+  font-size: 52px;
+  font-weight: 900;
+  margin: 10px 0 18px;
+  color:#111;
+}
+
+.agentdevis-tabs{
+  display:flex;
+  gap:10px;
+  padding: 14px 0 12px;
+}
+
+.agentdevis-tab{
+  border:1px solid #e6e8ef;
+  background:#fff;
+  height:34px;
+  padding:0 14px;
+  border-radius:999px;
+  cursor:pointer;
+  font-weight:800;
+  color:#111;
+}
+
+.agentdevis-tab.is-active{
+  background:#0f172a;
+  color:#fff;
+  border-color:#0f172a;
+}
+
+.agentdevis-tableCard{
+  background:#fff;
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding: 12px;
+}
+
+.agentdevis-tableScroll{
+  overflow:auto;
+  max-height: 68vh; /* comme tes screenshots : scroll vertical */
+  border-radius: 10px;
+}
+
+.agentdevis-table{
+  width:100%;
+  border-collapse:collapse;
+  min-width: 1300px; /* force le scroll horizontal */
+}
+
+.agentdevis-table th,
+.agentdevis-table td{
+  padding: 12px 12px;
+  border-bottom:1px solid #eef1f7;
+  white-space:nowrap;
+  font-size:13px;
+}
+
+.agentdevis-table th{
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 2;
+  font-weight:900;
+}
+
+.agentdevis-download{
+  height:34px;
+  padding:0 12px;
+  border-radius:10px;
+  border:none;
+  background:#16a34a;
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.agentdevis-muted{
+  color:#6b7280;
+  font-size:13px;
+  margin: 8px 4px;
+}
+
+.agentdevis-error{
+  color:#c43131;
+  font-weight:700;
+  font-size:13px;
+  margin: 8px 4px;
+}
+
+.agentdevis-empty{
+  padding: 18px 12px;
+  color:#6b7280;
+  font-weight:700;
+}

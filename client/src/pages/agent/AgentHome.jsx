@@ -5,6 +5,7 @@ import "./AgentHome.css";
 import AgentOtherProductsBlock from "./AgentOtherProductsBlock";
 
 
+
 import {
   TOKEN_KEY,
   USER_KEY,
@@ -497,6 +498,8 @@ export default function AgentHome() {
   };
 
   return (
+ 
+  
     <div className="agenthome-page">
       <div className="agenthome-card agenthome-card--wide">
         <div className="agenthome-title">Bonjour</div>
@@ -1093,7 +1096,7 @@ export default function AgentHome() {
         </div>
 
         {loadingRefs ? <div className="agenthome-muted">Chargement des référentiels…</div> : null}
-      </div>
+     </div>
     </div>
   );
 }

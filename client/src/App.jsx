@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import AdminApp from "./pages/AdminApp";
 import AgentHome from "./pages/agent/AgentHome";
+import AgentMesDevis from "./pages/agent/AgentMesDevis";
 
 
 // ✅ Tes pages agent (ajuste les chemins selon ton arborescence réelle)
@@ -18,6 +19,7 @@ export default function App() {
       <Route path="/agent/register" element={<AgentRegister />} />
       <Route path="/agent/login" element={<AgentLogin />} />
       <Route path="/agent/home" element={<AgentHome />} />
+      <Route path="/agent/mes-devis" element={<AgentMesDevis />} />
   
 
 

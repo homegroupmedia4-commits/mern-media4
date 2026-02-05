@@ -1,0 +1,75 @@
+.agentheader{
+  width:100%;
+  background:#fff;
+  border-bottom:1px solid #e6e8ef;
+}
+
+.agentheader-inner{
+  height:64px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.agentheader-brand{
+  display:flex;
+  align-items:center;
+  text-decoration:none;
+  color:#111;
+}
+
+.agentheader-logo{
+  font-weight:900;
+  letter-spacing:0.5px;
+  font-size:18px;
+}
+
+.agentheader-nav{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+
+.agentheader-link{
+  font-size:14px;
+  font-weight:600;
+  color:#111;
+  text-decoration:none;
+  background:transparent;
+  border:none;
+  cursor:pointer;
+  padding:8px 4px;
+}
+
+.agentheader-link.is-active{
+  border-bottom:2px solid #111;
+}
+
+.agentheader-btnlink{
+  padding:8px 4px;
+}
+
+.agentheader-sub{
+  border-top:1px solid #f0f2f7;
+  background:#fff;
+}
+
+.agentheader-subinner{
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  color:#111;
+  font-size:13px;
+}
+
+.agentheader-email{
+  color:#6b7280;
+}
