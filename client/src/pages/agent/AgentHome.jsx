@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./AgentHome.css";
+import AgentOtherProductsBlock from "./AgentOtherProductsBlock";
+
 
 import {
   TOKEN_KEY,
@@ -85,6 +87,9 @@ export default function AgentHome() {
   const [durations, setDurations] = useState([]);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
+  const [otherSelections, setOtherSelections] = useState({});
+
+
   // --- Infos client/prospect
   const [client, setClient] = useState({
     nom: "",
@@ -130,6 +135,7 @@ export default function AgentHome() {
           client,
           pitchInstances,
           validityDays: 30,
+            otherSelections,
           finalType: "location_maintenance",
         }),
       });
@@ -877,6 +883,18 @@ export default function AgentHome() {
             </div>
           );
         })}
+
+        {/* --------- AUTRES PRODUITS (hors Murs leds) --------- */}
+<AgentOtherProductsBlock
+  API={API}
+  products={products}
+  selectedProductIds={selectedProductIds}
+  wallLedsProductId={wallLedsProductId}
+  durations={durations}
+  loadingDur={loadingRefs}
+  onSelectionsChange={setOtherSelections}
+/>
+
 
         {/* --------- INFOS CLIENT --------- */}
         <div className="agenthome-section agenthome-section--client">

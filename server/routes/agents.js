@@ -453,11 +453,21 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
   try {
     const agent = req.agent;
 
-    const { client = {}, pitchInstances = [], validityDays = 30, finalType = "location_maintenance" } = req.body || {};
+    const {
+  client = {},
+  pitchInstances = [],
+  otherSelections = {}, // ✅ AJOUT
+  validityDays = 30,
+  finalType = "location_maintenance",
+} = req.body || {};
 
-    if (!Array.isArray(pitchInstances) || pitchInstances.length === 0) {
-      return res.status(400).json({ message: "Aucun pitch sélectionné." });
-    }
+const hasPitch = Array.isArray(pitchInstances) && pitchInstances.length > 0;
+const hasOther = otherSelections && Object.keys(otherSelections).length > 0;
+
+if (!hasPitch && !hasOther) {
+  return res.status(400).json({ message: "Aucun produit sélectionné." });
+}
+
 
     const { lines, totals, devisMentions } = buildLinesAndTotals({
       pitchInstances,
@@ -473,6 +483,7 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
       client,
       devisNumber,
         pitchInstances,
+          otherSelections,
       validityDays,
       lines,
       totals,

@@ -41,6 +41,7 @@ const AgentPdfSchema = new mongoose.Schema(
     ],
 
      pitchInstances: { type: Array, default: [] },
+     otherSelections: { type: Object, default: {} },
 
     // ✅ Totaux (comme ton PDF: Mensualité HT / TVA / TTC)
     totals: {
