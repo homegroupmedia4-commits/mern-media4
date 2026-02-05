@@ -284,12 +284,18 @@ export default function AgentHome() {
   useEffect(() => {
     if (!showWalleds) return;
 
+    // if (!selectedCategoryId) {
+    //   setPitches([]);
+    //   setPitchInstances([]);
+    //   setSelectedPitchIds([]);
+    //   return;
+    // }
+
     if (!selectedCategoryId) {
-      setPitches([]);
-      setPitchInstances([]);
-      setSelectedPitchIds([]);
-      return;
-    }
+  setPitches([]); // ✅ on masque juste la liste (pas les sélections)
+  return;
+}
+
 
     (async () => {
       setLoadingPitches(true);
@@ -395,11 +401,19 @@ export default function AgentHome() {
         if (p.instanceId !== instanceId) return p;
         const next = { ...p, ...patch };
 
+        // const categorieName =
+        //   categories.find((c) => c._id === selectedCategoryId)?.name || "";
+
         const categorieName =
-          categories.find((c) => c._id === selectedCategoryId)?.name || "";
+  next.categorieName ||
+  categories.find((c) => c._id === selectedCategoryId)?.name ||
+  "";
+
 
         const pitchObj = pitches.find((x) => (x._id || x.id) === next.pitchId);
-        const prixPitch = pitchObj?.price ?? 0;
+        // const prixPitch = pitchObj?.price ?? 0;
+        const prixPitch = pitchObj?.price ?? next.prixPitch ?? 0;
+
 
         const quote = computePitchQuote({
           largeurM: next.largeurM,

@@ -71,6 +71,10 @@ export function createDefaultPitchInstance({ pitch, durations }) {
     pitchId: id,
     pitchLabel: pitch?.label || pitch?.name || pitch?.titre || pitch?.code || "Pitch",
     resolutionLabel: pitch?.resolutionLabel || pitch?.resolution || pitch?.categoryName || "",
+        prixPitch: pitch?.price ?? 0,
+    categorieName: pitch?.categorieName || pitch?.categoryName || "",
+
+    
     collapsed: false,
 
     // Dimensions (vides au départ)
