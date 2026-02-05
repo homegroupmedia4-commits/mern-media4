@@ -10,6 +10,8 @@ const OtherProductSize = require("../models/OtherProductSize");
 const MemoryOption = require("../models/MemoryOption");
 const path = require("path");
 const fs = require("fs");
+const mongoose = require("mongoose");
+
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 const TOKEN_TTL = "7d";
@@ -20,18 +22,19 @@ const TOKEN_TTL = "7d";
  * - atomic via MongoDB (sans créer de nouveau modèle)
  */
 async function nextDevisNumberCounter4() {
-  // Collection "counters" : { _id: "agent_devis", seq: 1048 }
-  const coll = AgentPdf.db.collection("counters");
+  const coll = mongoose.connection.collection("counters");
+
   const r = await coll.findOneAndUpdate(
     { _id: "agent_devis" },
     { $inc: { seq: 1 } },
-    { upsert: true, returnDocument: "after" }
+    { upsert: true, returnDocument: "after" } // driver récent
   );
 
   const seq = Number(r?.value?.seq || 1);
   const n4 = String(Math.max(1, seq)).padStart(4, "0");
   return `DE${n4}`;
 }
+
 
 function fmt2(n) {
   const x = Number(n);
@@ -166,18 +169,22 @@ async function buildLinesAndTotals({
   // -----------------------------
   const otherMonthlyLines = [];
 
-  const checkedRowIds = [];
-  const checkedMemIds = [];
+const isOid = (v) => mongoose.Types.ObjectId.isValid(String(v));
 
-  for (const pid of Object.keys(otherSelections || {})) {
-    const sel = otherSelections?.[pid];
-    const checked = sel?.checked || {};
-    for (const rowId of Object.keys(checked)) {
-      checkedRowIds.push(rowId);
-      const memId = checked[rowId]?.memId;
-      if (memId) checkedMemIds.push(memId);
-    }
+const checkedRowIds = [];
+const checkedMemIds = [];
+
+for (const pid of Object.keys(otherSelections || {})) {
+  const sel = otherSelections?.[pid];
+  const checked = sel?.checked || {};
+  for (const rowId of Object.keys(checked)) {
+    if (isOid(rowId)) checkedRowIds.push(rowId);
+
+    const memId = checked[rowId]?.memId;
+    if (memId && isOid(memId)) checkedMemIds.push(memId);
   }
+}
+
 
   const sizes = checkedRowIds.length
     ? await OtherProductSize.find({ _id: { $in: checkedRowIds } }).lean()
