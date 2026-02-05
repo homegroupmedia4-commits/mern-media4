@@ -776,6 +776,62 @@ function generate5PagePdfBuffer({ texte, agent }) {
   });
 }
 
+// ✅ LISTE devis pour Admin (murs_leds / autres_produits / all)
+router.get("/devis", async (req, res) => {
+  try {
+    const { tab = "all", q = "", agentId = "" } = req.query;
+
+    const query = {};
+    if (agentId) query.agentId = agentId;
+
+    // filtre tab (simple et robuste)
+    if (tab === "murs_leds") query.pitchInstances = { $exists: true, $not: { $size: 0 } };
+    if (tab === "autres_produits")
+      query.$or = [
+        { pitchInstances: { $exists: false } },
+        { pitchInstances: { $size: 0 } },
+      ];
+
+    // recherche (devisNumber + client)
+    const s = String(q || "").trim();
+    if (s) {
+      query.$or = [
+        { devisNumber: { $regex: s, $options: "i" } },
+        { "client.nom": { $regex: s, $options: "i" } },
+        { "client.prenom": { $regex: s, $options: "i" } },
+        { "client.societe": { $regex: s, $options: "i" } },
+        { "client.email": { $regex: s, $options: "i" } },
+        { "client.votreEmail": { $regex: s, $options: "i" } },
+        { "agentSnapshot.email": { $regex: s, $options: "i" } },
+      ];
+    }
+
+    const rows = await AgentPdf.find(query).sort({ createdAt: -1 }).lean();
+
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).send("Erreur serveur (liste devis).");
+  }
+});
+
+
+
+// ✅ Liste agents pour filtre “Tous les utilisateurs”
+router.get("/agents-lite", async (req, res) => {
+  try {
+    const agents = await Agent.find({})
+      .select("_id nom prenom email")
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(agents);
+  } catch (e) {
+    console.error(e);
+    res.status(500).send("Erreur serveur (agents-lite).");
+  }
+});
+
+
 // ✅ POST /api/agents/devis (enregistrer devis JSON)
 router.post("/devis", requireAgentAuth, async (req, res) => {
   try {

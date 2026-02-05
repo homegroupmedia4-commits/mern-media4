@@ -32,6 +32,13 @@ const AgentPdfSchema = new mongoose.Schema(
   {
     agentId: { type: mongoose.Schema.Types.ObjectId, ref: "Agent", required: true },
 
+     // ✅ Snapshot agent (pratique pour admin sans populate)
+    agentSnapshot: {
+      nom: { type: String, default: "" },
+      prenom: { type: String, default: "" },
+      email: { type: String, default: "" },
+    },
+
     // ✅ Infos client/prospect
     client: {
       nom: { type: String, default: "" },

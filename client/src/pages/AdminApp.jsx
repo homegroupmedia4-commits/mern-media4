@@ -9,6 +9,8 @@ import AdminAgents from "./AdminAgents";
 import AdminProduits from "./AdminProduits";
 import AdminFinition from "./AdminFinition";
 import AdminFixation from "./AdminFixation";
+import AdminNosDevis from "./AdminNosDevis";
+
 
 
 
@@ -130,7 +132,9 @@ export default function AdminApp() {
   ) : activeKey === "tailles_ecrans" ? (
     <TaillesEcrans API={API} />
 
-    ) : activeKey === "produits" ? (
+    ) : activeKey === "nos_devis" ? (
+    <AdminNosDevis API={API} />
+   ) : activeKey === "produits" ? (
   <AdminProduits API={API} />
 ) : activeKey === "finition" ? (
   <AdminFinition API={API} />
