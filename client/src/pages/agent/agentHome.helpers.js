@@ -64,6 +64,17 @@ export function getWallLedsProductId(products) {
   return p?._id || p?.id || "";
 }
 
+export function getMaxDurationMonths(durations, fallback = 63) {
+  const max = Math.max(
+    ...((durations || [])
+      .map((d) => Number(d?.months))
+      .filter((n) => Number.isFinite(n) && n > 0)),
+    fallback
+  );
+  return String(max);
+}
+
+
 export function createDefaultPitchInstance({ pitch, durations }) {
   const id = pitch?._id || pitch?.id;
   return {
@@ -101,7 +112,8 @@ fixationComment: "",
 
     // Financement
     typeFinancement: "location_maintenance",
-    financementMonths: durations?.[0]?.months ? String(durations[0].months) : "63",
+financementMonths: getMaxDurationMonths(durations, 63),
+
 
     // Résultat
     prixTotalHtMois: "97",

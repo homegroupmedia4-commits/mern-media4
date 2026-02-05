@@ -89,6 +89,10 @@ export default function AgentHome() {
   const [loadingRefs, setLoadingRefs] = useState(false);
 
   const [otherSelections, setOtherSelections] = useState({});
+    // --- Catalogues pour le récap "autres produits"
+  const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
+  const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
+
 
 
   // --- Infos client/prospect
@@ -226,6 +230,42 @@ export default function AgentHome() {
   // ---------------------------
   // LOAD: Products (checkbox)
   // ---------------------------
+
+    // ---------------------------
+  // LOAD: other product sizes + memory options (pour récap)
+  // ---------------------------
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/other-product-sizes`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        setOtherSizesCatalog(list.filter((x) => x?.isActive !== false));
+      } catch (e) {
+        console.warn("Impossible de charger other-product-sizes (récap)", e);
+        setOtherSizesCatalog([]);
+      }
+    })();
+  }, [API]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/memory-options`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        setMemOptionsCatalog(list.filter((x) => x?.isActive !== false));
+      } catch (e) {
+        console.warn("Impossible de charger memory-options (récap)", e);
+        setMemOptionsCatalog([]);
+      }
+    })();
+  }, [API]);
+
+
+
   useEffect(() => {
     (async () => {
       setLoadingProducts(true);
@@ -340,11 +380,25 @@ export default function AgentHome() {
 
         setFinishes((Array.isArray(f) ? f : []).filter((x) => x?.isActive !== false));
         setFixations((Array.isArray(fx) ? fx : []).filter((x) => x?.isActive !== false));
-        setDurations(
-          (Array.isArray(d) ? d : [])
-            .filter((x) => x?.isActive !== false)
-            .sort((a, b) => (a?.months || 0) - (b?.months || 0))
-        );
+       
+
+       
+const sorted = (Array.isArray(d) ? d : [])
+  .filter((x) => x?.isActive !== false)
+  .sort((a, b) => (a?.months || 0) - (b?.months || 0));
+
+setDurations(sorted);
+
+// ✅ appliquer la plus grande durée par défaut aux pitchInstances si vide
+const maxMonths = String(sorted[sorted.length - 1]?.months || 63);
+
+setPitchInstances((prev) =>
+  prev.map((pi) =>
+    pi.financementMonths ? pi : { ...pi, financementMonths: maxMonths }
+  )
+);
+
+
       } catch (e) {
         console.error(e);
       } finally {
@@ -511,6 +565,156 @@ export default function AgentHome() {
     }
   };
 
+    const parseEuro = (v) => {
+    const n = Number(String(v ?? "").replace(",", "."));
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const fmtEuro = (n) =>
+    `${(Number.isFinite(n) ? n : 0).toFixed(2)} €`.replace(".", ",");
+
+  const productById = useMemo(() => {
+    const m = new Map();
+    (products || []).forEach((p) => {
+      const id = p?._id || p?.id;
+      if (id) m.set(String(id), p);
+    });
+    return m;
+  }, [products]);
+
+  const otherSizeById = useMemo(() => {
+    const m = new Map();
+    (otherSizesCatalog || []).forEach((s) => s?._id && m.set(String(s._id), s));
+    return m;
+  }, [otherSizesCatalog]);
+
+  const memById = useMemo(() => {
+    const m = new Map();
+    (memOptionsCatalog || []).forEach((mo) => mo?._id && m.set(String(mo._id), mo));
+    return m;
+  }, [memOptionsCatalog]);
+
+  const recap = useMemo(() => {
+    const lines = [];
+
+    // -------------------------
+    // 1) AUTRES PRODUITS (hors murs leds)
+    // -------------------------
+    for (const pid of Object.keys(otherSelections || {})) {
+      const sel = otherSelections?.[pid];
+      if (!sel) continue;
+
+      const product = productById.get(String(pid));
+      const productName = product?.name || "Produit";
+
+      const months = String(sel.leasingMonths || "");
+      const checked =
+        sel.byMonths?.[months]?.checked ||
+        sel.checked || // fallback compat ancien format
+        {};
+
+      for (const rowId of Object.keys(checked || {})) {
+        const row = otherSizeById.get(String(rowId));
+        if (!row) continue;
+
+        const memId = checked?.[rowId]?.memId;
+        const qtyRaw = checked?.[rowId]?.qty;
+        const qty = Math.max(1, parseInt(String(qtyRaw || 1), 10) || 1);
+
+        const mem = memId ? memById.get(String(memId)) : null;
+
+        const basePrice = parseEuro(row.price);
+        const memPrice = parseEuro(mem?.price);
+        const unit = basePrice + memPrice;
+        const total = unit * qty;
+
+        lines.push({
+          kind: "other",
+          key: `other_${pid}_${months}_${rowId}`,
+          text: `${productName} ${row.sizeInches ? `${row.sizeInches}"` : ""} – ${months} mois – Mémoire : ${
+            mem?.name || "—"
+          } : ${fmtEuro(memPrice)} – Prix final : ${fmtEuro(unit)} – Quantité : ${qty} – Montant HT : ${fmtEuro(total)}`,
+        });
+      }
+    }
+
+    // -------------------------
+    // 2) MURS LEDS (pitchInstances)
+    // -------------------------
+    for (const pi of pitchInstances || []) {
+      // montantHt est déjà calculé dans ton UI
+      const montant = parseEuro(pi.montantHt);
+
+      const pitchMeta = [pi.dimensions, pi.luminosite, pi.codeProduit].filter(Boolean).join(", ");
+      const pitchTitle = pitchMeta ? `${pi.pitchLabel} (${pitchMeta})` : pi.pitchLabel;
+
+      const priceLabel =
+        pi.typeFinancement === "achat" ? "Prix total HT (achat)" : "Prix total HT (/mois)";
+
+      lines.push({
+        kind: "pitch",
+        key: `pitch_${pi.instanceId}`,
+        text:
+          `Murs leds – ${pitchTitle} – Largeur (m) : ${pi.largeurM || "—"} – Hauteur (m) : ${pi.hauteurM || "—"} ` +
+          `– Largeur/Hauteur(px) : ${pi.largeurPx || "—"}x${pi.hauteurPx || "—"} px – ${pi.financementMonths || "—"} mois ` +
+          `– Surface (m²) : ${pi.surfaceM2 || "—"} – ${priceLabel} : ${pi.prixTotalHtMois || "—"} – Quantité d'écrans : ${pi.quantite || "1"} ` +
+          `${pi.categorieName ? `– Catégorie : ${pi.categorieName} ` : ""}` +
+          `– Montant HT : ${fmtEuro(montant)}`,
+      });
+    }
+
+    // Totaux HT (autres + pitch)
+    const totalHtOther = lines
+      .filter((l) => l.kind === "other")
+      .reduce((sum, l) => {
+        // on “re-parse” le montant depuis la ligne serait fragile, donc on recalcule à part si tu veux.
+        // Ici on fait simple : on recalculera via data brute juste après, mais pour l’instant on garde lines.
+        return sum;
+      }, 0);
+
+    // recalcul propre des totaux depuis la data brute :
+    let ht = 0;
+
+    // ht autres produits
+    for (const pid of Object.keys(otherSelections || {})) {
+      const sel = otherSelections?.[pid];
+      if (!sel) continue;
+
+      const months = String(sel.leasingMonths || "");
+      const checked = sel.byMonths?.[months]?.checked || sel.checked || {};
+
+      for (const rowId of Object.keys(checked || {})) {
+        const row = otherSizeById.get(String(rowId));
+        if (!row) continue;
+
+        const mem = checked?.[rowId]?.memId ? memById.get(String(checked[rowId].memId)) : null;
+
+        const basePrice = parseEuro(row.price);
+        const memPrice = parseEuro(mem?.price);
+        const unit = basePrice + memPrice;
+
+        const qty = Math.max(1, parseInt(String(checked?.[rowId]?.qty || 1), 10) || 1);
+        ht += unit * qty;
+      }
+    }
+
+    // ht murs leds
+    for (const pi of pitchInstances || []) {
+      ht += parseEuro(pi.montantHt);
+    }
+
+    const tva = ht * 0.2;
+    const ttc = ht + tva;
+
+    return {
+      lines,
+      totalHt: ht,
+      tva,
+      ttc,
+    };
+  }, [otherSelections, pitchInstances, productById, otherSizeById, memById]);
+
+
   return (
  
   
@@ -648,14 +852,32 @@ export default function AgentHome() {
         ) : null}
 
         {/* --------- PITCH INSTANCES --------- */}
-        {pitchInstances.map((pi) => {
-          const priceLabel =
-            pi.typeFinancement === "achat"
-              ? "Prix total HT (achat) :"
-              : "Prix total HT (/mois) :";
+{pitchInstances.map((pi) => {
+  const priceLabel =
+    pi.typeFinancement === "achat"
+      ? "Prix total HT (achat) :"
+      : "Prix total HT (/mois) :";
 
-          return (
-            <div key={pi.instanceId} className="agenthome-pitchCard">
+  // ✅ AJOUTE ICI (juste après priceLabel)
+  const fixationList = fixations.length
+    ? fixations
+    : [
+        { _id: "plafond", name: "Support plafond" },
+        { _id: "fixe", name: "Support fixe" },
+        { _id: "special", name: "Support spécial" },
+      ];
+
+  const selectedFix = fixationList.find(
+    (f) => String(f._id) === String(pi.fixationId)
+  );
+
+  const showFixationComment =
+    (selectedFix?.name || "").toLowerCase().includes("plafond");
+
+  return (
+    <div key={pi.instanceId} className="agenthome-pitchCard">
+    
+
               <div className="agenthome-pitchHeader">
                 <div className="agenthome-pitchHeaderLeft">
                   <div className="agenthome-pitchTitleLine">
@@ -825,18 +1047,20 @@ export default function AgentHome() {
                         className="agenthome-input"
                       />
                     </div>
-
-                    {pi.fixationId === "special" ? (
+{showFixationComment ? (
   <div className="agenthome-field agenthome-field--full" style={{ marginTop: 10 }}>
-    <label>Commentaires (si support spécial) :</label>
+    <label>Commentaires (si support plafond) :</label>
     <input
       className="agenthome-input"
       placeholder="préciser environnement de fixation"
       value={pi.fixationComment || ""}
-      onChange={(e) => updatePitchInstance(pi.instanceId, { fixationComment: e.target.value })}
+      onChange={(e) =>
+        updatePitchInstance(pi.instanceId, { fixationComment: e.target.value })
+      }
     />
   </div>
 ) : null}
+
 
                   </div>
 
@@ -1106,6 +1330,53 @@ export default function AgentHome() {
     {savingDevis ? "Enregistrement..." : "Valider"}
   </button>
 </div>
+
+
+{/* --------- RÉCAP --------- */}
+<div className="agenthome-subcard" style={{ marginTop: 14 }}>
+  <div className="agenthome-subcardTitle">Récapitulatif de la sélection</div>
+
+  {recap.lines.length ? (
+    <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+      {recap.lines.map((l) => (
+        <li key={l.key}>{l.text}</li>
+      ))}
+    </ul>
+  ) : (
+    <div className="agenthome-muted">Aucune sélection pour le moment.</div>
+  )}
+
+  <div style={{ marginTop: 14 }}>
+    <div style={{ fontWeight: 700, marginBottom: 6 }}>Informations client</div>
+    <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+      <li>Nom / Prénom : {client.nom || "—"} {client.prenom || ""}</li>
+      <li>Société : {client.societe || "—"}</li>
+      <li>Adresse : {[client.adresse1, client.adresse2, client.codePostal, client.ville].filter(Boolean).join(" ") || "—"}</li>
+      <li>Téléphone : {client.telephone || "—"}</li>
+      <li>Email client : {client.email || "—"}</li>
+      <li>Votre email : {client.votreEmail || "—"}</li>
+      <li>Commentaires : {client.commentaires || "—"}</li>
+    </ul>
+  </div>
+
+  <div style={{ marginTop: 14, borderTop: "1px dashed #e5e7eb", paddingTop: 12 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+      <span style={{ fontWeight: 700 }}>Montant total HT général :</span>
+      <span style={{ fontWeight: 700 }}>{fmtEuro(recap.totalHt)}</span>
+    </div>
+
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 6 }}>
+      <span style={{ fontWeight: 700 }}>Montant TVA (20%) :</span>
+      <span style={{ fontWeight: 700 }}>{fmtEuro(recap.tva)}</span>
+    </div>
+
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 10 }}>
+      <span style={{ fontWeight: 800 }}>Mensualité TTC :</span>
+      <span style={{ fontWeight: 800 }}>{fmtEuro(recap.ttc)}</span>
+    </div>
+  </div>
+</div>
+
 
         </div>
 
