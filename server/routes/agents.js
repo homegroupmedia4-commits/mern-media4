@@ -7,6 +7,9 @@ const PDFDocument = require("pdfkit");
 const AgentPdf = require("../models/AgentPdf");
 const OtherProductSize = require("../models/OtherProductSize");
 const MemoryOption = require("../models/MemoryOption");
+const path = require("path");
+const fs = require("fs");
+
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
@@ -360,14 +363,36 @@ function generateColoredDevisPdfBuffer({ docData, agent }) {
       // -----------------------------
       // HEADER (gauche) + TITRE
       // -----------------------------
-      doc.font("Helvetica-Bold").fontSize(14).fillColor(DARK).text("SAS MEDIA4", left, 22);
-      doc.font("Helvetica").fontSize(9).fillColor(DARK);
-      doc.text("1 Chemin du chêne rond", left, 38);
-      doc.text("91570 BIEVRES", left, 50);
-      doc.text("Tél : 01.85.41.01.00", left, 62);
-      doc.text("Site web : www.media4.fr", left, 74);
+    // -----------------------------
+// HEADER (gauche) + TITRE
+// -----------------------------
+const headerTopY = 22;
 
-      doc.font("Helvetica-Bold").fontSize(16).fillColor(DARK).text("Devis", 0, 40, { align: "center" });
+// ✅ 1) LOGO (à gauche)
+const logoPath = path.join(__dirname, "..", "assets", "Media4logo.png");
+const logoW = 70;
+const logoH = 70;
+
+let headerTextX = left;
+try {
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, left, headerTopY, { width: logoW, height: logoH });
+    // ✅ le texte démarre à droite du logo (extrême du bloc header gauche)
+    headerTextX = left + logoW + 12;
+  }
+} catch (e) {
+  // si logo absent => on laisse juste le texte
+}
+
+// ✅ 2) Tout le bloc de texte MEDIA4 en gras
+doc.font("Helvetica-Bold").fillColor(DARK);
+
+doc.fontSize(14).text("SAS MEDIA4", headerTextX, headerTopY);
+doc.fontSize(9).text("1 Chemin du chêne rond", headerTextX, headerTopY + 16);
+doc.fontSize(9).text("91570 BIEVRES", headerTextX, headerTopY + 28);
+doc.fontSize(9).text("Tél : 01.85.41.01.00", headerTextX, headerTopY + 40);
+doc.fontSize(9).text("Site web : www.media4.fr", headerTextX, headerTopY + 52);
+
 
       // -----------------------------
       // BLOC CLIENT (droite)
@@ -389,6 +414,14 @@ function generateColoredDevisPdfBuffer({ docData, agent }) {
         align: "left",
       });
 
+      // ✅ TITRE "Devis" aligné verticalement avec le bloc client
+const clientTopY = 58; // <= même Y que ton doc.text client
+doc.font("Helvetica-Bold")
+  .fontSize(16)
+  .fillColor(DARK)
+  .text("Devis", 0, clientTopY, { align: "center" });
+
+
       // -----------------------------
       // TABLE META : Numéro / Date / Durée
       // -----------------------------
@@ -396,16 +429,32 @@ function generateColoredDevisPdfBuffer({ docData, agent }) {
       const dateStr = new Date().toLocaleDateString("fr-FR");
       const validity = `${docData.validityDays || 30} jours`;
 
-      const metaY = 118;
-      const metaH = 18;
-      const colW = contentW / 3;
+    const metaY = 118;
+const metaH = 18;
 
-      // header
-      doc.save();
-      doc.rect(left, metaY, contentW, metaH).stroke();
-      for (let i = 0; i < 3; i++) {
-        doc.rect(left + colW * i, metaY, colW, metaH).fillAndStroke(GREEN);
-      }
+// ✅ moitié de la largeur utile
+const metaW = contentW * 0.5;
+const metaX = left;
+const colW = metaW / 3;
+
+// header
+doc.save();
+doc.rect(metaX, metaY, metaW, metaH).stroke();
+for (let i = 0; i < 3; i++) {
+  doc.rect(metaX + colW * i, metaY, colW, metaH).fillAndStroke(GREEN);
+}
+doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
+doc.text("Numéro", metaX + 6, metaY + 5);
+doc.text("Date", metaX + colW + 6, metaY + 5);
+doc.text("Durée de validité", metaX + colW * 2 + 6, metaY + 5);
+doc.restore();
+
+// values
+doc.font("Helvetica").fontSize(9).fillColor(DARK);
+doc.text(num, metaX + 6, metaY + metaH + 5);
+doc.text(dateStr, metaX + colW + 6, metaY + metaH + 5);
+doc.text(validity, metaX + colW * 2 + 6, metaY + metaH + 5);
+
       doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
       doc.text("Numéro", left + 6, metaY + 5);
       doc.text("Date", left + colW + 6, metaY + 5);
