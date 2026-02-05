@@ -820,10 +820,12 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
     });
 
     return res.json({ ok: true, devisId: saved._id });
-  } catch (e) {
-    console.error(e);
+   } catch (e) {
+    console.error("SAVE DEVIS ERROR:", e?.message);
+    console.error(e?.stack);
     return res.status(500).json({ message: "Erreur save devis." });
   }
+
 });
 
 // ✅ POST /api/agents/devis/:id/pdf (génère pdf couleur et stocke)
