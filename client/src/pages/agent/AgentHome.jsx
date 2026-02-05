@@ -1113,20 +1113,20 @@ export default function AgentHome() {
         <div className="agenthome-block">
        
 
-          <button
+          {/* <button
             className="agenthome-btn"
             type="button"
             onClick={submitPdf}
             disabled={savingPdf}
           >
             {savingPdf ? "Génération..." : "Valider & Générer PDF"}
-          </button>
+          </button> */}
 
-          {pdfUrl ? (
+          {/* {pdfUrl ? (
             <a className="agenthome-pdf" href={pdfUrl} target="_blank" rel="noreferrer">
               Ouvrir le PDF
             </a>
-          ) : null}
+          ) : null} */}
         </div>
 
         {error ? <div className="agenthome-error">{error}</div> : null}

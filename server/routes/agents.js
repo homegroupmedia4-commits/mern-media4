@@ -164,20 +164,99 @@ async function buildLinesAndTotals({
 
   const qtyPitchTotal = pitchLines.reduce((s, l) => s + (Number(l.qty) || 0), 0);
 
-  // -----------------------------
-  // 2) AUTRES PRODUITS (mensualité)
-  // -----------------------------
-  const otherMonthlyLines = [];
+//   // -----------------------------
+//   // 2) AUTRES PRODUITS (mensualité)
+//   // -----------------------------
+//   const otherMonthlyLines = [];
+
+// const isOid = (v) => mongoose.Types.ObjectId.isValid(String(v));
+
+// const checkedRowIds = [];
+// const checkedMemIds = [];
+
+// for (const pid of Object.keys(otherSelections || {})) {
+//   const sel = otherSelections?.[pid];
+//   const checked = sel?.checked || {};
+//   for (const rowId of Object.keys(checked)) {
+//     if (isOid(rowId)) checkedRowIds.push(rowId);
+
+//     const memId = checked[rowId]?.memId;
+//     if (memId && isOid(memId)) checkedMemIds.push(memId);
+//   }
+// }
+
+
+//   const sizes = checkedRowIds.length
+//     ? await OtherProductSize.find({ _id: { $in: checkedRowIds } }).lean()
+//     : [];
+//   const mems = checkedMemIds.length
+//     ? await MemoryOption.find({ _id: { $in: checkedMemIds } }).lean()
+//     : [];
+
+//   const sizeById = new Map(sizes.map((s) => [String(s._id), s]));
+//   const memById = new Map(mems.map((m) => [String(m._id), m]));
+
+//   for (const pid of Object.keys(otherSelections || {})) {
+//     const sel = otherSelections?.[pid];
+//     const checked = sel?.checked || {};
+
+//     for (const rowId of Object.keys(checked)) {
+//       const line = checked[rowId];
+//       const size = sizeById.get(String(rowId));
+//       if (!size) continue;
+
+//       const mem = line?.memId ? memById.get(String(line.memId)) : null;
+
+//       const basePrice = Number(size.price || 0);
+//       const memPrice = Number(mem?.price || 0);
+//       const unit = basePrice + memPrice;
+
+//       const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
+//       const total = unit * qty;
+
+//       // ✅ Description EXACTE : "NomProduit - XX pouces"
+//       const productName = String(size.product || "Produit");
+//       const inches = size.sizeInches ? `${size.sizeInches} pouces` : "";
+//       const description = [productName, inches].filter(Boolean).join(" - ");
+
+//       otherMonthlyLines.push({
+//         code: size.productCode || size.codeProduit || "—",
+//         description,
+//         qty,
+//         puHt: unit,
+//         montantHt: fmt2(total),
+//         tva: tvaRate,
+//         scope: "mensualite",
+//         kind: "other",
+//       });
+//     }
+//   }
+
+
+// -----------------------------
+// 2) AUTRES PRODUITS (mensualité)
+// -----------------------------
+const otherMonthlyLines = [];
 
 const isOid = (v) => mongoose.Types.ObjectId.isValid(String(v));
+
+function getCheckedBucket(sel) {
+  if (!sel) return {};
+  if (sel.byMonths) {
+    const months = String(sel.leasingMonths || "").trim();
+    return sel.byMonths?.[months]?.checked || {};
+  }
+  return sel.checked || {};
+}
 
 const checkedRowIds = [];
 const checkedMemIds = [];
 
 for (const pid of Object.keys(otherSelections || {})) {
   const sel = otherSelections?.[pid];
-  const checked = sel?.checked || {};
-  for (const rowId of Object.keys(checked)) {
+  const checked = getCheckedBucket(sel);
+
+  for (const rowId of Object.keys(checked || {})) {
     if (isOid(rowId)) checkedRowIds.push(rowId);
 
     const memId = checked[rowId]?.memId;
@@ -185,52 +264,51 @@ for (const pid of Object.keys(otherSelections || {})) {
   }
 }
 
+const sizes = checkedRowIds.length
+  ? await OtherProductSize.find({ _id: { $in: checkedRowIds } }).lean()
+  : [];
+const mems = checkedMemIds.length
+  ? await MemoryOption.find({ _id: { $in: checkedMemIds } }).lean()
+  : [];
 
-  const sizes = checkedRowIds.length
-    ? await OtherProductSize.find({ _id: { $in: checkedRowIds } }).lean()
-    : [];
-  const mems = checkedMemIds.length
-    ? await MemoryOption.find({ _id: { $in: checkedMemIds } }).lean()
-    : [];
+const sizeById = new Map(sizes.map((s) => [String(s._id), s]));
+const memById = new Map(mems.map((m) => [String(m._id), m]));
 
-  const sizeById = new Map(sizes.map((s) => [String(s._id), s]));
-  const memById = new Map(mems.map((m) => [String(m._id), m]));
+for (const pid of Object.keys(otherSelections || {})) {
+  const sel = otherSelections?.[pid];
+  const checked = getCheckedBucket(sel);
 
-  for (const pid of Object.keys(otherSelections || {})) {
-    const sel = otherSelections?.[pid];
-    const checked = sel?.checked || {};
+  for (const rowId of Object.keys(checked || {})) {
+    const line = checked[rowId];
+    const size = sizeById.get(String(rowId));
+    if (!size) continue;
 
-    for (const rowId of Object.keys(checked)) {
-      const line = checked[rowId];
-      const size = sizeById.get(String(rowId));
-      if (!size) continue;
+    const mem = line?.memId ? memById.get(String(line.memId)) : null;
 
-      const mem = line?.memId ? memById.get(String(line.memId)) : null;
+    const basePrice = Number(size.price || 0);
+    const memPrice = Number(mem?.price || 0);
+    const unit = basePrice + memPrice;
 
-      const basePrice = Number(size.price || 0);
-      const memPrice = Number(mem?.price || 0);
-      const unit = basePrice + memPrice;
+    const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
+    const total = unit * qty;
 
-      const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
-      const total = unit * qty;
+    const productName = String(size.product || "Produit");
+    const inches = size.sizeInches ? `${size.sizeInches} pouces` : "";
+    const description = [productName, inches].filter(Boolean).join(" - ");
 
-      // ✅ Description EXACTE : "NomProduit - XX pouces"
-      const productName = String(size.product || "Produit");
-      const inches = size.sizeInches ? `${size.sizeInches} pouces` : "";
-      const description = [productName, inches].filter(Boolean).join(" - ");
-
-      otherMonthlyLines.push({
-        code: size.productCode || size.codeProduit || "—",
-        description,
-        qty,
-        puHt: unit,
-        montantHt: fmt2(total),
-        tva: tvaRate,
-        scope: "mensualite",
-        kind: "other",
-      });
-    }
+    otherMonthlyLines.push({
+      code: size.productCode || size.codeProduit || "—",
+      description,
+      qty,
+      puHt: unit,
+      montantHt: fmt2(total),
+      tva: tvaRate,
+      scope: "mensualite",
+      kind: "other",
+    });
   }
+}
+
 
   const qtyOtherTotal = otherMonthlyLines.reduce((s, l) => s + (Number(l.qty) || 0), 0);
   const qtyTotalProducts = qtyPitchTotal + qtyOtherTotal; // ✅ PLAYER/ABOBR/PORT/PARA
