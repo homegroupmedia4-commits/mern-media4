@@ -1,6 +1,33 @@
 // server/models/AgentPdf.js
 const mongoose = require("mongoose");
 
+// ✅ Sous-schema pour une ligne (autorise "/" "-" "OFFERT" + nombres)
+const LineSchema = new mongoose.Schema(
+  {
+    code: { type: String, default: "" },
+    description: { type: String, default: "" },
+
+    // ✅ IMPORTANT: Mixed car tu mets "/" et aussi des nombres
+    qty: { type: mongoose.Schema.Types.Mixed, default: "" },
+
+    // ✅ IMPORTANT: Mixed car tu mets "-" et aussi des nombres
+    puHt: { type: mongoose.Schema.Types.Mixed, default: "" },
+
+    // ✅ IMPORTANT: Mixed car tu mets "OFFERT" / "-" / montant
+    montantHt: { type: mongoose.Schema.Types.Mixed, default: "" },
+
+    // ✅ IMPORTANT: Mixed car tu mets "-" et aussi 20
+    tva: { type: mongoose.Schema.Types.Mixed, default: "" },
+
+    // (facultatif mais utile pour ton rendu PDF)
+    scope: { type: String, default: "" }, // "mensualite" | "hors_mensualite" | "detail"
+    kind: { type: String, default: "" }, // "pitch" | "other"
+    isInfo: { type: Boolean, default: false },
+    isDetail: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const AgentPdfSchema = new mongoose.Schema(
   {
     agentId: { type: mongoose.Schema.Types.ObjectId, ref: "Agent", required: true },
@@ -21,27 +48,19 @@ const AgentPdfSchema = new mongoose.Schema(
       fraisParametrageOfferts: { type: Boolean, default: false },
       fraisPortOfferts: { type: Boolean, default: false },
       commentaires: { type: String, default: "" },
+      financementMonths: { type: String, default: "" }, // optionnel (si tu veux le stocker côté client)
     },
 
     // ✅ Devis meta
     devisNumber: { type: String, default: "" },
     validityDays: { type: Number, default: 30 },
 
-    // ✅ Lignes du tableau (structure “comme CF7” mais en JSON)
-    // code, description, qty, puHt, montantHt, tva
-    lines: [
-      {
-        code: String,
-        description: String,
-        qty: Number,
-        puHt: Number,
-        montantHt: String, // peut être "OFFERT" donc string
-        tva: Number,
-      },
-    ],
+    // ✅ Lignes du tableau
+    lines: { type: [LineSchema], default: [] },
 
-     pitchInstances: { type: Array, default: [] },
-     otherSelections: { type: Object, default: {} },
+    // ✅ Brut devis (utile pour regénérer / debug)
+    pitchInstances: { type: Array, default: [] },
+    otherSelections: { type: Object, default: {} },
 
     // ✅ Totaux (comme ton PDF: Mensualité HT / TVA / TTC)
     totals: {
@@ -50,12 +69,12 @@ const AgentPdfSchema = new mongoose.Schema(
       totalTtc: { type: Number, default: 0 },
     },
 
-    // ✅ Mentions (comme ton script devis_mentions)
+    // ✅ Mentions
     devisMentions: { type: String, default: "" },
 
     // ✅ Pour debug / export
-    htmlTable: { type: String, default: "" }, // si tu veux stocker le HTML "html_table" aussi
-    apLinesJson: { type: String, default: "" }, // si tu veux stocker ton ap_lines_json aussi
+    htmlTable: { type: String, default: "" },
+    apLinesJson: { type: String, default: "" },
 
     // ✅ PDF stocké en DB
     pdfBuffer: { type: Buffer, default: null },
