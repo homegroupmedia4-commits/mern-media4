@@ -74,7 +74,7 @@ export function createDefaultPitchInstance({ pitch, durations }) {
         prixPitch: pitch?.price ?? 0,
     categorieName: pitch?.categorieName || pitch?.categoryName || "",
 
-    
+
     collapsed: false,
 
     // Dimensions (vides au départ)
@@ -91,6 +91,12 @@ export function createDefaultPitchInstance({ pitch, durations }) {
     finitionId: "",
     fixationId: "",
    metreLineaire: "2.5",
+
+   dimensions: pitch?.dimensions || "",
+luminosite: pitch?.luminosite || "",
+codeProduit: pitch?.codeProduit || "",
+fixationComment: "",
+
 
 
     // Financement

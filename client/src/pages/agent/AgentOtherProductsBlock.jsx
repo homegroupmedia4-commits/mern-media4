@@ -28,6 +28,7 @@ export default function AgentOtherProductsBlock({
   const [loadingMemOptions, setLoadingMemOptions] = useState(false);
 
   // { [productId]: { leasingMonths: "63", checked: { [rowId]: { memId, qty }}}}
+  // const [otherSelections, setOtherSelections] = useState({});
   const [otherSelections, setOtherSelections] = useState({});
 
   // -----------------------------
@@ -118,9 +119,25 @@ export default function AgentOtherProductsBlock({
       for (const p of otherSelectedProducts) {
         const pid = p?._id || p?.id;
         if (!pid) continue;
+
+
+        // if (!next[pid]) {
+        //   next[pid] = { leasingMonths: getDefaultLeasingMonths(), checked: {} };
+        // }
+
         if (!next[pid]) {
-          next[pid] = { leasingMonths: getDefaultLeasingMonths(), checked: {} };
-        }
+  const m = getDefaultLeasingMonths();
+  next[pid] = { leasingMonths: m, byMonths: { [m]: { checked: {} } } };
+} else {
+  // ✅ assure la structure byMonths
+  const current = next[pid].leasingMonths || getDefaultLeasingMonths();
+  if (!next[pid].byMonths) next[pid].byMonths = {};
+  if (!next[pid].byMonths[current]) next[pid].byMonths[current] = { checked: {} };
+  if (!next[pid].leasingMonths) next[pid].leasingMonths = current;
+}
+
+
+
       }
 
       // remove unselected
@@ -139,50 +156,137 @@ export default function AgentOtherProductsBlock({
     onSelectionsChange?.(otherSelections);
   }, [otherSelections, onSelectionsChange]);
 
+  // const setOtherLeasingMonths = (productId, months) => {
+  //   setOtherSelections((prev) => ({
+  //     ...prev,
+  //     [productId]: {
+  //       ...(prev[productId] || { leasingMonths: getDefaultLeasingMonths(), checked: {} }),
+  //       leasingMonths: String(months),
+  //       checked: {}, 
+  //     },
+  //   }));
+  // };
+
   const setOtherLeasingMonths = (productId, months) => {
-    setOtherSelections((prev) => ({
+  const m = String(months);
+
+  setOtherSelections((prev) => {
+    const curr = prev[productId] || { leasingMonths: getDefaultLeasingMonths(), byMonths: {} };
+    const byMonths = { ...(curr.byMonths || {}) };
+
+    if (!byMonths[m]) byMonths[m] = { checked: {} }; // ✅ garde les autres durées
+    return {
       ...prev,
       [productId]: {
-        ...(prev[productId] || { leasingMonths: getDefaultLeasingMonths(), checked: {} }),
-        leasingMonths: String(months),
-        checked: {}, // reset tailles si on change durée
+        ...curr,
+        leasingMonths: m,
+        byMonths,
       },
-    }));
-  };
+    };
+  });
+};
+
+
+  // const toggleOtherSize = (productId, row) => {
+  //   const rowId = row._id;
+  //   setOtherSelections((prev) => {
+  //     const curr = prev[productId] || { leasingMonths: getDefaultLeasingMonths(), checked: {} };
+  //     const has = !!curr.checked[rowId];
+
+  //     const nextChecked = { ...curr.checked };
+  //     if (has) {
+  //       delete nextChecked[rowId];
+  //     } else {
+  //       nextChecked[rowId] = {
+  //         memId: memOptions?.[0]?._id || "",
+  //         qty: 1,
+  //       };
+  //     }
+
+  //     return { ...prev, [productId]: { ...curr, checked: nextChecked } };
+  //   });
+  // };
 
   const toggleOtherSize = (productId, row) => {
-    const rowId = row._id;
-    setOtherSelections((prev) => {
-      const curr = prev[productId] || { leasingMonths: getDefaultLeasingMonths(), checked: {} };
-      const has = !!curr.checked[rowId];
+  const rowId = row._id;
 
-      const nextChecked = { ...curr.checked };
-      if (has) {
-        delete nextChecked[rowId];
-      } else {
-        nextChecked[rowId] = {
-          memId: memOptions?.[0]?._id || "",
-          qty: 1,
-        };
-      }
+  setOtherSelections((prev) => {
+    const curr = prev[productId] || { leasingMonths: getDefaultLeasingMonths(), byMonths: {} };
+    const months = String(curr.leasingMonths || getDefaultLeasingMonths());
 
-      return { ...prev, [productId]: { ...curr, checked: nextChecked } };
-    });
-  };
+    const byMonths = { ...(curr.byMonths || {}) };
+    const bucket = byMonths[months] || { checked: {} };
+
+    const has = !!bucket.checked[rowId];
+    const nextChecked = { ...(bucket.checked || {}) };
+
+    if (has) {
+      delete nextChecked[rowId];
+    } else {
+      nextChecked[rowId] = {
+        memId: memOptions?.[0]?._id || "",
+        qty: 1,
+      };
+    }
+
+    byMonths[months] = { ...bucket, checked: nextChecked };
+
+    return {
+      ...prev,
+      [productId]: {
+        ...curr,
+        leasingMonths: months,
+        byMonths,
+      },
+    };
+  });
+};
+
+
+  // const updateOtherSize = (productId, rowId, patch) => {
+  //   setOtherSelections((prev) => {
+  //     const curr = prev[productId];
+  //     if (!curr?.checked?.[rowId]) return prev;
+  //     return {
+  //       ...prev,
+  //       [productId]: {
+  //         ...curr,
+  //         checked: { ...curr.checked, [rowId]: { ...curr.checked[rowId], ...patch } },
+  //       },
+  //     };
+  //   });
+  // };
 
   const updateOtherSize = (productId, rowId, patch) => {
-    setOtherSelections((prev) => {
-      const curr = prev[productId];
-      if (!curr?.checked?.[rowId]) return prev;
-      return {
-        ...prev,
-        [productId]: {
-          ...curr,
-          checked: { ...curr.checked, [rowId]: { ...curr.checked[rowId], ...patch } },
-        },
-      };
-    });
-  };
+  setOtherSelections((prev) => {
+    const curr = prev[productId];
+    if (!curr) return prev;
+
+    const months = String(curr.leasingMonths || getDefaultLeasingMonths());
+    const byMonths = { ...(curr.byMonths || {}) };
+    const bucket = byMonths[months] || { checked: {} };
+
+    if (!bucket?.checked?.[rowId]) return prev;
+
+    byMonths[months] = {
+      ...bucket,
+      checked: {
+        ...bucket.checked,
+        [rowId]: { ...bucket.checked[rowId], ...patch },
+      },
+    };
+
+    return {
+      ...prev,
+      [productId]: {
+        ...curr,
+        byMonths,
+      },
+    };
+  });
+};
+
+
 
   const computeOtherLine = ({ basePrice, memId, qty }) => {
     const memPrice = memOptions.find((m) => m._id === memId)?.price ?? 0;
@@ -202,16 +306,25 @@ export default function AgentOtherProductsBlock({
         const productId = p?._id || p?.id;
         const productName = p?.name || "Produit";
 
+        // const sel = otherSelections[productId] || {
+        //   leasingMonths: getDefaultLeasingMonths(),
+        //   checked: {},
+        // };
+
         const sel = otherSelections[productId] || {
-          leasingMonths: getDefaultLeasingMonths(),
-          checked: {},
-        };
+  leasingMonths: getDefaultLeasingMonths(),
+  byMonths: {},
+};
+
+const activeMonths = String(sel.leasingMonths || getDefaultLeasingMonths());
+const checkedActive = sel.byMonths?.[activeMonths]?.checked || {};
+
 
         const rowsForProduct = otherSizes.filter((r) => {
           return norm(r.product) === norm(productName) && String(r.leasingMonths) === String(sel.leasingMonths);
         });
 
-        const checkedIds = Object.keys(sel.checked || {});
+        const checkedIds = Object.keys(checkedActive || {});
         const hasChecked = checkedIds.length > 0;
 
         return (
@@ -247,7 +360,7 @@ export default function AgentOtherProductsBlock({
                   .slice()
                   .sort((a, b) => (a.sizeInches || 0) - (b.sizeInches || 0))
                   .map((row) => {
-                    const checked = !!sel.checked[row._id];
+                    const checked = !!checkedActive[row._id];
                     return (
                       <label key={row._id} className="agenthome-check">
                         <input
@@ -270,7 +383,7 @@ export default function AgentOtherProductsBlock({
 
                 {checkedIds.map((rowId) => {
                   const row = otherSizes.find((r) => r._id === rowId);
-                  const line = sel.checked[rowId];
+                  const line = checkedActive[rowId];
                   if (!row || !line) return null;
 
                   const calc = computeOtherLine({

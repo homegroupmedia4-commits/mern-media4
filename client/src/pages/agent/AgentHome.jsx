@@ -594,6 +594,8 @@ export default function AgentHome() {
                   <div className="agenthome-muted">Chargement...</div>
                 ) : (
                   <div className="agenthome-pitchList">
+
+
                     {pitches.map((pitch) => {
                       const id = pitch?._id || pitch?.id;
                       const checked = id ? selectedPitchIds.includes(id) : false;
@@ -619,9 +621,18 @@ export default function AgentHome() {
                             onChange={() => togglePitch(pitch)}
                           />
                           <span className="agenthome-pitchLabel">
-                            {label}
-                            {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
-                          </span>
+  {(() => {
+    const name = pitch?.name || pitch?.label || pitch?.titre || pitch?.code || "Pitch";
+    const dimensions = pitch?.dimensions || "";
+    const luminosite = pitch?.luminosite || "";
+    const codeProduit = pitch?.codeProduit || "";
+
+    const meta = [dimensions, luminosite, codeProduit].filter(Boolean).join(", ");
+    return meta ? `${name} (${meta})` : name;
+  })()}
+  {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
+</span>
+
                         </label>
                       );
                     })}
@@ -648,12 +659,20 @@ export default function AgentHome() {
               <div className="agenthome-pitchHeader">
                 <div className="agenthome-pitchHeaderLeft">
                   <div className="agenthome-pitchTitleLine">
-                    <strong>{pi.pitchLabel}</strong>
+                    <strong>
+  {(() => {
+    const meta = [pi.dimensions, pi.luminosite, pi.codeProduit].filter(Boolean).join(", ");
+    return meta ? `${pi.pitchLabel} (${meta})` : pi.pitchLabel;
+  })()}
+</strong>
+
                   </div>
                   {pi.resolutionLabel ? (
                     <div className="agenthome-muted">Résolution : {pi.resolutionLabel}</div>
                   ) : null}
                 </div>
+                {pi.categorieName ? <span className="agenthome-catBadge">{pi.categorieName}</span> : null}
+
 
                 <button
                   className="agenthome-pillBtn"
@@ -806,6 +825,19 @@ export default function AgentHome() {
                         className="agenthome-input"
                       />
                     </div>
+
+                    {pi.fixationId === "special" ? (
+  <div className="agenthome-field agenthome-field--full" style={{ marginTop: 10 }}>
+    <label>Commentaires (si support spécial) :</label>
+    <input
+      className="agenthome-input"
+      placeholder="préciser environnement de fixation"
+      value={pi.fixationComment || ""}
+      onChange={(e) => updatePitchInstance(pi.instanceId, { fixationComment: e.target.value })}
+    />
+  </div>
+) : null}
+
                   </div>
 
                   {/* Type financement */}
