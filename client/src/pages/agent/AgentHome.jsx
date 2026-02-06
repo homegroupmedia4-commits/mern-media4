@@ -560,7 +560,20 @@ setPitchInstances((prev) =>
   };
 
 
-  
+  const pitchesByCategory = useMemo(() => {
+  const map = new Map();
+
+  for (const p of pitches) {
+    const cid = String(p.__categoryId || "");
+    if (!cid) continue;
+
+    if (!map.has(cid)) map.set(cid, []);
+    map.get(cid).push(p);
+  }
+
+  return map; // Map<categoryId, pitches[]>
+}, [pitches]);
+
 
   const updatePitchInstance = (instanceId, patch) => {
     setPitchInstances((prev) =>
@@ -925,66 +938,76 @@ next.categorieId = selectedCategoryId;
                 {loadingPitches ? (
                   <div className="agenthome-muted">Chargement...</div>
                 ) : (
-                  <div className="agenthome-pitchList">
+<div className="agenthome-pitchList">
 
+  {/* ===== MODE PAR DÉFAUT : TOUTES LES CATÉGORIES ===== */}
+  {showAllPitches
+    ? Array.from(pitchesByCategory.entries()).map(([catId, catPitches]) => {
+        const cat = categories.find((c) => String(c._id) === catId);
 
-                    {pitches.map((pitch) => {
-                      const id = pitch?._id || pitch?.id;
-                      const checked = id ? selectedPitchIds.includes(id) : false;
+        return (
+          <div key={catId} className="agenthome-pitchGroup">
+            <div className="agenthome-pitchGroupTitle">
+              {cat?.name || "Catégorie"}
+            </div>
 
-                      const label =
-                        pitch?.label ||
-                        pitch?.name ||
-                        pitch?.titre ||
-                        pitch?.code ||
-                        "Pitch";
+            {catPitches.map((pitch) => {
+              const id = pitch?._id || pitch?.id;
+              const checked = selectedPitchIds.includes(id);
 
-                      const sub =
-                        pitch?.subtitle ||
-                        pitch?.spec ||
-                        pitch?.reference ||
-                        "";
+              const sub =
+                pitch?.subtitle ||
+                pitch?.spec ||
+                pitch?.reference ||
+                "";
 
-                        const catName =
-  categories.find((c) => String(c._id) === String(pitch.__categoryId))?.name || "";
+              return (
+                <label key={id} className="agenthome-check agenthome-check--pitch">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => togglePitch(pitch)}
+                  />
 
+                  <span className="agenthome-pitchLabel">
+                    {pitch.name || pitch.label || "Pitch"}
+                    {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        );
+      })
 
-                      return (
-                        <label key={id} className="agenthome-check agenthome-check--pitch">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => togglePitch(pitch)}
-                          />
-                          <span className="agenthome-pitchLabel">
-  {(() => {
-    const name = pitch?.name || pitch?.label || pitch?.titre || pitch?.code || "Pitch";
-    const dimensions = pitch?.dimensions || "";
-    const luminosite = pitch?.luminosite || "";
-    const codeProduit = pitch?.codeProduit || "";
+    /* ===== MODE FILTRÉ : 1 CATÉGORIE ===== */
+    : pitches.map((pitch) => {
+        const id = pitch?._id || pitch?.id;
+        const checked = selectedPitchIds.includes(id);
 
-    const meta = [dimensions, luminosite, codeProduit].filter(Boolean).join(", ");
-    return meta ? `${name} (${meta})` : name;
-  })()}
+        const sub =
+          pitch?.subtitle ||
+          pitch?.spec ||
+          pitch?.reference ||
+          "";
 
-    {showAllPitches && catName ? (
-    <span className="agenthome-catBadge" style={{ marginLeft: 8 }}>
-      {catName}
-    </span>
-  ) : null}
+        return (
+          <label key={id} className="agenthome-check agenthome-check--pitch">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => togglePitch(pitch)}
+            />
 
+            <span className="agenthome-pitchLabel">
+              {pitch.name || pitch.label || "Pitch"}
+              {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
+            </span>
+          </label>
+        );
+      })}
+</div>
 
-  {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
-</span>
-
-                        </label>
-                      );
-                    })}
-
-                    {pitches.length === 0 ? (
-                      <div className="agenthome-muted">Aucun pitch pour cette catégorie.</div>
-                    ) : null}
-                  </div>
                 )}
               </div>
             ) : null}
