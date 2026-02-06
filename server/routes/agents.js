@@ -11,6 +11,8 @@ const MemoryOption = require("../models/MemoryOption");
 const path = require("path");
 const fs = require("fs");
 const mongoose = require("mongoose");
+const { PDFDocument: PDFLibDocument } = require("pdf-lib");
+
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
@@ -344,23 +346,24 @@ for (const pid of Object.keys(otherSelections || {})) {
         ]
       : [];
 
-  // -----------------------------
-  // 4) ABOBR (qty = nb produits, comme l’image)
-  // -----------------------------
-  const abobrLine =
-    qtyTotalProducts > 0
-      ? [
-          {
-            code: "ABOBR",
-            description: "ABONNEMENT BRONZE LOGICIEL ET\nMAINTENANCE",
-            qty: qtyTotalProducts,
-            puHt: 19.95,
-            montantHt: fmt2(qtyTotalProducts * 19.95),
-            tva: tvaRate,
-            scope: "mensualite",
-          },
-        ]
-      : [];
+// -----------------------------
+// 4) ABOBR (1 fois par devis)
+// -----------------------------
+const abobrLine =
+  qtyTotalProducts > 0
+    ? [
+        {
+          code: "ABOBR",
+          description: "ABONNEMENT BRONZE LOGICIEL ET\nMAINTENANCE",
+          qty: 1,
+          puHt: 19.95,
+          montantHt: fmt2(19.95),
+          tva: tvaRate,
+          scope: "mensualite",
+        },
+      ]
+    : [];
+
 
   // -----------------------------
   // 5) INFO + hors mensualité
@@ -455,26 +458,17 @@ const fixationSuffix = fixationComment ? ` — ${fixationComment}` : "";
     String(pitchInstances?.[0]?.financementMonths || client?.financementMonths || "63").trim() ||
     "63";
 
-  if (qtyTotalProducts > 0) {
-    const detail = `Devis mensuel sur la base d'un leasing de ${leasingMonths} mois\navec garantie incluse`;
-    paraDetail.push({
-      code: "",
-      description: detail,
-      qty: "",
-      puHt: "",
-      montantHt: "",
-      tva: "",
-      isDetail: true,
-      scope: "detail",
-    });
-  }
-
+ if (qtyTotalProducts > 0) {
+  let detail = `Devis mensuel sur la base d'un leasing de ${leasingMonths} mois\navec garantie incluse`;
 
   const clientComment = String(client?.commentaires || "").trim();
-if (clientComment) {
+  if (clientComment) {
+    detail += `\n\nCommentaires :\n${clientComment}`;
+  }
+
   paraDetail.push({
     code: "",
-    description: `Commentaires :\n${clientComment}`,
+    description: detail,
     qty: "",
     puHt: "",
     montantHt: "",
@@ -485,13 +479,15 @@ if (clientComment) {
 }
 
 
+
   // -----------------------------
   // 6) TOTAUX (mensualité uniquement)
   // -----------------------------
-  const mensualiteBase =
-    pitchLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
-    otherMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
-    (abobrLine.length ? qtyTotalProducts * 19.95 : 0);
+const mensualiteBase =
+  pitchLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
+  otherMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
+  (abobrLine.length ? 19.95 : 0);
+
 
   const mensualiteHt = mensualiteBase;
   const totalTva = mensualiteHt * 0.2;
@@ -524,6 +520,20 @@ if (clientComment) {
  * - Table lignes (mêmes colonnes, même style vert)
  * - Bas de page : tableau TVA (gauche) + bloc totaux (droite) + signature
  */
+
+async function mergePdfBuffers(mainPdfBuffer, appendPdfBuffer) {
+  const mainDoc = await PDFLibDocument.load(mainPdfBuffer);
+  const appendDoc = await PDFLibDocument.load(appendPdfBuffer);
+
+  const pages = await mainDoc.copyPages(appendDoc, appendDoc.getPageIndices());
+  pages.forEach((p) => mainDoc.addPage(p));
+
+  const mergedBytes = await mainDoc.save();
+  return Buffer.from(mergedBytes);
+}
+
+
+
 function generateColoredDevisPdfBuffer({ docData }) {
   return new Promise((resolve, reject) => {
     try {
@@ -569,70 +579,57 @@ function generateColoredDevisPdfBuffer({ docData }) {
 let cursorY = headerTopY + 70;
 
 
-      // -----------------------------
-      // TITRE "Devis" centré
-      // -----------------------------
-      // -----------------------------
+     // -----------------------------
 // BLOC "DEVIS" + CLIENT (même zone verticale)
 // -----------------------------
-const titleY = cursorY;
+const titleBaseY = cursorY; // point de départ
 
-// Titre
-doc.font("Helvetica-Bold")
-  .fontSize(16)
-  .fillColor(DARK)
-  // .text("Devis", 0, titleY, { align: "center" });
-
-// ✅ petit espace sous le titre (mais pas énorme)
-cursorY = titleY + 22;
-
-      // doc.font("Helvetica-Bold").fontSize(16).fillColor(DARK).text("Devis", 0, titleY, { align: "center" });
-
-      // -----------------------------
-      // BLOC CLIENT (droite, sous le titre comme l’image)
-      // -----------------------------
-      const c = docData.client || {};
-      const clientLines = [
-        (c.societe || "").trim(),
-        `${(c.adresse1 || "").trim()}` || "",
-        `${(c.adresse2 || "").trim()}` || "",
-        `${(c.codePostal || "").trim()} ${(c.ville || "").trim()}`.trim(),
-        (c.nom || c.contactNom || "").trim() || "",
-        (c.email || "").trim(),
-        (c.telephone || "").trim(),
-      ].filter(Boolean);
-
-     
 const metaW = contentW * 0.5;
-
-// ✅ Bloc client à droite = ce qui reste, avec un gap
 const gap = 18;
 const clientX = left + metaW + gap;
 const clientW = contentW - metaW - gap;
-const clientY = cursorY;
 
-// ✅ Titre "Devis" au même X/largeur que le bloc client
+// ---- client lines
+const c = docData.client || {};
+const clientLines = [
+  (c.societe || "").trim(),
+  `${(c.adresse1 || "").trim()}` || "",
+  `${(c.adresse2 || "").trim()}` || "",
+  `${(c.codePostal || "").trim()} ${(c.ville || "").trim()}`.trim(),
+  (c.nom || c.contactNom || "").trim() || "",
+  (c.email || "").trim(),
+  (c.telephone || "").trim(),
+].filter(Boolean);
+
+doc.font("Helvetica").fontSize(9).fillColor(DARK);
+const clientText = clientLines.join("\n");
+
+// hauteur réelle bloc client
+const clientH = doc.heightOfString(clientText, {
+  width: clientW,
+  lineGap: 1.5,
+});
+
+// ✅ Titre centré par rapport au bloc client
+const titleH = 18; // ~ hauteur du "Devis" en 16px
+const titleY = titleBaseY + Math.max(0, (clientH - titleH) / 2);
+
+// ---- draw title
 doc.font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text("Devis", clientX, titleY, {
-    width: clientW,
-    align: "center",
-  });
+  .text("Devis", clientX, titleY, { width: clientW, align: "center" });
 
+// ---- draw client block
+const clientY = titleBaseY;
 doc.font("Helvetica").fontSize(9).fillColor(DARK);
-doc.text(clientLines.join("\n"), clientX, clientY, {
+doc.text(clientText, clientX, clientY, {
   width: clientW,
   align: "left",
   lineGap: 1.5,
 });
 
-// ✅ hauteur réelle du bloc client
-const clientH = doc.heightOfString(clientLines.join("\n"), {
-  width: clientW,
-  lineGap: 1.5,
-});
-
+// ✅ cursorY après le bloc client
 cursorY = clientY + clientH + 12;
 
 
@@ -782,7 +779,13 @@ const stopY = bottomY - 10; // ✅ garde une marge avant les blocs du bas
         cell(pu, cols[3].w, "right", boldRow, 8.7);
 
         cell(String(line.montantHt || ""), cols[4].w, "right", boldRow, 8.7);
-        cell(line.tva === "-" ? "-" : line.tva === "" ? "" : line.tva === null ? "" : String(line.tva), cols[5].w, "right", boldRow, 8.7);
+        const tvaTxt =
+  line.tva === "-" || line.tva === "" || line.tva === null || line.tva === undefined
+    ? (line.tva === "-" ? "-" : "")
+    : fmt2(line.tva);
+
+cell(tvaTxt, cols[5].w, "right", boldRow, 8.7);
+
 
         y += height;
       }
@@ -790,16 +793,25 @@ const stopY = bottomY - 10; // ✅ garde une marge avant les blocs du bas
       // -----------------------------
       // Mentions sous le tableau
       // -----------------------------
-      const mentions = String(docData.devisMentions || "").trim();
-      if (mentions) {
-        doc.font("Helvetica").fontSize(8).fillColor(DARK);
-        doc.text(mentions, left, y + 8, { width: contentW });
-      }
+     // -----------------------------
+// Mentions sous le tableau
+// -----------------------------
+let afterMentionsY = y;
 
-      // -----------------------------
-      // BAS DE PAGE (comme l’image)
-      // -----------------------------
-      const bottomY = pageH - 120;
+const mentions = String(docData.devisMentions || "").trim();
+if (mentions) {
+  doc.font("Helvetica").fontSize(8).fillColor(DARK);
+  doc.text(mentions, left, y + 6, { width: contentW });
+  afterMentionsY = y + 6 + doc.heightOfString(mentions, { width: contentW });
+}
+
+// -----------------------------
+// BAS DE PAGE (plus proche des mentions)
+// -----------------------------
+const minBottomY = pageH - 120;          // look par défaut
+const desiredBottomY = afterMentionsY + 10; // ✅ plus près
+const bottomY = Math.min(minBottomY, desiredBottomY);
+
 
       // TVA table (gauche)
       const t = docData.totals || { mensualiteHt: 0, totalTva: 0, totalTtc: 0 };
@@ -1019,13 +1031,23 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
   try {
     const agent = req.agent;
 
-    const {
-      client = {},
-      pitchInstances = [],
-      otherSelections = {},
-      validityDays = 30,
-      finalType = "location_maintenance",
-    } = req.body || {};
+    let {
+  client = {},
+  pitchInstances = [],
+  otherSelections = {},
+  validityDays = 30,
+  finalType = "location_maintenance",
+} = req.body || {};
+
+// ✅ fallback: si front n’envoie pas finalType, on prend celui du 1er pitch
+if (
+  (!finalType || finalType === "location_maintenance") &&
+  Array.isArray(pitchInstances) &&
+  pitchInstances[0]?.typeFinancement
+) {
+  finalType = String(pitchInstances[0].typeFinancement).trim() || finalType;
+}
+
 
     const hasPitch = Array.isArray(pitchInstances) && pitchInstances.length > 0;
     const hasOther = otherSelections && Object.keys(otherSelections).length > 0;
@@ -1075,11 +1097,26 @@ router.post("/devis/:id/pdf", requireAgentAuth, async (req, res) => {
     if (String(docData.agentId) !== String(agent._id))
       return res.status(403).json({ message: "Forbidden" });
 
-    const pdfBuffer = await generateColoredDevisPdfBuffer({ docData });
+    // const pdfBuffer = await generateColoredDevisPdfBuffer({ docData });
 
-    docData.pdfBuffer = pdfBuffer;
+    // docData.pdfBuffer = pdfBuffer;
+
+    const pdfBufferDevis = await generateColoredDevisPdfBuffer({ docData });
+
+// ✅ charge le CGV depuis le disque
+const cgvPath = path.join(__dirname, "..", "assets", "CGV-location-maintenance.pdf");
+const cgvBuffer = fs.readFileSync(cgvPath);
+
+// ✅ merge => devis + 3 pages CGV
+const mergedBuffer = await mergePdfBuffers(pdfBufferDevis, cgvBuffer);
+
+docData.pdfBuffer = mergedBuffer;
+
+
+
+
     docData.contentType = "application/pdf";
-    docData.pages = 1;
+    docData.pages = 4;
     await docData.save();
 
     return res.json({
