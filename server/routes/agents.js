@@ -655,10 +655,10 @@ cursorY = clientY + clientH + 12;
 
     const metaY = cursorY; // ✅ plus “collé”, dynamique
 
-      const metaH = 18;
-      const metaW = contentW * 0.5;
-      const metaX = left;
-      const colW = metaW / 3;
+    const metaH = 18;
+const metaX = left;
+const colW = metaW / 3;
+
 
      cursorY = metaY + metaH * 2 + 18; // ✅ espace sous meta
 
