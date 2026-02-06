@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { TOKEN_KEY, USER_KEY } from "./agentHome.helpers";
 import "./AgentHeader.css";
-import logo from "../../assets/Media4logo.png";
+
 
 
 export default function AgentHeader({ agent }) {
@@ -23,7 +23,8 @@ export default function AgentHeader({ agent }) {
       <div className="agentheader-inner">
         <Link to="/agent/home" className="agentheader-brand" aria-label="Media4">
           {/* Remplace par ton logo si tu en as un */}
-        <img className="agentheader-logo" src={logo} alt="MEDIA4" />
+       <img className="agentheader-logo" src="/Media4logo.png" alt="MEDIA4" />
+
 
         </Link>
 
