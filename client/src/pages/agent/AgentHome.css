@@ -1,12 +1,14 @@
 .agenthome-page{
   min-height:100vh;
   display:flex;
-  align-items:flex-start;
-  justify-content:center;
+  flex-direction:column;     /* ✅ important */
+  align-items:center;        /* centre la colonne */
+  justify-content:flex-start;
   background:#f6f7fb;
   padding:24px;
   font-family: Arial, Helvetica, sans-serif;
 }
+
 
 .agenthome-card{
   width: 420px;
@@ -214,12 +216,14 @@
 }
 
 .agenthome-pageTitle{
-  width: 760px;
-  font-size: 26px;
-  font-weight: 900;
+  width:760px;
+  text-align:left;           /* ✅ */
+  font-size:26px;
+  font-weight:900;
   color:#111;
-  margin: 0 auto 14px auto;
+  margin: 0 0 14px 0;        /* ✅ plus besoin de auto */
 }
+
 
 
 .agenthome-subcardTitle{
@@ -350,9 +354,9 @@
 .agenthome-headerRow{
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  gap:10px;          /* petit gap */
-  margin-bottom:10px; /* un peu plus serré */
+  justify-content:flex-start;  /* ✅ */
+  gap:6px;                     /* ✅ petit écart */
+  margin-bottom:10px;
 }
 
 .agenthome-userRow{

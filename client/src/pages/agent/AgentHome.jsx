@@ -288,12 +288,18 @@ export default function AgentHome() {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
         const active = list.filter((p) => p?.isActive !== false);
+const ORDER = ["murs leds", "totems", "kiosques", "ecrans muraux"];
 
-        const ORDER = ["Murs leds", "Totems", "Kiosques", "Ecrans muraux"];
+const norm = (s) =>
+  String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // enlève accents
 
 const sorted = active.slice().sort((a, b) => {
-  const an = String(a?.name || "");
-  const bn = String(b?.name || "");
+  const an = norm(a?.name);
+  const bn = norm(b?.name);
+
   const ai = ORDER.indexOf(an);
   const bi = ORDER.indexOf(bn);
 
@@ -307,7 +313,8 @@ setProducts(sorted);
 
 
 
-        setProducts(active);
+
+        
       } catch (e) {
         console.error(e);
         setError("Impossible de charger les produits.");
@@ -797,19 +804,12 @@ next.categorieId = selectedCategoryId;
       <div className="agenthome-card agenthome-card--wide">
 
 
- <div className="agenthome-headerRow">
-  <div className="agenthome-title">Bonjour</div>
-
-  {agent ? (
-    <div className="agenthome-userRow">
-      <strong className="agenthome-userName">
-        {agent.prenom} {agent.nom},
-      </strong>
-    </div>
-  ) : (
-    <div className="agenthome-muted">Chargement...</div>
-  )}
+<div className="agenthome-headerRow">
+  <div className="agenthome-title">
+    Bonjour {agent ? <strong>{agent.prenom} {agent.nom},</strong> : "…"}
+  </div>
 </div>
+
 
 
 
