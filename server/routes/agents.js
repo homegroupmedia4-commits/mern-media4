@@ -27,13 +27,20 @@ async function nextDevisNumberCounter4() {
   const r = await coll.findOneAndUpdate(
     { _id: "agent_devis" },
     { $inc: { seq: 1 } },
-    { upsert: true, returnDocument: "after" } // driver récent
+    {
+      upsert: true,
+      returnDocument: "after",
+      returnOriginal: false, // compat anciennes versions
+    }
   );
 
-  const seq = Number(r?.value?.seq || 1);
+  const doc = r?.value || r;
+  const seq = Number(doc?.seq || 1);
+
   const n4 = String(Math.max(1, seq)).padStart(4, "0");
   return `DE${n4}`;
 }
+
 
 
 function fmt2(n) {
@@ -104,10 +111,16 @@ async function buildLinesAndTotals({
     const code = pi.codeProduit || pi.code || "—";
 
     // Champs venant de PitchManager / UI
-    const nom = String(pi.name || pi.pitchName || "").trim(); // ex: "P2.6"
+   const nom = String(
+  pi.pitchLabel || pi.name || pi.pitchName || pi.pitchTitle || ""
+).trim();
+
     const dims = String(pi.dimensions || "").trim(); // ex: "500*500"
     const lumi = String(pi.luminosite || "").trim(); // ex: "4500cd/m2"
-    const cat = String(pi.categorieName || pi.categoryName || "").trim(); // ex: "Vitrine exposée rue ou événementiel (haute luminosité)"
+const cat = String(
+  pi.categorieName || pi.categoryName || pi.category || pi.categorie || ""
+).trim();
+
 
     const wM = pi.largeurM ? String(pi.largeurM).trim() : "";
     const hM = pi.hauteurM ? String(pi.hauteurM).trim() : "";
@@ -532,11 +545,28 @@ function generateColoredDevisPdfBuffer({ docData }) {
       doc.fontSize(9).text("Tél : 01.85.41.01.00", left, headerTopY + 40);
       doc.fontSize(9).text("Site web : www.media4.fr", left, headerTopY + 52);
 
+      // ✅ Y “après header” (on laisse respirer)
+let cursorY = headerTopY + 70;
+
+
       // -----------------------------
       // TITRE "Devis" centré
       // -----------------------------
-      const titleY = 64;
-      doc.font("Helvetica-Bold").fontSize(16).fillColor(DARK).text("Devis", 0, titleY, { align: "center" });
+      // -----------------------------
+// BLOC "DEVIS" + CLIENT (même zone verticale)
+// -----------------------------
+const titleY = cursorY;
+
+// Titre
+doc.font("Helvetica-Bold")
+  .fontSize(16)
+  .fillColor(DARK)
+  .text("Devis", 0, titleY, { align: "center" });
+
+// ✅ petit espace sous le titre (mais pas énorme)
+cursorY = titleY + 22;
+
+      // doc.font("Helvetica-Bold").fontSize(16).fillColor(DARK).text("Devis", 0, titleY, { align: "center" });
 
       // -----------------------------
       // BLOC CLIENT (droite, sous le titre comme l’image)
@@ -552,17 +582,29 @@ function generateColoredDevisPdfBuffer({ docData }) {
         (c.telephone || "").trim(),
       ].filter(Boolean);
 
-      doc.font("Helvetica").fontSize(9).fillColor(DARK);
-      doc.text(clientLines.join("\n"), left + contentW * 0.56, 86, {
-        width: contentW * 0.44,
-        align: "left",
-      });
+     const clientX = left + contentW * 0.56;
+const clientY = cursorY;
+
+doc.font("Helvetica").fontSize(9).fillColor(DARK);
+doc.text(clientLines.join("\n"), clientX, clientY, {
+  width: contentW * 0.44,
+  align: "left",
+    lineGap: 1.5,
+});
+
+// ✅ on mesure la hauteur pour placer la suite plus bas
+const clientH = doc.heightOfString(clientLines.join("\n"), {
+  width: contentW * 0.44,
+  lineGap: 1.5,
+});
+cursorY = clientY + clientH + 12; // ✅ espace sous bloc client
+
 
       // -----------------------------
       // TABLE META (Numéro / Date / Durée) à gauche (1/2 largeur)
       // -----------------------------
       const devisNumber = String(docData.devisNumber || "").trim(); // ex: "DE01048"
-      const num = devisNumber || "DE0001";
+      const num = devisNumber || "DE????";
       const dateStr = (() => {
         try {
           // si docData.createdAt existe, on l’utilise ; sinon date du jour
@@ -574,11 +616,15 @@ function generateColoredDevisPdfBuffer({ docData }) {
       })();
       const validity = `${docData.validityDays || 30} jours`;
 
-      const metaY = 118;
+    const metaY = cursorY; // ✅ plus “collé”, dynamique
+
       const metaH = 18;
       const metaW = contentW * 0.5;
       const metaX = left;
       const colW = metaW / 3;
+
+     cursorY = metaY + metaH * 2 + 18; // ✅ espace sous meta
+
 
       // header (✅ sans doublon)
       doc.save();
@@ -608,17 +654,18 @@ function generateColoredDevisPdfBuffer({ docData }) {
       // -----------------------------
       // TABLE LIGNES
       // -----------------------------
-      const tableY = metaY + 44;
-      const rowH = 18;
+      const tableY = cursorY;
+      const rowH = 22;
 
-      const cols = [
-        { key: "code", title: "Code", w: contentW * 0.14, align: "left" },
-        { key: "description", title: "Description", w: contentW * 0.50, align: "left" },
-        { key: "qty", title: "Qté", w: contentW * 0.08, align: "center" },
-        { key: "puHt", title: "P.U. HT", w: contentW * 0.12, align: "right" },
-        { key: "montantHt", title: "Montant HT", w: contentW * 0.12, align: "right" },
-        { key: "tva", title: "TVA", w: contentW * 0.04, align: "right" },
-      ];
+    const cols = [
+  { key: "code", title: "Code", w: contentW * 0.14, align: "left" },
+  { key: "description", title: "Description", w: contentW * 0.48, align: "left" },
+  { key: "qty", title: "Qté", w: contentW * 0.08, align: "center" },
+  { key: "puHt", title: "P.U. HT", w: contentW * 0.11, align: "right" },
+  { key: "montantHt", title: "Montant HT", w: contentW * 0.13, align: "right" },
+  { key: "tva", title: "TVA", w: contentW * 0.06, align: "right" }, // ✅ plus large
+];
+
 
       // header row
       let x = left;
@@ -628,7 +675,7 @@ function generateColoredDevisPdfBuffer({ docData }) {
       doc.rect(left, y, contentW, rowH).fill(GREEN).stroke();
       doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
       cols.forEach((cdef) => {
-        doc.text(cdef.title, x + 4, y + 5, { width: cdef.w - 8, align: cdef.align });
+        doc.text(cdef.title, x + 4, y + 7, { width: cdef.w - 8, align: cdef.align });
         x += cdef.w;
       });
       doc.restore();
@@ -641,10 +688,12 @@ function generateColoredDevisPdfBuffer({ docData }) {
         const isDetail = !!line.isDetail;
         const isInfo = !!line.isInfo;
 
-        const height = isDetail ? 30 : 22;
+        const height = isDetail ? 40 : 28;
 
         // garde un bas de page identique à l’image
-        const stopY = pageH - 150;
+       const bottomY = pageH - 120;
+const stopY = bottomY - 10; // ✅ garde une marge avant les blocs du bas
+
         if (y + height > stopY) break;
 
         // row border
@@ -658,12 +707,13 @@ function generateColoredDevisPdfBuffer({ docData }) {
         });
         doc.moveTo(left + contentW, y).lineTo(left + contentW, y + height).stroke();
 
-        const cell = (val, w, align = "left", bold = false, size = 8.7) => {
-          doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(size).fillColor(DARK);
-          const txt = val === null || val === undefined ? "" : String(val);
-          doc.text(txt, xx + 4, y + 5, { width: w - 8, align });
-          xx += w;
-        };
+     const cell = (val, w, align = "left", bold = false, size = 8.7) => {
+  doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(size).fillColor(DARK);
+  const txt = val === null || val === undefined ? "" : String(val);
+  doc.text(txt, xx + 4, y + 8, { width: w - 8, align, lineGap: 1.2 });
+  xx += w;
+};
+
 
         xx = left;
 
