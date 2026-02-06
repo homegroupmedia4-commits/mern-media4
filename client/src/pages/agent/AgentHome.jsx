@@ -9,6 +9,7 @@ import AgentHeader from "./AgentHeader";
 
 
 
+
 import {
   TOKEN_KEY,
   USER_KEY,
@@ -36,6 +37,8 @@ const DEFAULT_STATIC = normalizeStaticVals({
   prix_container: 150,
   prix_instal: 500,
 });
+
+
 
 
 
@@ -85,6 +88,8 @@ export default function AgentHome() {
 
   const [pitches, setPitches] = useState([]);
   const [loadingPitches, setLoadingPitches] = useState(false);
+  const [showAllPitches, setShowAllPitches] = useState(true);
+
 
   // instances de pitch sélectionnés (pour duplication)
   const [pitchInstances, setPitchInstances] = useState([]);
@@ -367,46 +372,85 @@ setSelectedCategoryId((prev) => {
     })();
   }, [API, showWalleds]);
 
-  // ---------------------------
-  // LOAD: Pitches par catégorie
-  // ---------------------------
   useEffect(() => {
-    if (!showWalleds) return;
+  if (!showWalleds) return;
 
-    // if (!selectedCategoryId) {
-    //   setPitches([]);
-    //   setPitchInstances([]);
-    //   setSelectedPitchIds([]);
-    //   return;
-    // }
+  (async () => {
+    setLoadingPitches(true);
+    setError("");
 
-    if (!selectedCategoryId) {
-  setPitches([]); // ✅ on masque juste la liste (pas les sélections)
-  return;
-}
+    try {
+      // ✅ MODE 1 : au chargement -> on affiche tous les pitches
+      if (showAllPitches) {
+        const categoryIds = (categories || [])
+          .filter((c) => c?._id && c?.isActive !== false)
+          .map((c) => String(c._id));
 
+        if (!categoryIds.length) {
+          setPitches([]);
+          return;
+        }
 
-    (async () => {
-      setLoadingPitches(true);
-      setError("");
-      try {
-        const list = await loadPitchesByCategory({
-          API,
-          categoryId: selectedCategoryId,
-          productId: wallLedsProductId,
-        });
+        const results = await Promise.all(
+          categoryIds.map((cid) =>
+            loadPitchesByCategory({
+              API,
+              categoryId: cid,
+              productId: wallLedsProductId,
+            }).then((list) => ({ cid, list: Array.isArray(list) ? list : [] }))
+          )
+        );
 
-        const active = list.filter((p) => p?.isActive !== false);
-        setPitches(active);
-      } catch (e) {
-        console.error(e);
-        setError("Impossible de charger les pitches (vérifie ton endpoint /api/pitches).");
-        setPitches([]);
-      } finally {
-        setLoadingPitches(false);
+        // concat + tag catégorie (utile si tu veux afficher le nom)
+        const merged = results.flatMap(({ cid, list }) =>
+          list
+            .filter((p) => p?.isActive !== false)
+            .map((p) => ({ ...p, __categoryId: cid }))
+        );
+
+        // dédoublonnage par _id
+        const map = new Map();
+        for (const p of merged) {
+          const id = String(p?._id || p?.id || "");
+          if (!id) continue;
+          if (!map.has(id)) map.set(id, p);
+        }
+
+        setPitches(Array.from(map.values()));
+        return;
       }
-    })();
-  }, [API, showWalleds, selectedCategoryId, wallLedsProductId]);
+
+      // ✅ MODE 2 : après changement du select -> on filtre
+      if (!selectedCategoryId) {
+        setPitches([]);
+        return;
+      }
+
+      const list = await loadPitchesByCategory({
+        API,
+        categoryId: selectedCategoryId,
+        productId: wallLedsProductId,
+      });
+
+      setPitches((Array.isArray(list) ? list : []).filter((p) => p?.isActive !== false));
+    } catch (e) {
+      console.error(e);
+      setError("Impossible de charger les pitches (vérifie ton endpoint /api/pitches).");
+      setPitches([]);
+    } finally {
+      setLoadingPitches(false);
+    }
+  })();
+}, [
+  API,
+  showWalleds,
+  showAllPitches,        // ✅ important
+  selectedCategoryId,
+  categories,            // ✅ important (pour load all)
+  wallLedsProductId,
+]);
+
+
 
   // ---------------------------
   // LOAD: finishes + fixations + durations
@@ -849,10 +893,14 @@ next.categorieId = selectedCategoryId;
             <div className="agenthome-sectionTitle">Type d’écrans :</div>
 
             <div className="agenthome-selectRow">
+
               <select
                 className="agenthome-select"
                 value={selectedCategoryId}
-                onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  onChange={(e) => {
+    setSelectedCategoryId(e.target.value);
+    setShowAllPitches(false); // ✅ dès qu'il change -> on filtre
+  }}
                 disabled={loadingCategories}
               >
 
@@ -897,6 +945,10 @@ next.categorieId = selectedCategoryId;
                         pitch?.reference ||
                         "";
 
+                        const catName =
+  categories.find((c) => String(c._id) === String(pitch.__categoryId))?.name || "";
+
+
                       return (
                         <label key={id} className="agenthome-check agenthome-check--pitch">
                           <input
@@ -914,6 +966,14 @@ next.categorieId = selectedCategoryId;
     const meta = [dimensions, luminosite, codeProduit].filter(Boolean).join(", ");
     return meta ? `${name} (${meta})` : name;
   })()}
+
+    {showAllPitches && catName ? (
+    <span className="agenthome-catBadge" style={{ marginLeft: 8 }}>
+      {catName}
+    </span>
+  ) : null}
+
+
   {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
 </span>
 
