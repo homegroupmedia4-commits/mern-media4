@@ -1,9 +1,14 @@
+// client/src/pages/agent/AgentRegister.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./AgentRegister.css";
 
 const TOKEN_KEY = "agent_token_v1";
 const USER_KEY = "agent_user_v1";
+
+// 🔒 Gate (mot de passe requis pour accéder à la page)
+const GATE_SESSION_KEY = "agent_register_gate_ok_v1";
+const GATE_PASSWORD = "Medi@91?devis";
 
 export default function AgentRegister() {
   const navigate = useNavigate();
@@ -13,6 +18,49 @@ export default function AgentRegister() {
     []
   );
 
+  // -----------------------------
+  // 🔒 Gate state
+  // -----------------------------
+  const [gateOk, setGateOk] = useState(false);
+  const [gatePwd, setGatePwd] = useState("");
+  const [gateError, setGateError] = useState("");
+
+  useEffect(() => {
+    try {
+      const ok = sessionStorage.getItem(GATE_SESSION_KEY) === "1";
+      setGateOk(ok);
+    } catch {
+      setGateOk(false);
+    }
+  }, []);
+
+  const submitGate = (e) => {
+    e.preventDefault();
+    setGateError("");
+
+    if (gatePwd === GATE_PASSWORD) {
+      try {
+        sessionStorage.setItem(GATE_SESSION_KEY, "1");
+      } catch {}
+      setGateOk(true);
+      setGatePwd("");
+      return;
+    }
+    setGateError("Mot de passe incorrect.");
+  };
+
+  const logoutGate = () => {
+    try {
+      sessionStorage.removeItem(GATE_SESSION_KEY);
+    } catch {}
+    setGateOk(false);
+    setGatePwd("");
+    setGateError("");
+  };
+
+  // -----------------------------
+  // Form state
+  // -----------------------------
   const [parrains, setParrains] = useState([]);
   const [loadingParrains, setLoadingParrains] = useState(true);
 
@@ -55,9 +103,10 @@ export default function AgentRegister() {
   };
 
   useEffect(() => {
+    if (!gateOk) return;
     loadParrains();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [gateOk]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -86,7 +135,6 @@ export default function AgentRegister() {
       navigate("/agent/home");
     } catch (e2) {
       console.error(e2);
-      // essaye de lire message JSON
       try {
         const parsed = JSON.parse(String(e2.message || ""));
         setError(parsed?.message || "Inscription impossible.");
@@ -98,10 +146,54 @@ export default function AgentRegister() {
     }
   };
 
+  // -----------------------------
+  // 🔒 Gate UI
+  // -----------------------------
+  if (!gateOk) {
+    return (
+      <div className="agent-page">
+        <div className="agent-card">
+          <div className="agent-title">Accès protégé</div>
+
+          <form onSubmit={submitGate} className="agent-form">
+            <div className="field" style={{ width: "100%" }}>
+              <label>Mot de passe</label>
+              <input
+                value={gatePwd}
+                onChange={(e) => setGatePwd(e.target.value)}
+                type="password"
+                placeholder="Saisir le mot de passe"
+                autoFocus
+              />
+            </div>
+
+            {gateError ? <div className="agent-error">{gateError}</div> : null}
+
+            <button className="agent-btn" type="submit">
+              Accéder
+            </button>
+
+            <div className="agent-foot">
+              <Link to="/agent/login">Retour</Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // -----------------------------
+  // Register UI
+  // -----------------------------
   return (
     <div className="agent-page">
       <div className="agent-card">
-        <div className="agent-title">Inscription</div>
+        <div className="agent-title" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <span>Inscription</span>
+          <button type="button" className="btn" onClick={logoutGate} title="Verrouiller la page">
+            Verrouiller
+          </button>
+        </div>
 
         <form onSubmit={submit} className="agent-form">
           {/* Row 1 */}
@@ -183,7 +275,7 @@ export default function AgentRegister() {
             </div>
           </div>
 
-          {/* Row 6 bis (optionnel fixe) */}
+          {/* Row 6 bis */}
           <div className="row">
             <div className="field">
               <label>Téléphone fixe</label>

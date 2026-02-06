@@ -30,7 +30,7 @@
 
 .row{
   display:flex;
-  gap: 18px;
+  gap: 68px;
   flex-wrap:wrap;
 }
 
@@ -50,7 +50,7 @@ label{
 }
 
 input, select{
-  width: 300px;
+  width: 340px;
   height: 40px;
   border: 1px solid #d8dbe6;
   border-radius: 10px;
