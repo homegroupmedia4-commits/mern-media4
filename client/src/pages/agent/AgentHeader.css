@@ -57,6 +57,12 @@
   border-top:1px solid #f0f2f7;
   background:#fff;
 }
+.agentheader-logo{
+  height: 26px;
+  width: auto;
+  display: block;
+}
+
 
 .agentheader-subinner{
   max-width: 1200px;

@@ -754,20 +754,21 @@ next.categorieId = selectedCategoryId;
 
 
       <div className="agenthome-card agenthome-card--wide">
-        <div className="agenthome-title">Bonjour</div>
+        <div className="agenthome-headerRow">
+  <div className="agenthome-title">Bonjour</div>
 
-        {agent ? (
-          <div className="agenthome-text">
-            <div>
-              <strong>
-                {agent.prenom} {agent.nom}
-              </strong>
-            </div>
-            <div>{agent.email}</div>
-          </div>
-        ) : (
-          <div className="agenthome-text">Chargement...</div>
-        )}
+  {agent ? (
+    <div className="agenthome-userRow">
+      <strong className="agenthome-userName">
+        {agent.prenom} {agent.nom}
+      </strong>
+   
+    </div>
+  ) : (
+    <div className="agenthome-muted">Chargement...</div>
+  )}
+</div>
+
 
         {/* --------- Produits --------- */}
         <div className="agenthome-section">
@@ -1442,15 +1443,7 @@ next.categorieId = selectedCategoryId;
 
         {error ? <div className="agenthome-error">{error}</div> : null}
 
-        <div className="agenthome-actions">
-          <button className="agenthome-btn" type="button" onClick={logout}>
-            Déconnexion
-          </button>
-
-          <Link className="agenthome-link" to="/agent/login">
-            Retour login
-          </Link>
-        </div>
+       
 
         {loadingRefs ? <div className="agenthome-muted">Chargement des référentiels…</div> : null}
           </div>

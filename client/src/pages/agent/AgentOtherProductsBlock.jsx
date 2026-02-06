@@ -333,24 +333,25 @@ const checkedActive = sel.byMonths?.[activeMonths]?.checked || {};
 
             <div className="agenthome-muted" style={{ marginBottom: 8 }}>
               {productName}
-            </div>
+            </div><div className="agenthome-selectCol">
+  <label className="agenthome-label">
+    Durée de leasing :
+  </label>
 
-            <div className="agenthome-selectRow">
-              <label style={{ marginRight: 8, fontWeight: 600 }}>Durée de leasing :</label>
+  <select
+    className="agenthome-select"
+    value={sel.leasingMonths}
+    onChange={(e) => setOtherLeasingMonths(productId, e.target.value)}
+    disabled={loadingDur}
+  >
+    {durationOptions.map((d) => (
+      <option key={d._id || d.months} value={String(d.months)}>
+        {d.months} mois
+      </option>
+    ))}
+  </select>
+</div>
 
-              <select
-                className="agenthome-select"
-                value={sel.leasingMonths}
-                onChange={(e) => setOtherLeasingMonths(productId, e.target.value)}
-                disabled={loadingDur}
-              >
-                {durationOptions.map((d) => (
-                  <option key={d._id || d.months} value={String(d.months)}>
-                    {d.months} mois
-                  </option>
-                ))}
-              </select>
-            </div>
 
             {loadingOtherSizes ? (
               <div className="agenthome-muted">Chargement des tailles…</div>

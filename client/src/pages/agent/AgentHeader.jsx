@@ -1,6 +1,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { TOKEN_KEY, USER_KEY } from "./agentHome.helpers";
 import "./AgentHeader.css";
+import logo from "../../assets/Media4logo.png";
+
 
 export default function AgentHeader({ agent }) {
   const location = useLocation();
@@ -21,7 +23,8 @@ export default function AgentHeader({ agent }) {
       <div className="agentheader-inner">
         <Link to="/agent/home" className="agentheader-brand" aria-label="Media4">
           {/* Remplace par ton logo si tu en as un */}
-          <span className="agentheader-logo">MEDIA4</span>
+        <img className="agentheader-logo" src={logo} alt="MEDIA4" />
+
         </Link>
 
         <nav className="agentheader-nav">
@@ -64,10 +67,7 @@ export default function AgentHeader({ agent }) {
       {agent ? (
         <div className="agentheader-sub">
           <div className="agentheader-subinner">
-            <span className="agentheader-hello">
-              Bonjour <strong>{agent.prenom} {agent.nom}</strong>
-            </span>
-            <span className="agentheader-email">{agent.email}</span>
+            
           </div>
         </div>
       ) : null}
