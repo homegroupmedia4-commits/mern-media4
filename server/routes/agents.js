@@ -1086,7 +1086,7 @@ if (
       pages: 1,
     });
 
-    return res.json({ ok: true, devisId: saved._id });
+    return res.json({ ok: true, devisId: saved._id, devisNumber });
    } catch (e) {
     console.error("SAVE DEVIS ERROR:", e?.message);
     console.error(e?.stack);

@@ -8,6 +8,7 @@ import AgentHeader from "./AgentHeader";
 
 
 
+
 import {
   TOKEN_KEY,
   USER_KEY,
@@ -47,6 +48,12 @@ export default function AgentHome() {
     () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
     []
   );
+
+  const DEFAULT_CATEGORY_NAME = "Exterieur fixe haute luminosité";
+
+
+  const [lastDevisNumber, setLastDevisNumber] = useState("");
+
 
   const [staticVals, setStaticVals] = useState(() => DEFAULT_STATIC);
 
@@ -150,6 +157,9 @@ export default function AgentHome() {
       if (!saveRes.ok) throw new Error(await saveRes.text());
       const saveData = await saveRes.json();
       const devisId = saveData.devisId;
+
+      setLastDevisNumber(saveData.devisNumber || "");
+
 
       // 2) Generate colored PDF
       const pdfRes = await fetch(`${API}/api/agents/devis/${devisId}/pdf`, {
@@ -278,6 +288,25 @@ export default function AgentHome() {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
         const active = list.filter((p) => p?.isActive !== false);
+
+        const ORDER = ["Murs leds", "Totems", "Kiosques", "Ecrans muraux"];
+
+const sorted = active.slice().sort((a, b) => {
+  const an = String(a?.name || "");
+  const bn = String(b?.name || "");
+  const ai = ORDER.indexOf(an);
+  const bi = ORDER.indexOf(bn);
+
+  if (ai === -1 && bi === -1) return an.localeCompare(bn);
+  if (ai === -1) return 1;
+  if (bi === -1) return -1;
+  return ai - bi;
+});
+
+setProducts(sorted);
+
+
+
         setProducts(active);
       } catch (e) {
         console.error(e);
@@ -311,6 +340,17 @@ export default function AgentHome() {
         const list = Array.isArray(data) ? data : [];
         const active = list.filter((c) => c?.isActive !== false);
         setCategories(active);
+
+        // ✅ auto-select catégorie par défaut (si pas déjà sélectionnée)
+setSelectedCategoryId((prev) => {
+  if (prev) return prev;
+
+  const preferred = active.find((c) => String(c?.name || "") === DEFAULT_CATEGORY_NAME);
+  return preferred?._id || active?.[0]?._id || "";
+});
+
+
+
       } catch (e) {
         console.error(e);
         setError("Impossible de charger les catégories.");
@@ -751,23 +791,26 @@ next.categorieId = selectedCategoryId;
     <div className="agenthome-page">
 
        
+<div className="agenthome-pageTitle">Demande de devis</div>
 
 
       <div className="agenthome-card agenthome-card--wide">
-        <div className="agenthome-headerRow">
+
+
+ <div className="agenthome-headerRow">
   <div className="agenthome-title">Bonjour</div>
 
   {agent ? (
     <div className="agenthome-userRow">
       <strong className="agenthome-userName">
-        {agent.prenom} {agent.nom}
+        {agent.prenom} {agent.nom},
       </strong>
-   
     </div>
   ) : (
     <div className="agenthome-muted">Chargement...</div>
   )}
 </div>
+
 
 
         {/* --------- Produits --------- */}
@@ -812,9 +855,11 @@ next.categorieId = selectedCategoryId;
                 onChange={(e) => setSelectedCategoryId(e.target.value)}
                 disabled={loadingCategories}
               >
-                <option value="">
-                  {loadingCategories ? "Chargement..." : "Choisir une catégorie"}
-                </option>
+
+               {loadingCategories ? <option value="">Chargement...</option> : null}
+
+
+
                 {categories.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
@@ -1425,20 +1470,14 @@ next.categorieId = selectedCategoryId;
         <div className="agenthome-block">
        
 
-          <button
-            className="agenthome-btn"
-            type="button"
-            onClick={submitPdf}
-            disabled={savingPdf}
-          >
-            {savingPdf ? "Génération..." : "Valider & Générer PDF"}
-          </button> 
+         {pdfUrl ? (
+  <a className="agenthome-pdf" href={pdfUrl} target="_blank" rel="noreferrer">
+    {`Télécharger le pdf - ${lastDevisNumber || "DE----"}`}
+  </a>
+) : null}
 
-           {pdfUrl ? (
-            <a className="agenthome-pdf" href={pdfUrl} target="_blank" rel="noreferrer">
-              Ouvrir le PDF
-            </a>
-          ) : null}
+
+          
         </div>
 
         {error ? <div className="agenthome-error">{error}</div> : null}

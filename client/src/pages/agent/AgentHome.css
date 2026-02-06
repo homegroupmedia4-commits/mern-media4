@@ -23,7 +23,7 @@
 .agenthome-title{
   font-size: 18px;
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 0px;
 }
 
 .agenthome-text{
@@ -213,6 +213,15 @@
   background:#fbfcff;
 }
 
+.agenthome-pageTitle{
+  width: 760px;
+  font-size: 26px;
+  font-weight: 900;
+  color:#111;
+  margin: 0 auto 14px auto;
+}
+
+
 .agenthome-subcardTitle{
   font-size: 14px;
   font-weight: 800;
@@ -342,8 +351,8 @@
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:16px;
-  margin-bottom:16px;
+  gap:10px;          /* petit gap */
+  margin-bottom:10px; /* un peu plus serré */
 }
 
 .agenthome-userRow{
