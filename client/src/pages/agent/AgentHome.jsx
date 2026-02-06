@@ -439,15 +439,35 @@ setPitchInstances((prev) =>
 
       if (has) {
         setPitchInstances((inst) => inst.filter((pi) => pi.pitchId !== id));
-      } else {
+
+        
+      } 
+      
+      else {
+
+        const categorieName =
+    categories.find((c) => String(c._id) === String(selectedCategoryId))?.name || "";
+
+
         setPitchInstances((inst) => [
           ...inst,
-          createDefaultPitchInstance({ pitch, durations }),
+
+           {
+      ...createDefaultPitchInstance({ pitch, durations }),
+      categorieId: selectedCategoryId,     // ✅ utile
+      categorieName,                       // ✅ indispensable pour le PDF
+    },
+
         ]);
+
+
       }
       return next;
     });
   };
+
+
+  
 
   const updatePitchInstance = (instanceId, patch) => {
     setPitchInstances((prev) =>
@@ -481,6 +501,10 @@ setPitchInstances((prev) =>
           staticVals,
           categorieName,
         });
+
+        next.categorieName = categorieName;
+next.categorieId = selectedCategoryId;
+
 
         return {
           ...next,

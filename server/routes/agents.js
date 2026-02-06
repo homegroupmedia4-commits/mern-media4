@@ -561,7 +561,7 @@ const titleY = cursorY;
 doc.font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text("Devis", 0, titleY, { align: "center" });
+  // .text("Devis", 0, titleY, { align: "center" });
 
 // ✅ petit espace sous le titre (mais pas énorme)
 cursorY = titleY + 22;
@@ -584,6 +584,16 @@ cursorY = titleY + 22;
 
      const clientX = left + contentW * 0.56;
 const clientY = cursorY;
+
+// ✅ Titre "Devis" aligné au bloc client (à droite)
+doc.font("Helvetica-Bold")
+  .fontSize(16)
+  .fillColor(DARK)
+  .text("Devis", clientX, titleY, {
+    width: contentW * 0.44,
+    align: "center",
+  });
+
 
 doc.font("Helvetica").fontSize(9).fillColor(DARK);
 doc.text(clientLines.join("\n"), clientX, clientY, {
