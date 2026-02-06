@@ -5,7 +5,6 @@ const fmtDate = (iso) => {
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
-    // yyyy-mm-dd hh:mm:ss
     return d.toISOString().replace("T", " ").slice(0, 19);
   } catch {
     return "";
@@ -20,8 +19,18 @@ const money = (n) => {
   return x.toFixed(2);
 };
 
+// ✅ essaie plusieurs clés (selon ton app)
+function getAuthToken() {
+  return (
+    localStorage.getItem("agent_token_v1") ||
+    localStorage.getItem("admin_token_v1") ||
+    localStorage.getItem("token") ||
+    ""
+  );
+}
+
 export default function AdminNosDevis({ API }) {
-  const [tab, setTab] = useState("murs_leds"); // "murs_leds" | "autres_produits"
+  const [tab, setTab] = useState("murs_leds");
   const [q, setQ] = useState("");
   const [agentId, setAgentId] = useState("");
 
@@ -30,16 +39,19 @@ export default function AdminNosDevis({ API }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // UI table (client-side sort + pagination)
   const [sortKey, setSortKey] = useState("createdAt");
-  const [sortDir, setSortDir] = useState("desc"); // "asc" | "desc"
+  const [sortDir, setSortDir] = useState("desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
+  const authHeaders = () => {
+    const token = getAuthToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const toggleSort = (key) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
       setSortKey(key);
       setSortDir("asc");
     }
@@ -48,13 +60,15 @@ export default function AdminNosDevis({ API }) {
 
   const loadAgents = async () => {
     try {
-      const res = await fetch(`${API}/api/agents/agents-lite`);
+      // ✅ on met le header sinon 401 si tu protèges aussi ce endpoint
+      const res = await fetch(`${API}/api/agents/agents-lite`, {
+        headers: { ...authHeaders() },
+      });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setAgents(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
-      // non bloquant
       setAgents([]);
     }
   };
@@ -68,13 +82,26 @@ export default function AdminNosDevis({ API }) {
         `&q=${encodeURIComponent(q)}` +
         `&agentId=${encodeURIComponent(agentId)}`;
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(await res.text());
+      const res = await fetch(url, {
+        headers: { ...authHeaders() },
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        // ✅ message clair si token manquant/expiré
+        if (res.status === 401) throw new Error("401");
+        throw new Error(txt);
+      }
+
       const data = await res.json();
       setRows(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
-      setError("Impossible de charger les devis.");
+      if (String(e?.message) === "401") {
+        setError("Non autorisé. Connecte-toi (token manquant/expiré).");
+      } else {
+        setError("Impossible de charger les devis.");
+      }
       setRows([]);
     } finally {
       setLoading(false);
@@ -86,14 +113,12 @@ export default function AdminNosDevis({ API }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // reload on tab/agent
   useEffect(() => {
     setPage(1);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, agentId]);
 
-  // reload “debounce light” sur search
   useEffect(() => {
     setPage(1);
     const t = setTimeout(() => load(), 250);
@@ -101,15 +126,16 @@ export default function AdminNosDevis({ API }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
+  // ✅ PDF dans un nouvel onglet : on passe le token en query
   const openPdf = (id) => {
-    window.open(`${API}/api/agents/devis/${id}/pdf`, "_blank", "noopener,noreferrer");
+    const token = getAuthToken();
+    const url = token
+      ? `${API}/api/agents/devis/${id}/pdf?token=${encodeURIComponent(token)}`
+      : `${API}/api/agents/devis/${id}/pdf`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  // -----------------------------
-  // Build rows view
-  // -----------------------------
   const mursRows = useMemo(() => {
-    // 1 devis -> 1 ligne par pitch instance
     const out = [];
     for (const d of rows) {
       const list = Array.isArray(d.pitchInstances) ? d.pitchInstances : [];
@@ -118,12 +144,9 @@ export default function AdminNosDevis({ API }) {
       for (const pi of list) {
         const agentName = [d.agentSnapshot?.prenom, d.agentSnapshot?.nom].filter(Boolean).join(" ");
         out.push({
-          _rowType: "murs",
           devisId: d._id,
           devisNumber: d.devisNumber,
           createdAt: d.createdAt,
-          agentEmail: d.agentSnapshot?.email || "",
-          agentName,
           agentDisplay: d.agentSnapshot?.email || agentName || "",
           client: d.client || {},
           pi: pi || {},
@@ -134,7 +157,6 @@ export default function AdminNosDevis({ API }) {
   }, [rows]);
 
   const otherRows = useMemo(() => {
-    // 1 devis -> 1 ligne par taille cochée
     const out = [];
     for (const d of rows) {
       const sel = d.otherSelections || {};
@@ -149,12 +171,9 @@ export default function AdminNosDevis({ API }) {
           const line = checked[rowId] || {};
           const agentName = [d.agentSnapshot?.prenom, d.agentSnapshot?.nom].filter(Boolean).join(" ");
           out.push({
-            _rowType: "other",
             devisId: d._id,
             devisNumber: d.devisNumber,
             createdAt: d.createdAt,
-            agentEmail: d.agentSnapshot?.email || "",
-            agentName,
             agentDisplay: d.agentSnapshot?.email || agentName || "",
             client: d.client || {},
             productId: pid,
@@ -162,7 +181,6 @@ export default function AdminNosDevis({ API }) {
             leasingMonths,
             memId: line.memId || "",
             qty: line.qty || 1,
-            // si jamais ton backend les inclut déjà (sinon "—" affiché)
             unitPrice: line.unitPrice,
             totalPrice: line.totalPrice,
             sizeInches: line.sizeInches,
@@ -175,9 +193,6 @@ export default function AdminNosDevis({ API }) {
     return out;
   }, [rows]);
 
-  // -----------------------------
-  // Sort + paginate (client-side)
-  // -----------------------------
   const sortedMursRows = useMemo(() => {
     const arr = [...mursRows];
     const dir = sortDir === "asc" ? 1 : -1;
@@ -192,8 +207,6 @@ export default function AdminNosDevis({ API }) {
           return String(r.agentDisplay || "");
         case "clientEmail":
           return String(c.email || "");
-        case "clientNom":
-          return String(c.nom || "");
         case "createdAt":
           return String(r.createdAt || "");
         case "pitchLabel":
@@ -232,8 +245,6 @@ export default function AdminNosDevis({ API }) {
           return String(r.agentDisplay || "");
         case "clientEmail":
           return String(c.email || "");
-        case "clientNom":
-          return String(c.nom || "");
         case "createdAt":
           return String(r.createdAt || "");
         case "rowId":
@@ -281,36 +292,18 @@ export default function AdminNosDevis({ API }) {
       </div>
 
       <div className="subtabs" style={{ marginBottom: 12 }}>
-        <button
-          className={`subtab ${tab === "murs_leds" ? "active" : ""}`}
-          type="button"
-          onClick={() => setTab("murs_leds")}
-        >
+        <button className={`subtab ${tab === "murs_leds" ? "active" : ""}`} type="button" onClick={() => setTab("murs_leds")}>
           Murs leds
         </button>
-        <button
-          className={`subtab ${tab === "autres_produits" ? "active" : ""}`}
-          type="button"
-          onClick={() => setTab("autres_produits")}
-        >
+        <button className={`subtab ${tab === "autres_produits" ? "active" : ""}`} type="button" onClick={() => setTab("autres_produits")}>
           Autres produits
         </button>
       </div>
 
       <div className="page-actions" style={{ marginBottom: 12, gap: 10 }}>
-        <input
-          className="input"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Rechercher (code devis, email, nom, société...)"
-        />
+        <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher (code devis, email, nom, société...)" />
 
-        <select
-          className="input"
-          value={agentId}
-          onChange={(e) => setAgentId(e.target.value)}
-          title="Filtrer par utilisateur"
-        >
+        <select className="input" value={agentId} onChange={(e) => setAgentId(e.target.value)} title="Filtrer par utilisateur">
           <option value="">Tous les utilisateurs</option>
           {agents.map((a) => (
             <option key={a._id} value={a._id}>
@@ -357,14 +350,12 @@ export default function AdminNosDevis({ API }) {
                     Catégorie {sortKey === "resolutionLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
                   <th>Code produit</th>
-
                   <th style={{ cursor: "pointer" }} onClick={() => toggleSort("agent")}>
                     Utilisateur {sortKey === "agent" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
                   <th style={{ cursor: "pointer" }} onClick={() => toggleSort("createdAt")}>
                     Date et heure {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
-
                   <th>Nom</th>
                   <th>Prénom</th>
                   <th>Société</th>
@@ -376,7 +367,6 @@ export default function AdminNosDevis({ API }) {
                     Email {sortKey === "clientEmail" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
                   <th>Commentaires</th>
-
                   <th style={{ cursor: "pointer" }} onClick={() => toggleSort("surfaceM2")}>
                     Surface (m²) {sortKey === "surfaceM2" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
@@ -451,7 +441,6 @@ export default function AdminNosDevis({ API }) {
                   <th style={{ cursor: "pointer" }} onClick={() => toggleSort("devisNumber")}>
                     Code devis {sortKey === "devisNumber" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
-
                   <th style={{ cursor: "pointer" }} onClick={() => toggleSort("rowId")}>
                     Taille sélectionnée {sortKey === "rowId" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
@@ -463,20 +452,16 @@ export default function AdminNosDevis({ API }) {
                   <th style={{ cursor: "pointer" }} onClick={() => toggleSort("totalPrice")}>
                     Total {sortKey === "totalPrice" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
-
                   <th>Taille (pouces)</th>
                   <th>Durée leasing (mois)</th>
                   <th>Prix associé</th>
-
                   <th>Commentaires</th>
-
                   <th style={{ cursor: "pointer" }} onClick={() => toggleSort("agent")}>
                     Utilisateur {sortKey === "agent" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
                   <th style={{ cursor: "pointer" }} onClick={() => toggleSort("createdAt")}>
                     Date {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                   </th>
-
                   <th>Action</th>
                 </tr>
               </thead>
@@ -487,19 +472,15 @@ export default function AdminNosDevis({ API }) {
                   return (
                     <tr key={`${r.devisId}_${r.productId}_${r.rowId}`}>
                       <td>{r.devisNumber || "—"}</td>
-
                       <td>{r.rowId || "—"}</td>
                       <td>{r.memoryLabel || r.memId || "—"}</td>
                       <td>{r.unitPrice != null ? `${money(r.unitPrice)} €` : "—"}</td>
                       <td>{r.qty ?? 1}</td>
                       <td>{r.totalPrice != null ? `${money(r.totalPrice)} €` : "—"}</td>
-
                       <td>{r.sizeInches != null ? r.sizeInches : "—"}</td>
                       <td>{r.leasingMonths || "—"} mois</td>
                       <td>{r.priceLabel || "—"}</td>
-
                       <td>{c.commentaires || "—"}</td>
-
                       <td>{r.agentDisplay || "—"}</td>
                       <td>{fmtDate(r.createdAt)}</td>
                       <td>
@@ -526,10 +507,7 @@ export default function AdminNosDevis({ API }) {
 
       {!loading ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 12 }}>
-          <div className="muted">
-            {total === 0 ? "0 résultat" : `${start + 1}-${Math.min(end, total)} sur ${total} résultat(s)`}
-          </div>
-
+          <div className="muted">{total === 0 ? "0 résultat" : `${start + 1}-${Math.min(end, total)} sur ${total} résultat(s)`}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button className="btn" type="button" disabled={safePage <= 1} onClick={() => setPage(1)}>
               «
@@ -537,17 +515,10 @@ export default function AdminNosDevis({ API }) {
             <button className="btn" type="button" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
               Préc.
             </button>
-
             <div className="muted">
               Page {safePage} / {totalPages}
             </div>
-
-            <button
-              className="btn"
-              type="button"
-              disabled={safePage >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
+            <button className="btn" type="button" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
               Suiv.
             </button>
             <button className="btn" type="button" disabled={safePage >= totalPages} onClick={() => setPage(totalPages)}>

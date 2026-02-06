@@ -969,21 +969,28 @@ function generate5PagePdfBuffer({ texte, agent }) {
     }
   });
 }
-// ✅ LISTE devis (agent connecté uniquement)
+// ✅ LISTE devis (agent ou superadmin)
 router.get("/devis", requireAgentAuth, async (req, res) => {
   try {
-    const { tab = "all", q = "" } = req.query;
+    const { tab = "all", q = "", agentId = "" } = req.query;
 
-    // ✅ force l’agent connecté
-    const query = { agentId: req.agent._id };
+    const isAdmin = ["admin", "superadmin"].includes(String(req.agent.role || ""));
+
+    // ✅ superadmin => voit tout (ou filtre agentId si fourni)
+    // ✅ agent normal => voit seulement ses devis
+    const query = isAdmin
+      ? (agentId ? { agentId } : {})
+      : { agentId: req.agent._id };
 
     // filtre tab
     if (tab === "murs_leds") query.pitchInstances = { $exists: true, $not: { $size: 0 } };
-    if (tab === "autres_produits")
+
+    if (tab === "autres_produits") {
       query.$or = [
         { pitchInstances: { $exists: false } },
         { pitchInstances: { $size: 0 } },
       ];
+    }
 
     // recherche
     const s = String(q || "").trim();
@@ -1007,18 +1014,23 @@ router.get("/devis", requireAgentAuth, async (req, res) => {
 
 
 // ✅ Liste agents pour filtre “Tous les utilisateurs”
-router.get("/agents-lite", async (req, res) => {
+router.get("/agents-lite", requireAgentAuth, async (req, res) => {
   try {
+    const isAdmin = ["admin", "superadmin"].includes(String(req.agent.role || ""));
+    if (!isAdmin) return res.status(403).json({ message: "Forbidden" });
+
     const agents = await Agent.find({})
       .select("_id nom prenom email")
       .sort({ createdAt: -1 })
       .lean();
+
     res.json(agents);
   } catch (e) {
     console.error(e);
     res.status(500).send("Erreur serveur (agents-lite).");
   }
 });
+
 
 
 // ✅ POST /api/agents/devis (enregistrer devis JSON)
