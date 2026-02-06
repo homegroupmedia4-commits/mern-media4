@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./AgentHome.css";
 import AgentOtherProductsBlock from "./AgentOtherProductsBlock";
+import AgentHeader from "./AgentHeader";
+
 
 
 
@@ -740,9 +742,15 @@ next.categorieId = selectedCategoryId;
 
 
   return (
+
+   
  
   
     <div className="agenthome-page">
+
+        <AgentHeader agent={agent} />
+
+        
       <div className="agenthome-card agenthome-card--wide">
         <div className="agenthome-title">Bonjour</div>
 
