@@ -1054,7 +1054,13 @@ next.categorieId = selectedCategoryId;
                             type="radio"
                             name={`fixation_${pi.instanceId}`}
                             checked={pi.fixationId === f._id}
-                            onChange={() => updatePitchInstance(pi.instanceId, { fixationId: f._id })}
+                          onChange={() =>
+  updatePitchInstance(pi.instanceId, {
+    fixationId: f._id,
+    fixationName: f.name, // ✅ indispensable
+  })
+}
+
                           />
                           <span>{f.name}</span>
                         </label>

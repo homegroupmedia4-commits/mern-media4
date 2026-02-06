@@ -388,7 +388,11 @@ for (const pid of Object.keys(otherSelections || {})) {
   const portQty = qtyTotalProducts;
   const paraQty = qtyTotalProducts;
 
-  const fixationLabel = guessFixationName(pitchInstances?.[0] || {});
+const pi0 = pitchInstances?.[0] || {};
+const fixationLabel = guessFixationName(pi0);
+const fixationComment = String(pi0.fixationComment || "").trim();
+const fixationSuffix = fixationComment ? ` — ${fixationComment}` : "";
+
 
   const portLine =
     portQty > 0
@@ -410,7 +414,7 @@ for (const pid of Object.keys(otherSelections || {})) {
   if (qtyPitchTotal > 0) {
     instLines.push({
       code: "INST",
-      description: `INSTALLATION (Murs leds) - ${fixationLabel}`,
+      description: `INSTALLATION (Murs leds) - ${fixationLabel}${fixationSuffix}`,
       qty: qtyPitchTotal,
       puHt: 600,
       montantHt: instOffert ? "OFFERT" : fmt2(qtyPitchTotal * 600),
@@ -421,7 +425,7 @@ for (const pid of Object.keys(otherSelections || {})) {
   if (qtyOtherTotal > 0) {
     instLines.push({
       code: "INST",
-      description: `INSTALLATION (Totems / Kiosques / Écrans\nmuraux) - ${fixationLabel}`,
+      description: `INSTALLATION (Totems / Kiosques / Écrans\nmuraux) - ${fixationLabel}${fixationSuffix}`,
       qty: qtyOtherTotal,
       puHt: 300,
       montantHt: instOffert ? "OFFERT" : fmt2(qtyOtherTotal * 300),
@@ -464,6 +468,22 @@ for (const pid of Object.keys(otherSelections || {})) {
       scope: "detail",
     });
   }
+
+
+  const clientComment = String(client?.commentaires || "").trim();
+if (clientComment) {
+  paraDetail.push({
+    code: "",
+    description: `Commentaires :\n${clientComment}`,
+    qty: "",
+    puHt: "",
+    montantHt: "",
+    tva: "",
+    isDetail: true,
+    scope: "detail",
+  });
+}
+
 
   // -----------------------------
   // 6) TOTAUX (mensualité uniquement)
@@ -582,32 +602,39 @@ cursorY = titleY + 22;
         (c.telephone || "").trim(),
       ].filter(Boolean);
 
-     const clientX = left + contentW * 0.56;
+     
+const metaW = contentW * 0.5;
+
+// ✅ Bloc client à droite = ce qui reste, avec un gap
+const gap = 18;
+const clientX = left + metaW + gap;
+const clientW = contentW - metaW - gap;
 const clientY = cursorY;
 
-// ✅ Titre "Devis" aligné au bloc client (à droite)
+// ✅ Titre "Devis" au même X/largeur que le bloc client
 doc.font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
   .text("Devis", clientX, titleY, {
-    width: contentW * 0.44,
+    width: clientW,
     align: "center",
   });
 
-
 doc.font("Helvetica").fontSize(9).fillColor(DARK);
 doc.text(clientLines.join("\n"), clientX, clientY, {
-  width: contentW * 0.44,
+  width: clientW,
   align: "left",
-    lineGap: 1.5,
-});
-
-// ✅ on mesure la hauteur pour placer la suite plus bas
-const clientH = doc.heightOfString(clientLines.join("\n"), {
-  width: contentW * 0.44,
   lineGap: 1.5,
 });
-cursorY = clientY + clientH + 12; // ✅ espace sous bloc client
+
+// ✅ hauteur réelle du bloc client
+const clientH = doc.heightOfString(clientLines.join("\n"), {
+  width: clientW,
+  lineGap: 1.5,
+});
+
+cursorY = clientY + clientH + 12;
+
 
 
       // -----------------------------
@@ -698,7 +725,24 @@ cursorY = clientY + clientH + 12; // ✅ espace sous bloc client
         const isDetail = !!line.isDetail;
         const isInfo = !!line.isInfo;
 
-        const height = isDetail ? 40 : 28;
+        // ✅ Hauteur dynamique selon le contenu (évite que ça déborde)
+const paddingY = 16; // marge verticale interne
+const minH = isDetail ? 40 : 28;
+
+const descFont = (isInfo || isDetail) ? "Helvetica-Bold" : "Helvetica";
+const descSize = 8.7;
+
+doc.font(descFont).fontSize(descSize);
+const descH = doc.heightOfString(String(line.description || ""), {
+  width: cols[1].w - 8,
+  lineGap: 1.2,
+});
+
+doc.font("Helvetica").fontSize(descSize);
+const codeH = doc.heightOfString(String(line.code || ""), { width: cols[0].w - 8, lineGap: 1.2 });
+
+const height = Math.max(minH, Math.ceil(Math.max(descH, codeH) + paddingY));
+
 
         // garde un bas de page identique à l’image
        const bottomY = pageH - 120;
