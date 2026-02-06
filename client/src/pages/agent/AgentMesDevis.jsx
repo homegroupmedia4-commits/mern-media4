@@ -19,6 +19,43 @@ export default function AgentMesDevis() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // catalogues pour reconstruire les autres produits
+  const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
+  const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
+
+  const fmt2 = (n) => {
+    const x = Number(n);
+    return Number.isFinite(x) ? x.toFixed(2) : "";
+  };
+
+  const fmtDateFR = (iso) => {
+    try {
+      const d = iso ? new Date(iso) : null;
+      if (!d || Number.isNaN(d.getTime())) return "";
+      return d.toLocaleString("fr-FR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  };
+
+  const getCheckedBucket = (sel) => {
+    if (!sel) return {};
+    if (sel.byMonths) {
+      const months = String(sel.leasingMonths || "").trim();
+      return sel.byMonths?.[months]?.checked || {};
+    }
+    return sel.checked || {};
+  };
+
+  // -----------------------------
+  // Load devis
+  // -----------------------------
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
@@ -30,7 +67,6 @@ export default function AgentMesDevis() {
       setLoading(true);
       setError("");
       try {
-        // ✅ IMPORTANT: cet endpoint doit retourner UNIQUEMENT les devis de l'agent connecté
         const res = await fetch(`${API}/api/agents/devis`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -47,22 +83,47 @@ export default function AgentMesDevis() {
     })();
   }, [API]);
 
-  const filtered = rows.filter((d) => {
-    // tu peux adapter selon ce que tu stockes :
-    // - d.lines (kind)
-    // - d.pitchInstances
-    // - d.otherSelections
-    const hasPitch = Array.isArray(d?.pitchInstances) && d.pitchInstances.length > 0;
-    const hasOther = d?.otherSelections && Object.keys(d.otherSelections).length > 0;
-    return tab === "walleds" ? hasPitch : hasOther;
-  });
+  // -----------------------------
+  // Load catalogues (autres produits)
+  // -----------------------------
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/other-product-sizes`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        setOtherSizesCatalog(list.filter((x) => x?.isActive !== false));
+      } catch (e) {
+        console.warn("other-product-sizes load error", e);
+        setOtherSizesCatalog([]);
+      }
+    })();
+  }, [API]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/memory-options`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        setMemOptionsCatalog(list.filter((x) => x?.isActive !== false));
+      } catch (e) {
+        console.warn("memory-options load error", e);
+        setMemOptionsCatalog([]);
+      }
+    })();
+  }, [API]);
+
+  // -----------------------------
+  // Download PDF
+  // -----------------------------
   const downloadPdf = async (devisId) => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
 
     try {
-      // si ton backend renvoie direct un PDF en GET, remplace par un simple window.open
       const res = await fetch(`${API}/api/agents/devis/${devisId}/pdf`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -83,6 +144,105 @@ export default function AgentMesDevis() {
       alert("Impossible de télécharger ce devis.");
     }
   };
+
+  // -----------------------------
+  // Flatten rows (walleds / other)
+  // -----------------------------
+  const flattened = useMemo(() => {
+    const out = [];
+
+    for (const d of rows) {
+      const devisId = d._id || d.id;
+      const devisNumber = d.devisNumber || "";
+      const c = d.client || {};
+      const dateStr = fmtDateFR(d.createdAt);
+
+      if (tab === "walleds") {
+        const pitches = Array.isArray(d?.pitchInstances) ? d.pitchInstances : [];
+        for (const pi of pitches) {
+          const qty = Number(pi?.quantite || 1) || 1;
+          const mensualiteHt = Number(pi?.montantHt || 0) || 0;
+          const mensualiteTtc = mensualiteHt * 1.2;
+
+          out.push({
+            kind: "walleds",
+            key: `${devisId}_pi_${pi?.instanceId || pi?.pitchId || Math.random()}`,
+            devisId,
+            devisNumber,
+            dateStr,
+            client: c,
+
+            // pitch cols
+            produit: "Murs leds",
+            pitch: pi?.pitchLabel || pi?.name || "",
+            categorie: pi?.categorieName || pi?.categoryName || "",
+            dimensions: pi?.dimensions || "",
+            luminosite: pi?.luminosite || "",
+            largeurM: pi?.largeurM ?? "",
+            hauteurM: pi?.hauteurM ?? "",
+            largeurPx: pi?.largeurPx ?? "",
+            hauteurPx: pi?.hauteurPx ?? "",
+            dureeMois: pi?.financementMonths ?? "",
+            qty,
+            mensualiteHt,
+            mensualiteTtc,
+
+            montantHt: mensualiteHt, // même valeur ici (HT mensuel)
+            codeProduit: pi?.codeProduit || pi?.code || "", // ✅ FIX
+          });
+        }
+        continue;
+      }
+
+      // other
+      const otherSelections = d.otherSelections || {};
+      for (const pid of Object.keys(otherSelections)) {
+        const sel = otherSelections[pid];
+        const months = String(sel?.leasingMonths || "").trim();
+        const checked = getCheckedBucket(sel);
+
+        for (const rowId of Object.keys(checked || {})) {
+          const line = checked[rowId];
+          const sizeRow = otherSizesCatalog.find((r) => String(r._id) === String(rowId));
+          if (!sizeRow) continue;
+
+          const mem = line?.memId
+            ? memOptionsCatalog.find((m) => String(m._id) === String(line.memId))
+            : null;
+
+          const basePrice = Number(sizeRow.price || 0);
+          const memPrice = Number(mem?.price || 0);
+          const unit = basePrice + memPrice;
+
+          const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
+          const total = unit * qty;
+
+          out.push({
+            kind: "other",
+            key: `${devisId}_other_${pid}_${months}_${rowId}`,
+            devisId,
+            devisNumber,
+            dateStr,
+            client: c,
+
+            produit: String(sizeRow.product || "Produit"),
+            taillePouces: sizeRow.sizeInches ?? "",
+            memoire: mem?.name || "—",
+            prixUnitaire: unit,
+            quantite: qty,
+            totalHt: total,
+            dureeMois: months || String(sizeRow.leasingMonths || ""),
+            prixAssocie: memPrice, // “prix associé” = surcoût mémoire
+            codeProduit: sizeRow.productCode || sizeRow.codeProduit || "",
+          });
+        }
+      }
+    }
+
+    return out;
+  }, [rows, tab, otherSizesCatalog, memOptionsCatalog]);
+
+  const hasAny = flattened.length > 0;
 
   return (
     <>
@@ -125,18 +285,32 @@ export default function AgentMesDevis() {
                       <th>Téléphone</th>
                       <th>Email</th>
 
-                      {/* Colonnes "walleds" */}
                       {tab === "walleds" ? (
                         <>
                           <th>Produit</th>
                           <th>Pitch</th>
+
+                          <th>Catégorie</th>
+                          <th>Dimensions</th>
+                          <th>Luminosité</th>
+
                           <th>Surface (m²)</th>
                           <th>Largeur (m)</th>
                           <th>Hauteur (m)</th>
+
+                          <th>Largeur (px)</th>
+                          <th>Hauteur (px)</th>
+
                           <th>Durée (mois)</th>
+                          <th>Quantité</th>
+
+                          <th>Mensualité HT</th>
+                          <th>Mensualité TTC</th>
+
                           <th>Montant HT</th>
                           <th>Code devis</th>
                           <th>Code produit</th>
+
                           <th>Adresse</th>
                           <th>Adresse 2</th>
                           <th>Code Postal</th>
@@ -145,18 +319,18 @@ export default function AgentMesDevis() {
                           <th>Date</th>
                         </>
                       ) : (
-                        /* Colonnes "other" */
                         <>
                           <th>Produit</th>
                           <th>Taille sélectionnée</th>
                           <th>Mémoire</th>
                           <th>Prix unitaire</th>
                           <th>Quantité</th>
-                          <th>Total</th>
+                          <th>Total (HT)</th>
                           <th>Durée leasing (mois)</th>
                           <th>Prix associé</th>
                           <th>Code devis</th>
                           <th>Code produit</th>
+
                           <th>Adresse</th>
                           <th>Adresse 2</th>
                           <th>Code Postal</th>
@@ -169,73 +343,16 @@ export default function AgentMesDevis() {
                   </thead>
 
                   <tbody>
-                    {filtered.map((d) => {
-                      const id = d._id || d.id;
-
-                      const c = d.client || {};
-                      const created = d.createdAt ? new Date(d.createdAt) : null;
-                      const dateStr = created
-                        ? created.toLocaleString("fr-FR", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" })
-                        : "";
-
-                      // Pour afficher "1 ligne = 1 devis" comme sur tes screenshots :
-                      // - côté other: tu peux afficher un récap (ou une ligne par item, selon ta structure)
-                      // - ici on affiche une ligne “résumé” (tu pourras détailler ensuite)
-                      const devisNumber = d.devisNumber || "";
-
-                      if (tab === "walleds") {
-                        const firstPitch = Array.isArray(d.pitchInstances) ? d.pitchInstances[0] : null;
-
-                        return (
-                          <tr key={id}>
-                            <td>{c.societe || ""}</td>
-                            <td>
-                              <button
-                                className="agentdevis-download"
-                                type="button"
-                                onClick={() => downloadPdf(id)}
-                              >
-                                Télécharger le devis
-                              </button>
-                            </td>
-                            <td>{c.nom || ""}</td>
-                            <td>{c.prenom || ""}</td>
-                            <td>{c.telephone || ""}</td>
-                            <td>{c.email || ""}</td>
-
-                            <td>Murs leds</td>
-                            <td>{firstPitch?.pitchLabel || ""}</td>
-                            <td>{firstPitch?.surfaceM2 || ""}</td>
-                            <td>{firstPitch?.largeurM || ""}</td>
-                            <td>{firstPitch?.hauteurM || ""}</td>
-                            <td>{firstPitch?.financementMonths || ""}</td>
-                            <td>{firstPitch?.montantHt || ""}</td>
-                            <td>{devisNumber}</td>
-                            <td>{firstPitch?.pitchId || firstPitch?.codeProduit || ""}</td>
-                            <td>{c.adresse1 || ""}</td>
-                            <td>{c.adresse2 || ""}</td>
-                            <td>{c.codePostal || ""}</td>
-                            <td>{c.ville || ""}</td>
-                            <td>{c.commentaires || ""}</td>
-                            <td>{dateStr}</td>
-                          </tr>
-                        );
-                      }
-
-                      // other
-                      // Ici on met un “résumé” (à adapter selon la forme exacte de otherSelections)
-                      const anyOther = d.otherSelections || {};
-                      const firstKey = Object.keys(anyOther)[0];
-                      const first = firstKey ? anyOther[firstKey] : null;
-
+                    {flattened.map((r) => {
+                      const c = r.client || {};
                       return (
-                        <tr key={id}>
+                        <tr key={r.key}>
                           <td>{c.societe || ""}</td>
                           <td>
                             <button
                               className="agentdevis-download"
                               type="button"
-                              onClick={() => downloadPdf(id)}
+                              onClick={() => downloadPdf(r.devisId)}
                             >
                               Télécharger le devis
                             </button>
@@ -245,29 +362,67 @@ export default function AgentMesDevis() {
                           <td>{c.telephone || ""}</td>
                           <td>{c.email || ""}</td>
 
-                          <td>{first?.productName || first?.produit || ""}</td>
-                          <td>{first?.size || first?.taille || ""}</td>
-                          <td>{first?.memory || first?.memoire || ""}</td>
-                          <td>{first?.unitPrice || first?.prixUnitaire || ""}</td>
-                          <td>{first?.qty || first?.quantite || ""}</td>
-                          <td>{first?.total || first?.totalHt || ""}</td>
-                          <td>{first?.months || first?.duree || ""}</td>
-                          <td>{first?.associatedPrice || first?.prixAssocie || ""}</td>
-                          <td>{devisNumber}</td>
-                          <td>{first?.codeProduit || ""}</td>
-                          <td>{c.adresse1 || ""}</td>
-                          <td>{c.adresse2 || ""}</td>
-                          <td>{c.codePostal || ""}</td>
-                          <td>{c.ville || ""}</td>
-                          <td>{c.commentaires || ""}</td>
-                          <td>{dateStr}</td>
+                          {tab === "walleds" ? (
+                            <>
+                              <td>{r.produit}</td>
+                              <td>{r.pitch}</td>
+
+                              <td>{r.categorie}</td>
+                              <td>{r.dimensions}</td>
+                              <td>{r.luminosite}</td>
+
+                              <td>{r.surfaceM2 ?? ""}</td>
+                              <td>{r.largeurM}</td>
+                              <td>{r.hauteurM}</td>
+
+                              <td>{r.largeurPx}</td>
+                              <td>{r.hauteurPx}</td>
+
+                              <td>{r.dureeMois}</td>
+                              <td>{r.qty}</td>
+
+                              <td>{fmt2(r.mensualiteHt)}</td>
+                              <td>{fmt2(r.mensualiteTtc)}</td>
+
+                              <td>{fmt2(r.montantHt)}</td>
+                              <td>{r.devisNumber}</td>
+                              <td>{r.codeProduit}</td>
+
+                              <td>{c.adresse1 || ""}</td>
+                              <td>{c.adresse2 || ""}</td>
+                              <td>{c.codePostal || ""}</td>
+                              <td>{c.ville || ""}</td>
+                              <td>{c.commentaires || ""}</td>
+                              <td>{r.dateStr}</td>
+                            </>
+                          ) : (
+                            <>
+                              <td>{r.produit}</td>
+                              <td>{r.taillePouces !== "" ? `${r.taillePouces} pouces` : ""}</td>
+                              <td>{r.memoire}</td>
+                              <td>{fmt2(r.prixUnitaire)}</td>
+                              <td>{r.quantite}</td>
+                              <td>{fmt2(r.totalHt)}</td>
+                              <td>{r.dureeMois}</td>
+                              <td>{fmt2(r.prixAssocie)}</td>
+                              <td>{r.devisNumber}</td>
+                              <td>{r.codeProduit}</td>
+
+                              <td>{c.adresse1 || ""}</td>
+                              <td>{c.adresse2 || ""}</td>
+                              <td>{c.codePostal || ""}</td>
+                              <td>{c.ville || ""}</td>
+                              <td>{c.commentaires || ""}</td>
+                              <td>{r.dateStr}</td>
+                            </>
+                          )}
                         </tr>
                       );
                     })}
 
-                    {filtered.length === 0 && !loading ? (
+                    {!hasAny && !loading ? (
                       <tr>
-                        <td colSpan={tab === "walleds" ? 17 : 17} className="agentdevis-empty">
+                        <td colSpan={tab === "walleds" ? 28 : 22} className="agentdevis-empty">
                           Aucun devis.
                         </td>
                       </tr>
