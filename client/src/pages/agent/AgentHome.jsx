@@ -743,14 +743,16 @@ next.categorieId = selectedCategoryId;
 
   return (
 
+     <>
+    <AgentHeader agent={agent} />
    
  
   
     <div className="agenthome-page">
 
-        <AgentHeader agent={agent} />
+       
 
-        
+
       <div className="agenthome-card agenthome-card--wide">
         <div className="agenthome-title">Bonjour</div>
 
@@ -1451,7 +1453,8 @@ next.categorieId = selectedCategoryId;
         </div>
 
         {loadingRefs ? <div className="agenthome-muted">Chargement des référentiels…</div> : null}
-     </div>
+          </div>
     </div>
-  );
-}
+  </>
+);
+} 
