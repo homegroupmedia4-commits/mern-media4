@@ -1,12 +1,6 @@
 // client/src/pages/AdminNosDevis.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import AdminNosDevis from "./AdminNosDevis";
-
-export default function NosDevisPage() {
-  const { API } = useOutletContext();
-  return <AdminNosDevis API={API} />;
-}
 
 const fmtDate = (iso) => {
   try {
@@ -36,7 +30,10 @@ function getAuthToken() {
   );
 }
 
-export default function AdminNosDevis({ API }) {
+export default function AdminNosDevis() {
+  // ✅ on récupère API depuis AdminApp via <Outlet context={{ API }} />
+  const { API } = useOutletContext();
+
   const [tab, setTab] = useState("murs_leds");
   const [q, setQ] = useState("");
   const [agentId, setAgentId] = useState("");
@@ -67,7 +64,6 @@ export default function AdminNosDevis({ API }) {
 
   const loadAgents = async () => {
     try {
-      // ✅ on met le header sinon 401 si tu protèges aussi ce endpoint
       const res = await fetch(`${API}/api/agents/agents-lite`, {
         headers: { ...authHeaders() },
       });
@@ -95,7 +91,6 @@ export default function AdminNosDevis({ API }) {
 
       if (!res.ok) {
         const txt = await res.text();
-        // ✅ message clair si token manquant/expiré
         if (res.status === 401) throw new Error("401");
         throw new Error(txt);
       }
@@ -133,7 +128,6 @@ export default function AdminNosDevis({ API }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  // ✅ PDF dans un nouvel onglet : on passe le token en query
   const openPdf = (id) => {
     const token = getAuthToken();
     const url = token
@@ -308,7 +302,12 @@ export default function AdminNosDevis({ API }) {
       </div>
 
       <div className="page-actions" style={{ marginBottom: 12, gap: 10 }}>
-        <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher (code devis, email, nom, société...)" />
+        <input
+          className="input"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Rechercher (code devis, email, nom, société...)"
+        />
 
         <select className="input" value={agentId} onChange={(e) => setAgentId(e.target.value)} title="Filtrer par utilisateur">
           <option value="">Tous les utilisateurs</option>
