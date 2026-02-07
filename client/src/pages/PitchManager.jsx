@@ -1,11 +1,30 @@
+// client/src/pages/PitchManager.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useOutletContext } from "react-router-dom";
 
-export default function PitchManager({ API }) {
-  const [tab, setTab] = useState("add"); // add | list
+const SLUG_TO_TAB = {
+  ajoutpitch: "add",
+  tableaupitch: "list",
+};
+
+const TAB_TO_SLUG = {
+  add: "ajoutpitch",
+  list: "tableaupitch",
+};
+
+export default function PitchManagerPage() {
+  const { API } = useOutletContext();
+  const { slug } = useParams(); // /pitchs/:slug
+  const navigate = useNavigate();
+
+  const [tab, setTab] = useState(() => SLUG_TO_TAB[slug] || "add");
 
   const [cats, setCats] = useState([]);
   const [catsLoading, setCatsLoading] = useState(true);
   const [catsError, setCatsError] = useState("");
+
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   const [pitches, setPitches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +38,7 @@ export default function PitchManager({ API }) {
     luminosite: "",
     price: "",
     categoryId: "",
-      productId: "",
+    productId: "",
   });
 
   const [saving, setSaving] = useState(false);
@@ -30,26 +49,34 @@ export default function PitchManager({ API }) {
 
   const activeCats = useMemo(() => cats.filter((c) => c.isActive), [cats]);
 
-  const [products, setProducts] = useState([]);
-const [productsLoading, setProductsLoading] = useState(true);
+  // URL -> tab
+  useEffect(() => {
+    const nextTab = SLUG_TO_TAB[slug] || "add";
+    setTab(nextTab);
+    setError("");
+    setCatsError("");
+  }, [slug]);
 
-const loadProducts = async () => {
-  setProductsLoading(true);
-  try {
-    const res = await fetch(`${API}/api/products`);
-    const data = await res.json();
-    setProducts(Array.isArray(data) ? data : []);
-  } finally {
-    setProductsLoading(false);
-  }
-};
+  // tab -> URL
+  const goTab = (nextTab) => {
+    const nextSlug = TAB_TO_SLUG[nextTab] || "ajoutpitch";
+    navigate(`/pitchs/${nextSlug}`);
+  };
 
-useEffect(() => {
-  loadProducts();
-  loadCategories();
-  loadPitches();
-}, []);
-
+  const loadProducts = async () => {
+    setProductsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/products`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+      setError("Impossible de charger les produits.");
+    } finally {
+      setProductsLoading(false);
+    }
+  };
 
   const loadCategories = async () => {
     setCatsError("");
@@ -84,6 +111,7 @@ useEffect(() => {
   };
 
   useEffect(() => {
+    loadProducts();
     loadCategories();
     loadPitches();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,20 +131,20 @@ useEffect(() => {
       luminosite: form.luminosite.trim(),
       price: Number(form.price),
       categoryId: form.categoryId,
-        productId: form.productId,
+      productId: form.productId,
     };
 
     if (!payload.name || !payload.codeProduit || !payload.dimensions || !payload.luminosite) {
-      setError("Merci de remplir tous les champs.");
-      return;
+      return setError("Merci de remplir tous les champs.");
     }
     if (!Number.isFinite(payload.price)) {
-      setError("Le prix doit être un nombre.");
-      return;
+      return setError("Le prix doit être un nombre.");
+    }
+    if (!payload.productId) {
+      return setError("Merci de choisir un produit.");
     }
     if (!payload.categoryId) {
-      setError("Merci de choisir une catégorie.");
-      return;
+      return setError("Merci de choisir une catégorie.");
     }
 
     setSaving(true);
@@ -126,16 +154,22 @@ useEffect(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       if (!res.ok) throw new Error(await res.text());
       const created = await res.json();
 
-      // refresh table state
       setPitches((prev) => [created, ...prev]);
-      setForm({ name: "", codeProduit: "", dimensions: "", luminosite: "", price: "", categoryId: "" });
+      setForm({
+        name: "",
+        codeProduit: "",
+        dimensions: "",
+        luminosite: "",
+        price: "",
+        categoryId: "",
+        productId: "",
+      });
 
-      // UX: aller sur la liste
-      setTab("list");
+      // UX: aller sur la liste via URL
+      goTab("list");
     } catch (e) {
       console.error(e);
       setError("Ajout impossible (doublon code produit ou erreur serveur).");
@@ -146,7 +180,7 @@ useEffect(() => {
 
   const startEdit = (row) => {
     setEditingId(row._id);
-    setEditingValue(row.name);
+    setEditingValue(row.name || "");
   };
 
   const cancelEdit = () => {
@@ -216,14 +250,14 @@ useEffect(() => {
           <button
             className={`subtab ${tab === "add" ? "active" : ""}`}
             type="button"
-            onClick={() => setTab("add")}
+            onClick={() => goTab("add")}
           >
             Ajout d&apos;un Pitch
           </button>
           <button
             className={`subtab ${tab === "list" ? "active" : ""}`}
             type="button"
-            onClick={() => setTab("list")}
+            onClick={() => goTab("list")}
           >
             Les pitchs
           </button>
@@ -266,24 +300,23 @@ useEffect(() => {
           </div>
 
           <div className="pm-row">
-  <label className="pm-label">Produit</label>
-  <select
-    className="input pm-input"
-    value={form.productId}
-    onChange={onChange("productId")}
-    disabled={productsLoading}
-  >
-    <option value="">{productsLoading ? "Chargement..." : "-- Choisir un produit --"}</option>
-    {products
-      .filter((p) => p?.isActive !== false)
-      .map((p) => (
-        <option key={p._id} value={p._id}>
-          {p.name}
-        </option>
-      ))}
-  </select>
-</div>
-
+            <label className="pm-label">Produit</label>
+            <select
+              className="input pm-input"
+              value={form.productId}
+              onChange={onChange("productId")}
+              disabled={productsLoading}
+            >
+              <option value="">{productsLoading ? "Chargement..." : "-- Choisir un produit --"}</option>
+              {products
+                .filter((p) => p?.isActive !== false)
+                .map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name}
+                  </option>
+                ))}
+            </select>
+          </div>
 
           <div className="pm-row">
             <label className="pm-label">Groupe (catégorie)</label>
@@ -317,12 +350,12 @@ useEffect(() => {
               <thead>
                 <tr>
                   <th style={{ width: "7%" }}>ID</th>
-                  <th style={{ width: "10%" }}>Nom</th>
+                  <th style={{ width: "14%" }}>Nom</th>
                   <th style={{ width: "12%" }}>Code produit</th>
                   <th style={{ width: "12%" }}>Dimensions</th>
                   <th style={{ width: "12%" }}>Luminosité</th>
                   <th style={{ width: "10%" }}>Prix</th>
-                  <th style={{ width: "27%" }}>Groupe</th>
+                  <th style={{ width: "23%" }}>Groupe</th>
                   <th style={{ width: "10%" }}>Statut</th>
                   <th style={{ width: "20%" }}>Actions</th>
                 </tr>

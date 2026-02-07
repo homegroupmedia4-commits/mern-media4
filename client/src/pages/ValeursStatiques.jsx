@@ -1,7 +1,43 @@
+// client/src/pages/ValeursStatiques.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, useOutletContext } from "react-router-dom";
 
-export default function ValeursStatiques({ API }) {
-  const [tab, setTab] = useState("durations"); // durations | coeffs
+const SLUG_TO_TAB = {
+  dureeleasing: "durations",
+  "coefficient-montant": "coeffs",
+};
+
+const TAB_TO_SLUG = {
+  durations: "dureeleasing",
+  coeffs: "coefficient-montant",
+};
+
+const DEFAULT_STATIC_VALUES = {
+  accessoires_players: 800,
+  cout_locaux_chine_france: 1000,
+  coeff_leasing: 0.7,
+  marge_catalogue: 0.7,
+  droits_douane: 1.14,
+  taux_eur_usd: 1.07,
+  fixation_finition_eur_ml: 100,
+  tirage_cable_eur_m2: 80,
+  reprise_peinture_eur_m2: 100,
+  coffrage_placo_eur_m2: 75,
+  raccordement_eur_m2: 75,
+  livraison_eur_m2: 150,
+  prix_container_eur_m2: 150,
+  installation_eur_m2: 500,
+};
+
+export default function ValeursStatiquesPage() {
+  // ✅ API via Outlet (comme AdminApp.jsx)
+  const ctx = useOutletContext?.() || {};
+  const API = ctx.API;
+
+  const { slug } = useParams(); // /configuration/:slug
+  const navigate = useNavigate();
+
+  const [tab, setTab] = useState(() => SLUG_TO_TAB[slug] || "durations");
 
   // ---- Durées ----
   const [months, setMonths] = useState("");
@@ -36,6 +72,19 @@ export default function ValeursStatiques({ API }) {
     []
   );
 
+  // URL -> tab
+  useEffect(() => {
+    const nextTab = SLUG_TO_TAB[slug] || "durations";
+    setTab(nextTab);
+    setError("");
+  }, [slug]);
+
+  // tab -> URL
+  const goTab = (nextTab) => {
+    const nextSlug = TAB_TO_SLUG[nextTab] || "dureeleasing";
+    navigate(`/configuration/${nextSlug}`);
+  };
+
   const loadDurations = async () => {
     setError("");
     setLoadingDur(true);
@@ -52,43 +101,25 @@ export default function ValeursStatiques({ API }) {
     }
   };
 
-const DEFAULT_STATIC_VALUES = {
-  accessoires_players: 800,
-  cout_locaux_chine_france: 1000,
-  coeff_leasing: 0.7,
-  marge_catalogue: 0.7,
-  droits_douane: 1.14,
-  taux_eur_usd: 1.07,
-  fixation_finition_eur_ml: 100,
-  tirage_cable_eur_m2: 80,
-  reprise_peinture_eur_m2: 100,
-  coffrage_placo_eur_m2: 75,
-  raccordement_eur_m2: 75,
-  livraison_eur_m2: 150,
-  prix_container_eur_m2: 150,
-  installation_eur_m2: 500,
-};
+  const loadValues = async () => {
+    setError("");
+    setLoadingVals(true);
+    try {
+      const res = await fetch(`${API}/api/static-values`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
 
-const loadValues = async () => {
-  setError("");
-  setLoadingVals(true);
-  try {
-    const res = await fetch(`${API}/api/static-values`);
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-
-    // ✅ merge: defaults + DB values
-    setValues({ ...DEFAULT_STATIC_VALUES, ...(data || {}) });
-  } catch (e) {
-    console.error(e);
-    // ✅ même en erreur: afficher defaults
-    setValues({ ...DEFAULT_STATIC_VALUES });
-    setError("Impossible de charger les valeurs statiques (defaults affichés).");
-  } finally {
-    setLoadingVals(false);
-  }
-};
-
+      // ✅ merge defaults + DB
+      setValues({ ...DEFAULT_STATIC_VALUES, ...(data || {}) });
+    } catch (e) {
+      console.error(e);
+      // ✅ même si erreur: afficher defaults
+      setValues({ ...DEFAULT_STATIC_VALUES });
+      setError("Impossible de charger les valeurs statiques (defaults affichés).");
+    } finally {
+      setLoadingVals(false);
+    }
+  };
 
   useEffect(() => {
     loadDurations();
@@ -146,14 +177,12 @@ const loadValues = async () => {
     setSavingVals(true);
     setError("");
     try {
-      // convert en numbers
       const payload = {};
-     for (const f of FIELDS) {
-  const raw = values?.[f.key];
-  const n = Number(raw);
-  payload[f.key] = Number.isFinite(n) ? n : DEFAULT_STATIC_VALUES[f.key];
-}
-
+      for (const f of FIELDS) {
+        const raw = values?.[f.key];
+        const n = Number(raw);
+        payload[f.key] = Number.isFinite(n) ? n : DEFAULT_STATIC_VALUES[f.key];
+      }
 
       const res = await fetch(`${API}/api/static-values`, {
         method: "PATCH",
@@ -163,7 +192,7 @@ const loadValues = async () => {
 
       if (!res.ok) throw new Error(await res.text());
       const updated = await res.json();
-      setValues(updated);
+      setValues({ ...DEFAULT_STATIC_VALUES, ...(updated || {}) });
     } catch (e) {
       console.error(e);
       setError("Sauvegarde impossible (valeur invalide ou erreur serveur).");
@@ -181,14 +210,15 @@ const loadValues = async () => {
           <button
             className={`subtab ${tab === "durations" ? "active" : ""}`}
             type="button"
-            onClick={() => setTab("durations")}
+            onClick={() => goTab("durations")}
           >
             Durées de leasing
           </button>
+
           <button
             className={`subtab ${tab === "coeffs" ? "active" : ""}`}
             type="button"
-            onClick={() => setTab("coeffs")}
+            onClick={() => goTab("coeffs")}
           >
             Coefficients & montants par défaut
           </button>
@@ -268,7 +298,6 @@ const loadValues = async () => {
                         type="number"
                         step="0.01"
                         value={values?.[f.key] ?? DEFAULT_STATIC_VALUES[f.key] ?? ""}
-
                         onChange={onValueChange(f.key)}
                       />
                     </div>

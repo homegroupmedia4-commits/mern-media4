@@ -1,4 +1,12 @@
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import CategoriesPitch from "./CategoriesPitch";
+
+export default function CategoriePitchPage() {
+  const { API } = useOutletContext();
+  return <CategoriesPitch API={API} />;
+}
+
 
 export default function CategoriesPitch({ API }) {
   const [newName, setNewName] = useState("");

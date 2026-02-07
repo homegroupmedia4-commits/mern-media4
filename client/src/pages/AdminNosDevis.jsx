@@ -1,5 +1,12 @@
 // client/src/pages/AdminNosDevis.jsx
 import { useEffect, useMemo, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import AdminNosDevis from "./AdminNosDevis";
+
+export default function NosDevisPage() {
+  const { API } = useOutletContext();
+  return <AdminNosDevis API={API} />;
+}
 
 const fmtDate = (iso) => {
   try {
