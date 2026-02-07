@@ -18,7 +18,7 @@ import AgentLogin from "./pages/agent/AgentLogin";
 export default function App() {
   return (
     <Routes>
-      {/* ================= PAGE PAR DÉFAUT ================= */}
+      {/* ================= ROOT ================= */}
       <Route path="/" element={<Navigate to="/agent/login" replace />} />
 
       {/* ================= ADMIN ================= */}
@@ -27,21 +27,25 @@ export default function App() {
 
         <Route path="nosdevis" element={<AdminNosDevis />} />
         <Route path="agents" element={<AdminAgents />} />
-
         <Route path="produits" element={<AdminProduits />} />
         <Route path="fixation" element={<AdminFixation />} />
         <Route path="finition" element={<AdminFinition />} />
-
         <Route path="tailles-ecrans" element={<TaillesEcrans />} />
         <Route path="valeurs-statiques" element={<ValeursStatiques />} />
         <Route path="categories-pitch" element={<CategoriesPitch />} />
       </Route>
 
+      {/* 👉 fallback ADMIN (CRITIQUE pour éviter /agent/login) */}
+      <Route
+        path="/adminmedia4/*"
+        element={<Navigate to="/adminmedia4" replace />}
+      />
+
       {/* ================= AGENT ================= */}
       <Route path="/agent/login" element={<AgentLogin />} />
       <Route path="/agent/home" element={<AgentHome />} />
 
-      {/* ================= FALLBACK ================= */}
+      {/* ================= GLOBAL FALLBACK ================= */}
       <Route path="*" element={<Navigate to="/agent/login" replace />} />
     </Routes>
   );

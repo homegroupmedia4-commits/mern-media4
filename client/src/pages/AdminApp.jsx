@@ -1,10 +1,10 @@
-// client/src/pages/AdminApp.jsx
 import { useEffect, useMemo, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import "../App.css";
 
 const ADMIN_PASSWORD = "Homegroup91?";
 const STORAGE_KEY = "m4_admin_authed_v1";
+const ADMIN_BASE = "/adminmedia4";
 
 export default function AdminApp() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -12,14 +12,6 @@ export default function AdminApp() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // groupes ouverts/fermés
-  const [openGroups, setOpenGroups] = useState(() => ({
-    pitchs: true,
-    autres: true,
-    config: true,
-  }));
 
   const API = useMemo(
     () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
@@ -27,20 +19,22 @@ export default function AdminApp() {
   );
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === "1") setIsAuthed(true);
+    if (localStorage.getItem(STORAGE_KEY) === "1") {
+      setIsAuthed(true);
+    }
   }, []);
 
   const handleLogin = (e) => {
     e.preventDefault();
     setError("");
+
     if (password === ADMIN_PASSWORD) {
       localStorage.setItem(STORAGE_KEY, "1");
       setIsAuthed(true);
       setPassword("");
-      return;
+    } else {
+      setError("Mot de passe incorrect.");
     }
-    setError("Mot de passe incorrect.");
   };
 
   const handleLogout = () => {
@@ -49,15 +43,7 @@ export default function AdminApp() {
     navigate("/agent/login", { replace: true });
   };
 
-  const toggleGroup = (key) => {
-    setOpenGroups((p) => ({ ...p, [key]: !p[key] }));
-  };
-
-  const isPathActive = (prefix) => location.pathname.startsWith(prefix);
-
-  // ✅ base path admin
-  const ADMIN_BASE = "/adminmedia4";
-
+  /* ================= LOGIN ================= */
   if (!isAuthed) {
     return (
       <div className="login-page">
@@ -72,10 +58,9 @@ export default function AdminApp() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••"
               autoFocus
             />
-            {error ? <div className="login-error">{error}</div> : null}
+            {error && <div className="login-error">{error}</div>}
             <button className="login-btn" type="submit">
               Se connecter
             </button>
@@ -89,6 +74,7 @@ export default function AdminApp() {
     );
   }
 
+  /* ================= DASHBOARD ================= */
   return (
     <div className="dash-shell">
       <aside className="sidebar sidebar--white">
@@ -96,156 +82,50 @@ export default function AdminApp() {
           <div className="sidebar-brand">
             <div className="sidebar-brand-title">MEDIA4</div>
 
-            <a className="sidebar-agentBtn" href="/agent/home" target="_blank" rel="noreferrer">
+            <NavLink className="sidebar-agentBtn" to="/agent/home">
               Voir la page agent
-            </a>
+            </NavLink>
           </div>
 
           <nav className="sidebar-nav">
-            {/* 1) Nos devis */}
-            <NavLink
-              to={`${ADMIN_BASE}/nosdevis`}
-              className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}
-            >
+            <NavLink to={`${ADMIN_BASE}/nosdevis`} className="sidebar-item">
               Nos devis
             </NavLink>
 
-            {/* 2) Pitchs */}
-            <button
-              type="button"
-              className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/pitchs`) ? "is-active" : ""}`}
-              onClick={() => toggleGroup("pitchs")}
-            >
-              <span>Pitchs</span>
-              <span className={`chev ${openGroups.pitchs ? "open" : ""}`}>▾</span>
-            </button>
+            <NavLink to={`${ADMIN_BASE}/agents`} className="sidebar-item">
+              Agents
+            </NavLink>
 
-            {openGroups.pitchs ? (
-              <div className="sidebar-subnav">
-                <NavLink
-                  to={`${ADMIN_BASE}/pitchs/ajoutpitch`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Ajouter pitch
-                </NavLink>
+            <NavLink to={`${ADMIN_BASE}/produits`} className="sidebar-item">
+              Produits
+            </NavLink>
 
-                <NavLink
-                  to={`${ADMIN_BASE}/pitchs/tableaupitch`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Tableau pitch
-                </NavLink>
+            <NavLink to={`${ADMIN_BASE}/fixation`} className="sidebar-item">
+              Fixation
+            </NavLink>
 
-                <NavLink
-                  to={`${ADMIN_BASE}/pitchs/categoriepitch`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Categorie
-                </NavLink>
-              </div>
-            ) : null}
+            <NavLink to={`${ADMIN_BASE}/finition`} className="sidebar-item">
+              Finition
+            </NavLink>
 
-            {/* 3) Autres produits */}
-            <button
-              type="button"
-              className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/autres-produits`) ? "is-active" : ""}`}
-              onClick={() => toggleGroup("autres")}
-            >
-              <span>Autres produits</span>
-              <span className={`chev ${openGroups.autres ? "open" : ""}`}>▾</span>
-            </button>
+            <NavLink to={`${ADMIN_BASE}/tailles-ecrans`} className="sidebar-item">
+              Tailles écrans
+            </NavLink>
 
-            {openGroups.autres ? (
-              <div className="sidebar-subnav">
-                <NavLink
-                  to={`${ADMIN_BASE}/autres-produits/ajouterautreproduit`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Ajouter autre produit
-                </NavLink>
+            <NavLink to={`${ADMIN_BASE}/valeurs-statiques`} className="sidebar-item">
+              Valeurs statiques
+            </NavLink>
 
-                <NavLink
-                  to={`${ADMIN_BASE}/autres-produits/tableauautreproduit`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Tableau autre produit
-                </NavLink>
-
-                <NavLink
-                  to={`${ADMIN_BASE}/autres-produits/ajoutememoire`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Ajouter memoire
-                </NavLink>
-
-                <NavLink
-                  to={`${ADMIN_BASE}/autres-produits/tableaumemoire`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Tableau memoire
-                </NavLink>
-              </div>
-            ) : null}
-
-            {/* 4) Configuration */}
-            <button
-              type="button"
-              className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/configuration`) ? "is-active" : ""}`}
-              onClick={() => toggleGroup("config")}
-            >
-              <span>Configuration</span>
-              <span className={`chev ${openGroups.config ? "open" : ""}`}>▾</span>
-            </button>
-
-            {openGroups.config ? (
-              <div className="sidebar-subnav">
-                <NavLink
-                  to={`${ADMIN_BASE}/configuration/produit`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  produit
-                </NavLink>
-
-                <NavLink
-                  to={`${ADMIN_BASE}/configuration/coefficient-montant`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Coefficient &amp; montant
-                </NavLink>
-
-                <NavLink
-                  to={`${ADMIN_BASE}/configuration/dureeleasing`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Durée leasing
-                </NavLink>
-
-                <NavLink
-                  to={`${ADMIN_BASE}/configuration/fixation`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Fixation
-                </NavLink>
-
-                <NavLink
-                  to={`${ADMIN_BASE}/configuration/finition`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Finition
-                </NavLink>
-              </div>
-            ) : null}
-
-            {/* 5) Agent */}
-            <NavLink
-              to={`${ADMIN_BASE}/agent`}
-              className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}
-            >
-              Agent
+            <NavLink to={`${ADMIN_BASE}/categories-pitch`} className="sidebar-item">
+              Catégories pitch
             </NavLink>
           </nav>
 
-          <button className="sidebar-logout sidebar-logout--white" onClick={handleLogout} type="button">
+          <button
+            className="sidebar-logout sidebar-logout--white"
+            onClick={handleLogout}
+            type="button"
+          >
             Déconnexion
           </button>
         </div>
