@@ -10,6 +10,7 @@ import AdminFinition from "./pages/AdminFinition";
 import TaillesEcrans from "./pages/TaillesEcrans";
 import ValeursStatiques from "./pages/ValeursStatiques";
 import CategoriesPitch from "./pages/CategoriesPitch";
+import PitchManagerPage from "./pages/PitchManager"; // ✅ ta page qui gère add/list via slug
 
 /* ================= AGENT ================= */
 import AgentHome from "./pages/agent/AgentHome";
@@ -26,20 +27,23 @@ export default function App() {
         <Route index element={<Navigate to="nosdevis" replace />} />
 
         <Route path="nosdevis" element={<AdminNosDevis />} />
+
+        {/* ✅ Pitchs (add/list gérés par PitchManager.jsx via :slug) */}
+        <Route path="pitchs" element={<Navigate to="pitchs/ajoutpitch" replace />} />
+        <Route path="pitchs/:slug" element={<PitchManagerPage />} />
+
+        <Route path="categories-pitch" element={<CategoriesPitch />} />
+
         <Route path="agents" element={<AdminAgents />} />
         <Route path="produits" element={<AdminProduits />} />
         <Route path="fixation" element={<AdminFixation />} />
         <Route path="finition" element={<AdminFinition />} />
         <Route path="tailles-ecrans" element={<TaillesEcrans />} />
         <Route path="valeurs-statiques" element={<ValeursStatiques />} />
-        <Route path="categories-pitch" element={<CategoriesPitch />} />
       </Route>
 
-      {/* 👉 fallback ADMIN (CRITIQUE pour éviter /agent/login) */}
-      <Route
-        path="/adminmedia4/*"
-        element={<Navigate to="/adminmedia4" replace />}
-      />
+      {/* 👉 fallback ADMIN (évite de partir sur /agent/login si URL admin inconnue) */}
+      <Route path="/adminmedia4/*" element={<Navigate to="/adminmedia4" replace />} />
 
       {/* ================= AGENT ================= */}
       <Route path="/agent/login" element={<AgentLogin />} />
