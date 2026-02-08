@@ -32,7 +32,8 @@ router.post("/", async (req, res) => {
       productId,
       leasingMonths: Number(leasingMonths),
       price: Number(price),
-      productCode: String(productCode || "").trim(),
+    productCode: String(productCode || "").trim() || undefined,
+
       isActive: true,
     });
 

@@ -34,12 +34,13 @@ const otherProductSizeSchema = new mongoose.Schema(
     },
 
     // Code produit interne
-    productCode: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 40,
-    },
+  productCode: {
+  type: String,
+  trim: true,
+  maxlength: 40,
+  default: "",
+},
+
 
     // Actif / inactif
     isActive: {
@@ -54,15 +55,12 @@ const otherProductSizeSchema = new mongoose.Schema(
  * ✅ Unicité métier
  * - un code produit = unique
  */
-otherProductSizeSchema.index({ productCode: 1 }, { unique: true });
+otherProductSizeSchema.index({ productCode: 1 }, { unique: true, sparse: true });
 
-/**
- * (optionnel mais très propre)
- * - empêche doublon taille + durée + produit
- */
-// otherProductSizeSchema.index(
-//   { productId: 1, sizeInches: 1, leasingMonths: 1 },
-//   { unique: true }
-// );
+otherProductSizeSchema.index(
+  { productId: 1, sizeInches: 1, leasingMonths: 1 },
+  { unique: true }
+);
+
 
 module.exports = mongoose.model("OtherProductSize", otherProductSizeSchema);
