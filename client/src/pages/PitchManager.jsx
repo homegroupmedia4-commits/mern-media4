@@ -236,14 +236,16 @@ export default function PitchManagerPage() {
       <div className="page-header">
         <h2 className="page-title">Pitch Manager</h2>
 
-        <div className="subtabs">
+        {/* <div className="subtabs">
           <button className={`subtab ${tab === "add" ? "active" : ""}`} type="button" onClick={() => goTab("add")}>
             Ajout d&apos;un Pitch
           </button>
           <button className={`subtab ${tab === "list" ? "active" : ""}`} type="button" onClick={() => goTab("list")}>
             Les pitchs
           </button>
-        </div>
+        </div> */}
+
+
       </div>
 
       {error ? <div className="alert">{error}</div> : null}

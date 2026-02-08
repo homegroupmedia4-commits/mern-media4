@@ -389,9 +389,9 @@ const productLabelById = (pidOrObj) => {
   return (
     <div className="page">
       <div className="page-header">
-        <h2 className="page-title">Tailles Écrans Muraux</h2>
+        <h2 className="page-title">Tailles Autres produits</h2>
 
-        <div className="subtabs">
+        {/* <div className="subtabs">
           <button
             className={`subtab ${tab === "autres_form" ? "active" : ""}`}
             type="button"
@@ -423,7 +423,10 @@ const productLabelById = (pidOrObj) => {
           >
             Tableau mémoires
           </button>
-        </div>
+        </div> */}
+
+
+
       </div>
 
       {error ? <div className="alert">{error}</div> : null}

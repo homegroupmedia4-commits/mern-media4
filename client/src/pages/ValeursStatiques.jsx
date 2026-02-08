@@ -230,7 +230,7 @@ export default function ValeursStatiquesPage() {
       <div className="page-header">
         <h2 className="page-title">Valeurs Statiques</h2>
 
-        <div className="subtabs">
+        {/* <div className="subtabs">
           <button
             className={`subtab ${tab === "durations" ? "active" : ""}`}
             type="button"
@@ -246,7 +246,9 @@ export default function ValeursStatiquesPage() {
           >
             Coefficients & montants par défaut
           </button>
-        </div>
+        </div> */}
+
+
       </div>
 
       {error ? <div className="alert">{error}</div> : null}
