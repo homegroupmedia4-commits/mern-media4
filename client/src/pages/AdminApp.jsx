@@ -52,56 +52,38 @@ export default function AdminApp() {
   };
 
   // ✅ auto-login agent admin (si tu définis VITE_ADMIN_EMAIL + VITE_ADMIN_PASS)
-  const ensureAdminApiToken = async () => {
-    // Déjà OK ?
-    if (
-      localStorage.getItem(ADMIN_TOKEN_KEY) ||
-      localStorage.getItem("agent_token_v1") ||
-      localStorage.getItem("token")
-    ) {
-      setTokenStatus({ loading: false, ok: true, msg: "" });
-      return;
-    }
+const ensureAdminApiToken = async (pwd = "") => {
+  // Déjà OK ?
+  if (localStorage.getItem(ADMIN_TOKEN_KEY)) {
+    setTokenStatus({ loading: false, ok: true, msg: "" });
+    return;
+  }
 
-    const email = import.meta.env.VITE_ADMIN_EMAIL;
-    const pass = import.meta.env.VITE_ADMIN_PASS;
+  setTokenStatus({ loading: true, ok: false, msg: "" });
 
-    if (!email || !pass) {
-      setTokenStatus({
-        loading: false,
-        ok: false,
-        msg:
-          "Token API manquant. Ajoute VITE_ADMIN_EMAIL et VITE_ADMIN_PASS (compte Agent), ou connecte-toi côté /agent/login.",
-      });
-      return;
-    }
+  try {
+    const res = await fetch(`${API}/api/agents/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pwd || ADMIN_PASSWORD }),
+    });
 
-    setTokenStatus({ loading: true, ok: false, msg: "" });
+    if (!res.ok) throw new Error(await res.text());
 
-    try {
-      const res = await fetch(`${API}/api/agents/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: pass }),
-      });
+    const data = await res.json();
+    if (!data?.token) throw new Error("No token");
 
-      if (!res.ok) throw new Error(await res.text());
-
-      const data = await res.json();
-      if (!data?.token) throw new Error("No token");
-
-      localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-      setTokenStatus({ loading: false, ok: true, msg: "" });
-    } catch (e) {
-      console.error(e);
-      setTokenStatus({
-        loading: false,
-        ok: false,
-        msg:
-          "Impossible d’obtenir le token API (vérifie le compte agent et les variables VITE_ADMIN_EMAIL/VITE_ADMIN_PASS).",
-      });
-    }
-  };
+    localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+    setTokenStatus({ loading: false, ok: true, msg: "" });
+  } catch (e) {
+    console.error(e);
+    setTokenStatus({
+      loading: false,
+      ok: false,
+      msg: "Impossible d’obtenir le token admin API. Vérifie le mot de passe admin côté serveur.",
+    });
+  }
+};
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -116,14 +98,17 @@ export default function AdminApp() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+if (password === ADMIN_PASSWORD) {
+  localStorage.setItem(STORAGE_KEY, "1");
+  setIsAuthed(true);
 
-    if (password === ADMIN_PASSWORD) {
-      localStorage.setItem(STORAGE_KEY, "1");
-      setIsAuthed(true);
-      setPassword("");
-      await ensureAdminApiToken();
-      return;
-    }
+  const pwd = password; // garde avant reset
+  setPassword("");
+
+  await ensureAdminApiToken(pwd);
+  return;
+}
+
 
     setError("Mot de passe incorrect.");
   };
@@ -186,9 +171,10 @@ export default function AdminApp() {
                 : tokenStatus.msg ||
                   "Token API manquant. Connecte-toi sur /agent/login, ou configure VITE_ADMIN_EMAIL/VITE_ADMIN_PASS."}
               <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="btn btn-dark" type="button" onClick={ensureAdminApiToken}>
-                  Réessayer
-                </button>
+                <button className="btn btn-dark" type="button" onClick={() => ensureAdminApiToken(ADMIN_PASSWORD)}>
+  Réessayer
+</button>
+
                 <a className="btn btn-outline" href="/agent/login" target="_blank" rel="noreferrer">
                   Ouvrir /agent/login
                 </a>

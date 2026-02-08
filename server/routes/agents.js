@@ -13,6 +13,30 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 
+const ADMIN_UI_PASSWORD = process.env.ADMIN_UI_PASSWORD || "Homegroup91?";
+
+
+router.post("/admin/login", async (req, res) => {
+  try {
+    const { password } = req.body || {};
+    if (String(password || "") !== String(ADMIN_UI_PASSWORD)) {
+      return res.status(401).json({ message: "Mot de passe admin invalide." });
+    }
+
+    // ✅ Token "admin" (pas lié à Agent)
+    const token = jwt.sign(
+      { admin: true, role: "superadmin" },
+      JWT_SECRET,
+      { expiresIn: TOKEN_TTL }
+    );
+
+    return res.json({ token });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
 
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
@@ -915,6 +939,20 @@ async function requireAgentAuth(req, res, next) {
       return res.status(401).json({ message: "Token invalide." });
     }
 
+    // ✅ CAS ADMIN (token non lié à Agent)
+    if (payload?.admin === true) {
+      req.agent = {
+        _id: null,
+        nom: "ADMIN",
+        prenom: "",
+        email: "",
+        role: payload.role || "superadmin",
+        isAdminToken: true,
+      };
+      return next();
+    }
+
+    // ✅ CAS AGENT NORMAL
     const agent = await Agent.findById(payload.agentId).select("_id nom prenom email role");
     if (!agent) return res.status(404).json({ message: "Agent introuvable." });
 
@@ -925,6 +963,7 @@ async function requireAgentAuth(req, res, next) {
     return res.status(500).json({ message: "Erreur serveur." });
   }
 }
+
 
 function generate5PagePdfBuffer({ texte, agent }) {
   return new Promise((resolve, reject) => {
@@ -1017,6 +1056,8 @@ router.get("/devis", requireAgentAuth, async (req, res) => {
 router.get("/agents-lite", requireAgentAuth, async (req, res) => {
   try {
     const isAdmin = ["admin", "superadmin"].includes(String(req.agent.role || ""));
+
+
     if (!isAdmin) return res.status(403).json({ message: "Forbidden" });
 
     const agents = await Agent.find({})
@@ -1101,8 +1142,11 @@ router.post("/devis/:id/pdf", requireAgentAuth, async (req, res) => {
     const agent = req.agent;
     const docData = await AgentPdf.findById(req.params.id);
     if (!docData) return res.status(404).json({ message: "Devis introuvable." });
-    if (String(docData.agentId) !== String(agent._id))
-      return res.status(403).json({ message: "Forbidden" });
+   const isAdmin = ["admin", "superadmin"].includes(String(agent.role || "")) || agent.isAdminToken;
+if (!isAdmin && String(docData.agentId) !== String(agent._id)) {
+  return res.status(403).json({ message: "Forbidden" });
+}
+
 
     // const pdfBuffer = await generateColoredDevisPdfBuffer({ docData });
 
