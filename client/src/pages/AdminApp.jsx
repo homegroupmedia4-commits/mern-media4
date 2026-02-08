@@ -18,7 +18,11 @@ export default function AdminApp() {
   const [error, setError] = useState("");
 
   // ✅ état token (si manque => NosDevis 401)
-  const [tokenStatus, setTokenStatus] = useState({ loading: false, ok: false, msg: "" });
+  const [tokenStatus, setTokenStatus] = useState({
+    loading: false,
+    ok: false,
+    msg: "",
+  });
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,7 +43,7 @@ export default function AdminApp() {
 
   const toggleGroup = (key) => setOpenGroups((p) => ({ ...p, [key]: !p[key] }));
 
-  const hasAgentToken = () => {
+  const hasAnyToken = () => {
     const t =
       localStorage.getItem(ADMIN_TOKEN_KEY) ||
       localStorage.getItem("agent_token_v1") ||
@@ -50,13 +54,11 @@ export default function AdminApp() {
   // ✅ auto-login agent admin (si tu définis VITE_ADMIN_EMAIL + VITE_ADMIN_PASS)
   const ensureAdminApiToken = async () => {
     // Déjà OK ?
-    if (localStorage.getItem(ADMIN_TOKEN_KEY)) {
-      setTokenStatus({ loading: false, ok: true, msg: "" });
-      return;
-    }
-
-    // Si l’utilisateur est déjà loggué agent, ça peut suffire
-    if (localStorage.getItem("agent_token_v1") || localStorage.getItem("token")) {
+    if (
+      localStorage.getItem(ADMIN_TOKEN_KEY) ||
+      localStorage.getItem("agent_token_v1") ||
+      localStorage.getItem("token")
+    ) {
       setTokenStatus({ loading: false, ok: true, msg: "" });
       return;
     }
@@ -69,7 +71,7 @@ export default function AdminApp() {
         loading: false,
         ok: false,
         msg:
-          "Token API manquant. Ajoute VITE_ADMIN_EMAIL et VITE_ADMIN_PASS (compte Agent avec rôle admin/superadmin), ou connecte-toi côté /agent/login.",
+          "Token API manquant. Ajoute VITE_ADMIN_EMAIL et VITE_ADMIN_PASS (compte Agent), ou connecte-toi côté /agent/login.",
       });
       return;
     }
@@ -89,7 +91,6 @@ export default function AdminApp() {
       if (!data?.token) throw new Error("No token");
 
       localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-
       setTokenStatus({ loading: false, ok: true, msg: "" });
     } catch (e) {
       console.error(e);
@@ -97,22 +98,18 @@ export default function AdminApp() {
         loading: false,
         ok: false,
         msg:
-          "Impossible d’obtenir le token admin (vérifie le compte agent admin/superadmin, ou les variables VITE_ADMIN_EMAIL/VITE_ADMIN_PASS).",
+          "Impossible d’obtenir le token API (vérifie le compte agent et les variables VITE_ADMIN_EMAIL/VITE_ADMIN_PASS).",
       });
     }
   };
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === "1") {
-      setIsAuthed(true);
-    }
+    if (saved === "1") setIsAuthed(true);
   }, []);
 
   useEffect(() => {
-    if (isAuthed) {
-      ensureAdminApiToken();
-    }
+    if (isAuthed) ensureAdminApiToken();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed]);
 
@@ -124,8 +121,6 @@ export default function AdminApp() {
       localStorage.setItem(STORAGE_KEY, "1");
       setIsAuthed(true);
       setPassword("");
-
-      // ✅ tente de récupérer un token pour AdminNosDevis
       await ensureAdminApiToken();
       return;
     }
@@ -135,10 +130,7 @@ export default function AdminApp() {
 
   const handleLogout = () => {
     localStorage.removeItem(STORAGE_KEY);
-
-    // ⚠️ ne supprime pas agent_token_v1 (si tu veux garder la session agent)
     localStorage.removeItem(ADMIN_TOKEN_KEY);
-
     setIsAuthed(false);
     navigate("/agent/login", { replace: true });
   };
@@ -187,12 +179,12 @@ export default function AdminApp() {
           </div>
 
           {/* ✅ Alerte token (sinon Nos devis = 401) */}
-          {!hasAgentToken() || tokenStatus?.ok === false ? (
+          {!hasAnyToken() || tokenStatus?.ok === false ? (
             <div className="alert" style={{ marginBottom: 12 }}>
               {tokenStatus.loading
-                ? "Connexion API admin..."
+                ? "Connexion API..."
                 : tokenStatus.msg ||
-                  "Token API manquant. Connecte-toi sur /agent/login avec un compte admin/superadmin, ou configure VITE_ADMIN_EMAIL/VITE_ADMIN_PASS."}
+                  "Token API manquant. Connecte-toi sur /agent/login, ou configure VITE_ADMIN_EMAIL/VITE_ADMIN_PASS."}
               <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button className="btn btn-dark" type="button" onClick={ensureAdminApiToken}>
                   Réessayer
@@ -205,7 +197,6 @@ export default function AdminApp() {
           ) : null}
 
           <nav className="sidebar-nav">
-            {/* 1) Nos devis */}
             <NavLink
               to={`${ADMIN_BASE}/nosdevis`}
               className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}
@@ -213,7 +204,6 @@ export default function AdminApp() {
               Nos devis
             </NavLink>
 
-            {/* 2) Pitchs */}
             <button
               type="button"
               className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/pitchs`) ? "is-active" : ""}`}
@@ -248,7 +238,6 @@ export default function AdminApp() {
               </div>
             ) : null}
 
-            {/* 3) Autres produits */}
             <button
               type="button"
               className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/autres-produits`) ? "is-active" : ""}`}
@@ -276,7 +265,6 @@ export default function AdminApp() {
               </div>
             ) : null}
 
-            {/* 4) Configuration */}
             <button
               type="button"
               className={`sidebar-group ${
@@ -324,7 +312,6 @@ export default function AdminApp() {
               </div>
             ) : null}
 
-            {/* 5) Agents */}
             <NavLink
               to={`${ADMIN_BASE}/agents`}
               className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}

@@ -34,7 +34,6 @@ export default function App() {
         <Route path="pitchs/:slug" element={<PitchManagerPage />} />
 
         <Route path="categories-pitch" element={<CategoriesPitch />} />
-
         <Route path="agents" element={<AdminAgents />} />
         <Route path="produits" element={<AdminProduits />} />
         <Route path="fixation" element={<AdminFixation />} />
@@ -43,7 +42,7 @@ export default function App() {
         <Route path="valeurs-statiques" element={<ValeursStatiques />} />
       </Route>
 
-      {/* ✅ fallback ADMIN (ne renvoie pas vers /agent/login si URL admin inconnue) */}
+      {/* ✅ fallback ADMIN */}
       <Route path="/adminmedia4/*" element={<Navigate to="/adminmedia4" replace />} />
 
       {/* ================= AGENT ================= */}

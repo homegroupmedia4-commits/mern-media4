@@ -20,7 +20,7 @@ const money = (n) => {
   return x.toFixed(2);
 };
 
-// ✅ admin token FIRST
+// ✅ admin token FIRST (fallback agent token)
 function getAuthToken() {
   return (
     localStorage.getItem("admin_token_v1") ||
@@ -61,12 +61,21 @@ export default function AdminNosDevis() {
     setPage(1);
   };
 
+  // ✅ agents-lite => peut 403 si pas admin, on affiche juste "Tous les utilisateurs"
   const loadAgents = async () => {
     try {
       const res = await fetch(`${API}/api/agents/agents-lite`, {
         headers: authHeaders(),
       });
+
+      // si pas admin => pas grave
+      if (res.status === 403) {
+        setAgents([]);
+        return;
+      }
+
       if (!res.ok) throw new Error(await res.text());
+
       const data = await res.json();
       setAgents(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -98,7 +107,7 @@ export default function AdminNosDevis() {
     } catch (e) {
       console.error(e);
       if (String(e?.message) === "401") {
-        setError("Non autorisé. Token manquant/expiré (admin_token_v1).");
+        setError("Non autorisé. Token manquant/expiré (admin_token_v1 ou agent_token_v1).");
       } else {
         setError("Impossible de charger les devis.");
       }
@@ -134,6 +143,9 @@ export default function AdminNosDevis() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  // =========================
+  // Flatten rows
+  // =========================
   const mursRows = useMemo(() => {
     const out = [];
     for (const d of rows) {
@@ -196,6 +208,9 @@ export default function AdminNosDevis() {
     return out;
   }, [rows]);
 
+  // =========================
+  // Sorting
+  // =========================
   const sortedMursRows = useMemo(() => {
     const arr = [...mursRows];
     const dir = sortDir === "asc" ? 1 : -1;
@@ -294,7 +309,7 @@ export default function AdminNosDevis() {
       <div className="page-header">
         <h2 className="page-title">Nos devis</h2>
         <div className="muted" style={{ marginTop: 6 }}>
-          Superadmin : tous les devis soumis (filtrables par utilisateur).
+          Admin : devis visibles selon les droits du token (agent ou admin).
         </div>
       </div>
 
@@ -327,7 +342,8 @@ export default function AdminNosDevis() {
           className="input"
           value={agentId}
           onChange={(e) => setAgentId(e.target.value)}
-          title="Filtrer par utilisateur"
+          title="Filtrer par utilisateur (si autorisé)"
+          disabled={agents.length === 0}
         >
           <option value="">Tous les utilisateurs</option>
           {agents.map((a) => (
@@ -356,11 +372,6 @@ export default function AdminNosDevis() {
 
       {error ? <div className="alert">{error}</div> : null}
 
-      {/* =========================
-          TABLE + PAGINATION (COMPLET)
-          ========================= */}
-
-      {/* Toolbar tri + pagination */}
       <div className="page-actions" style={{ marginBottom: 12, gap: 10 }}>
         <div className="muted">
           {loading ? "Chargement..." : `${total} ligne(s)`}
@@ -387,7 +398,6 @@ export default function AdminNosDevis() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="table-wrap">
         {loading ? (
           <div className="muted">Chargement...</div>
@@ -397,76 +407,41 @@ export default function AdminNosDevis() {
           <table className="table table-wide">
             <thead>
               <tr>
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("createdAt")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("createdAt")} style={{ cursor: "pointer" }}>
                   Date {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("devisNumber")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("devisNumber")} style={{ cursor: "pointer" }}>
                   Devis {sortKey === "devisNumber" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("agent")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("agent")} style={{ cursor: "pointer" }}>
                   Agent {sortKey === "agent" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("clientEmail")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Client {sortKey === "clientEmail" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                <th onClick={() => toggleSort("clientEmail")} style={{ cursor: "pointer" }}>
+                  Client{" "}
+                  {sortKey === "clientEmail" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("pitchLabel")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Pitch {sortKey === "pitchLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                <th onClick={() => toggleSort("pitchLabel")} style={{ cursor: "pointer" }}>
+                  Pitch{" "}
+                  {sortKey === "pitchLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("resolutionLabel")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Résolution {sortKey === "resolutionLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                <th onClick={() => toggleSort("resolutionLabel")} style={{ cursor: "pointer" }}>
+                  Résolution{" "}
+                  {sortKey === "resolutionLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("surfaceM2")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Surface m² {sortKey === "surfaceM2" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                <th onClick={() => toggleSort("surfaceM2")} style={{ cursor: "pointer" }}>
+                  Surface m²{" "}
+                  {sortKey === "surfaceM2" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("montantHt")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Montant HT {sortKey === "montantHt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                <th onClick={() => toggleSort("montantHt")} style={{ cursor: "pointer" }}>
+                  Montant HT{" "}
+                  {sortKey === "montantHt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
                 <th>Actions</th>
@@ -490,7 +465,11 @@ export default function AdminNosDevis() {
                     <td title={c.email || ""}>{c.email || c.company || "—"}</td>
                     <td>{pi.pitchLabel || "—"}</td>
                     <td>{pi.resolutionLabel || "—"}</td>
-                    <td>{Number.isFinite(Number(pi.surfaceM2)) ? Number(pi.surfaceM2).toFixed(2) : "—"}</td>
+                    <td>
+                      {Number.isFinite(Number(pi.surfaceM2))
+                        ? Number(pi.surfaceM2).toFixed(2)
+                        : "—"}
+                    </td>
                     <td>{money(pi.montantHt)} €</td>
                     <td>
                       <button className="btn btn-outline" type="button" onClick={() => openPdf(r.devisId)}>
@@ -506,71 +485,37 @@ export default function AdminNosDevis() {
           <table className="table table-wide">
             <thead>
               <tr>
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("createdAt")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("createdAt")} style={{ cursor: "pointer" }}>
                   Date {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("devisNumber")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("devisNumber")} style={{ cursor: "pointer" }}>
                   Devis {sortKey === "devisNumber" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("agent")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("agent")} style={{ cursor: "pointer" }}>
                   Agent {sortKey === "agent" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("clientEmail")}
-                  style={{ cursor: "pointer" }}
-                >
-                  Client {sortKey === "clientEmail" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                <th onClick={() => toggleSort("clientEmail")} style={{ cursor: "pointer" }}>
+                  Client{" "}
+                  {sortKey === "clientEmail" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("rowId")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("rowId")} style={{ cursor: "pointer" }}>
                   Item {sortKey === "rowId" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
                 <th>Leasing</th>
                 <th>Mémoire</th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("qty")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("qty")} style={{ cursor: "pointer" }}>
                   Qté {sortKey === "qty" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
                 <th>PU</th>
 
-                <th
-                  role="button"
-                  title="Trier"
-                  onClick={() => toggleSort("totalPrice")}
-                  style={{ cursor: "pointer" }}
-                >
+                <th onClick={() => toggleSort("totalPrice")} style={{ cursor: "pointer" }}>
                   Total {sortKey === "totalPrice" ? (sortDir === "asc" ? "▲" : "▼") : ""}
                 </th>
 
@@ -602,7 +547,9 @@ export default function AdminNosDevis() {
                         ? `${money(r.unitPrice)} €`
                         : "—"}
                     </td>
-                    <td>{Number.isFinite(Number(r.totalPrice)) ? `${money(r.totalPrice)} €` : "—"}</td>
+                    <td>
+                      {Number.isFinite(Number(r.totalPrice)) ? `${money(r.totalPrice)} €` : "—"}
+                    </td>
                     <td>
                       <button className="btn btn-outline" type="button" onClick={() => openPdf(r.devisId)}>
                         PDF
@@ -616,7 +563,6 @@ export default function AdminNosDevis() {
         )}
       </div>
 
-      {/* Pagination bottom */}
       {!loading && totalPages > 1 ? (
         <div className="page-actions" style={{ marginTop: 12, gap: 10 }}>
           <div className="muted">
@@ -624,12 +570,7 @@ export default function AdminNosDevis() {
           </div>
 
           <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              className="btn btn-outline"
-              type="button"
-              onClick={() => setPage(1)}
-              disabled={safePage === 1}
-            >
+            <button className="btn btn-outline" type="button" onClick={() => setPage(1)} disabled={safePage === 1}>
               « Début
             </button>
             <button
@@ -648,12 +589,7 @@ export default function AdminNosDevis() {
             >
               Suivant →
             </button>
-            <button
-              className="btn btn-outline"
-              type="button"
-              onClick={() => setPage(totalPages)}
-              disabled={safePage === totalPages}
-            >
+            <button className="btn btn-outline" type="button" onClick={() => setPage(totalPages)} disabled={safePage === totalPages}>
               Fin »
             </button>
           </div>
