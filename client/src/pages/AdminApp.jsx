@@ -299,37 +299,42 @@ if (password === ADMIN_PASSWORD) {
               <span className={`chev ${openGroups.config ? "open" : ""}`}>▾</span>
             </button>
 
-            {openGroups.config ? (
-              <div className="sidebar-subnav">
-                <NavLink
-                  to={`${ADMIN_BASE}/valeurs-statiques`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Coefficient &amp; montant
-                </NavLink>
 
-                <NavLink
-                  to={`${ADMIN_BASE}/valeurs-statiques`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Durée leasing
-                </NavLink>
+{openGroups.config ? (
+  <div className="sidebar-subnav">
+    <NavLink
+      to={`${ADMIN_BASE}/valeurs-statiques/coefficient-montant`}
+      end
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Coefficient &amp; montant
+    </NavLink>
 
-                <NavLink
-                  to={`${ADMIN_BASE}/fixation`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Fixation
-                </NavLink>
+    <NavLink
+      to={`${ADMIN_BASE}/valeurs-statiques/dureeleasing`}
+      end
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Durée leasing
+    </NavLink>
 
-                <NavLink
-                  to={`${ADMIN_BASE}/finition`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Finition
-                </NavLink>
-              </div>
-            ) : null}
+    <NavLink
+      to={`${ADMIN_BASE}/fixation`}
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Fixation
+    </NavLink>
+
+    <NavLink
+      to={`${ADMIN_BASE}/finition`}
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Finition
+    </NavLink>
+  </div>
+) : null}
+git add .
+
 
             <NavLink
               to={`${ADMIN_BASE}/agents`}
