@@ -26,10 +26,9 @@ export default function App() {
       {/* ================= ADMIN ================= */}
       <Route path="/adminmedia4" element={<AdminApp />}>
         <Route index element={<Navigate to="nosdevis" replace />} />
-
         <Route path="nosdevis" element={<AdminNosDevis />} />
 
-        {/* ✅ Pitchs (add/list gérés par PitchManager.jsx via :slug) */}
+        {/* ✅ Pitchs */}
         <Route path="pitchs" element={<Navigate to="pitchs/ajoutpitch" replace />} />
         <Route path="pitchs/:slug" element={<PitchManagerPage />} />
 
@@ -38,9 +37,19 @@ export default function App() {
         <Route path="produits" element={<AdminProduits />} />
         <Route path="fixation" element={<AdminFixation />} />
         <Route path="finition" element={<AdminFinition />} />
-        <Route path="tailles-ecrans" element={<TaillesEcrans />} />
+
+        {/* ✅ Tailles écrans + onglets via slug */}
+        <Route path="tailles-ecrans" element={<Navigate to="tailles-ecrans/ajouterautreproduit" replace />} />
+        <Route path="tailles-ecrans/:slug" element={<TaillesEcrans />} />
+
         <Route path="valeurs-statiques" element={<ValeursStatiques />} />
       </Route>
+
+      {/* ✅ SHORTCUTS demandés (URLs “propres”) */}
+      <Route path="/ajouterautreproduit" element={<Navigate to="/adminmedia4/tailles-ecrans/ajouterautreproduit" replace />} />
+      <Route path="/tableauautreproduit" element={<Navigate to="/adminmedia4/tailles-ecrans/tableauautreproduit" replace />} />
+      <Route path="/ajoutememoire" element={<Navigate to="/adminmedia4/tailles-ecrans/ajoutememoire" replace />} />
+      <Route path="/tableaumemoire" element={<Navigate to="/adminmedia4/tailles-ecrans/tableaumemoire" replace />} />
 
       {/* ✅ fallback ADMIN */}
       <Route path="/adminmedia4/*" element={<Navigate to="/adminmedia4" replace />} />

@@ -29,12 +29,20 @@ const DEFAULT_STATIC_VALUES = {
   installation_eur_m2: 500,
 };
 
-export default function ValeursStatiquesPage() {
-  // ✅ API via Outlet (comme AdminApp.jsx)
-  const ctx = useOutletContext?.() || {};
-  const API = ctx.API;
+// ✅ admin token FIRST (fallback agent token)
+function getAuthToken() {
+  return (
+    localStorage.getItem("admin_token_v1") ||
+    localStorage.getItem("agent_token_v1") ||
+    localStorage.getItem("token") ||
+    ""
+  );
+}
 
-  const { slug } = useParams(); // /configuration/:slug
+export default function ValeursStatiquesPage() {
+  const { API } = useOutletContext();
+
+  const { slug } = useParams(); // /adminmedia4/valeurs-statiques/:slug
   const navigate = useNavigate();
 
   const [tab, setTab] = useState(() => SLUG_TO_TAB[slug] || "durations");
@@ -61,7 +69,7 @@ export default function ValeursStatiquesPage() {
       { key: "droits_douane", label: "Droits de douane" },
       { key: "taux_eur_usd", label: "Taux € / $" },
       { key: "fixation_finition_eur_ml", label: "Fixation & finition (€/ml)" },
-      { key: "tirage_cable_eur_m2", label: "Tirage cable (€/m²)" },
+      { key: "tirage_cable_eur_m2", label: "Tirage câble (€/m²)" },
       { key: "reprise_peinture_eur_m2", label: "Reprise peinture (€/m²)" },
       { key: "coffrage_placo_eur_m2", label: "Coffrage placo (€/m²)" },
       { key: "raccordement_eur_m2", label: "Raccordement (€/m²)" },
@@ -71,6 +79,12 @@ export default function ValeursStatiquesPage() {
     ],
     []
   );
+
+  const authHeaders = (json = true) => {
+    const token = getAuthToken();
+    const base = token ? { Authorization: `Bearer ${token}` } : {};
+    return json ? { ...base, "Content-Type": "application/json" } : base;
+  };
 
   // URL -> tab
   useEffect(() => {
@@ -82,20 +96,23 @@ export default function ValeursStatiquesPage() {
   // tab -> URL
   const goTab = (nextTab) => {
     const nextSlug = TAB_TO_SLUG[nextTab] || "dureeleasing";
-    navigate(`/configuration/${nextSlug}`);
+    navigate(`/adminmedia4/valeurs-statiques/${nextSlug}`);
   };
 
   const loadDurations = async () => {
     setError("");
     setLoadingDur(true);
     try {
-      const res = await fetch(`${API}/api/leasing-durations`);
+      const res = await fetch(`${API}/api/leasing-durations`, {
+        headers: authHeaders(false),
+      });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setDurations(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
       setError("Impossible de charger les durées de leasing.");
+      setDurations([]);
     } finally {
       setLoadingDur(false);
     }
@@ -105,7 +122,9 @@ export default function ValeursStatiquesPage() {
     setError("");
     setLoadingVals(true);
     try {
-      const res = await fetch(`${API}/api/static-values`);
+      const res = await fetch(`${API}/api/static-values`, {
+        headers: authHeaders(false),
+      });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
 
@@ -136,12 +155,14 @@ export default function ValeursStatiquesPage() {
     try {
       const res = await fetch(`${API}/api/leasing-durations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(true),
         body: JSON.stringify({ months: m }),
       });
       if (!res.ok) throw new Error(await res.text());
       const created = await res.json();
-      setDurations((prev) => [...prev, created].sort((a, b) => a.months - b.months));
+      setDurations((prev) =>
+        [...prev, created].sort((a, b) => (a.months || 0) - (b.months || 0))
+      );
       setMonths("");
     } catch (e) {
       console.error(e);
@@ -157,7 +178,10 @@ export default function ValeursStatiquesPage() {
 
     setError("");
     try {
-      const res = await fetch(`${API}/api/leasing-durations/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API}/api/leasing-durations/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(false),
+      });
       if (!res.ok) throw new Error(await res.text());
       setDurations((prev) => prev.filter((d) => d._id !== id));
     } catch (e) {
@@ -186,7 +210,7 @@ export default function ValeursStatiquesPage() {
 
       const res = await fetch(`${API}/api/static-values`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders(true),
         body: JSON.stringify(payload),
       });
 
@@ -243,6 +267,9 @@ export default function ValeursStatiquesPage() {
               <button className="btn btn-dark" type="button" onClick={addDuration} disabled={savingDur}>
                 {savingDur ? "Ajout..." : "Ajouter"}
               </button>
+              <button className="btn btn-outline" type="button" onClick={loadDurations} disabled={loadingDur || savingDur}>
+                Rafraîchir
+              </button>
             </div>
 
             <div className="table-wrap" style={{ marginTop: 14 }}>
@@ -257,16 +284,20 @@ export default function ValeursStatiquesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {durations.map((d) => (
-                      <tr key={d._id}>
-                        <td>{d.months} mois</td>
-                        <td>
-                          <button className="btn btn-soft-danger" type="button" onClick={() => deleteDuration(d._id)}>
-                            Supprimer
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {durations
+                      .slice()
+                      .sort((a, b) => (a.months || 0) - (b.months || 0))
+                      .map((d) => (
+                        <tr key={d._id}>
+                          <td>{d.months} mois</td>
+                          <td>
+                            <button className="btn btn-soft-danger" type="button" onClick={() => deleteDuration(d._id)}>
+                              Supprimer
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+
                     {durations.length === 0 ? (
                       <tr>
                         <td colSpan={2} className="muted">
@@ -304,9 +335,14 @@ export default function ValeursStatiquesPage() {
                   ))}
                 </div>
 
-                <button className="btn btn-dark" type="button" onClick={saveAllValues} disabled={savingVals}>
-                  {savingVals ? "Sauvegarde..." : "Enregistrer"}
-                </button>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button className="btn btn-dark" type="button" onClick={saveAllValues} disabled={savingVals}>
+                    {savingVals ? "Sauvegarde..." : "Enregistrer"}
+                  </button>
+                  <button className="btn btn-outline" type="button" onClick={loadValues} disabled={savingVals}>
+                    Rafraîchir
+                  </button>
+                </div>
               </>
             )}
           </div>

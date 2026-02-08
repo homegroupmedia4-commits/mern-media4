@@ -158,9 +158,15 @@ if (password === ADMIN_PASSWORD) {
           <div className="sidebar-brand">
             <div className="sidebar-brand-title">MEDIA4</div>
 
-            <a className="sidebar-agentBtn" href="/agent/home" target="_blank" rel="noreferrer">
-              Voir la page agent
-            </a>
+           <a
+  className="sidebar-agentBtn"
+  href="/agent/home"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Voir la page agent
+</a>
+
           </div>
 
           {/* ✅ Alerte token (sinon Nos devis = 401) */}
@@ -224,32 +230,59 @@ if (password === ADMIN_PASSWORD) {
               </div>
             ) : null}
 
-            <button
-              type="button"
-              className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/autres-produits`) ? "is-active" : ""}`}
-              onClick={() => toggleGroup("autres")}
-            >
-              <span>Autres produits</span>
-              <span className={`chev ${openGroups.autres ? "open" : ""}`}>▾</span>
-            </button>
 
-            {openGroups.autres ? (
-              <div className="sidebar-subnav">
-                <NavLink
-                  to={`${ADMIN_BASE}/produits`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Tableau autre produit
-                </NavLink>
 
-                <NavLink
-                  to={`${ADMIN_BASE}/tailles-ecrans`}
-                  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
-                >
-                  Tailles écrans
-                </NavLink>
-              </div>
-            ) : null}
+    <button
+  type="button"
+  className={`sidebar-group ${
+    isPathActive(`/ajouterautreproduit`) ||
+    isPathActive(`/tableauautreproduit`) ||
+    isPathActive(`/ajoutememoire`) ||
+    isPathActive(`/tableaumemoire`) ||
+    isPathActive(`${ADMIN_BASE}/tailles-ecrans`)
+      ? "is-active"
+      : ""
+  }`}
+  onClick={() => toggleGroup("autres")}
+>
+  <span>Autres produits</span>
+  <span className={`chev ${openGroups.autres ? "open" : ""}`}>▾</span>
+</button>
+
+{openGroups.autres ? (
+  <div className="sidebar-subnav">
+    <NavLink
+      to="/ajouterautreproduit"
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Ajouter autre produit
+    </NavLink>
+
+    <NavLink
+      to="/tableauautreproduit"
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Tableau autre produit
+    </NavLink>
+
+    <NavLink
+      to="/ajoutememoire"
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Ajouter mémoire
+    </NavLink>
+
+    <NavLink
+      to="/tableaumemoire"
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Tableau mémoires
+    </NavLink>
+  </div>
+) : null}
+
+
+
 
             <button
               type="button"

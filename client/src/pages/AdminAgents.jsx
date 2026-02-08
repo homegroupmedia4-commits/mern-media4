@@ -1,6 +1,20 @@
+// client/src/pages/AdminAgents.jsx
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
-export default function AdminAgents({ API }) {
+// ✅ admin token FIRST (fallback agent token)
+function getAuthToken() {
+  return (
+    localStorage.getItem("admin_token_v1") ||
+    localStorage.getItem("agent_token_v1") ||
+    localStorage.getItem("token") ||
+    ""
+  );
+}
+
+export default function AdminAgents() {
+  const { API } = useOutletContext();
+
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,12 +28,19 @@ export default function AdminAgents({ API }) {
     }
   };
 
+  const authHeaders = () => {
+    const token = getAuthToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   useEffect(() => {
     (async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`${API}/api/agents/admin/list`);
+        const res = await fetch(`${API}/api/agents/admin/list`, {
+          headers: authHeaders(),
+        });
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setAgents(Array.isArray(data) ? data : []);
@@ -30,6 +51,7 @@ export default function AdminAgents({ API }) {
         setLoading(false);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API]);
 
   return (
@@ -47,17 +69,7 @@ export default function AdminAgents({ API }) {
           <table className="table" style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {[
-                  "Nom",
-                  "Prénom",
-                  "Email",
-                  "Rôle",
-                  "Société",
-                  "Téléphone",
-                  "Ville",
-                  "Pays",
-                  "Créé le",
-                ].map((h) => (
+                {["Nom", "Prénom", "Email", "Rôle", "Société", "Téléphone", "Ville", "Pays", "Créé le"].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -85,33 +97,17 @@ export default function AdminAgents({ API }) {
               ) : (
                 agents.map((a) => (
                   <tr key={a._id}>
-                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
-                      {a.nom || "—"}
-                    </td>
-                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
-                      {a.prenom || "—"}
-                    </td>
-                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
-                      {a.email || "—"}
-                    </td>
-                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
-                      {a.role || "—"}
-                    </td>
-                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
-                      {a.societe || "—"}
-                    </td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.nom || "—"}</td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.prenom || "—"}</td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.email || "—"}</td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.role || "—"}</td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.societe || "—"}</td>
                     <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
                       {a.telephonePortable || a.telephoneFixe || "—"}
                     </td>
-                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
-                      {a.ville || "—"}
-                    </td>
-                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
-                      {a.pays || "—"}
-                    </td>
-                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
-                      {formatDate(a.createdAt)}
-                    </td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.ville || "—"}</td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.pays || "—"}</td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{formatDate(a.createdAt)}</td>
                   </tr>
                 ))
               )}
