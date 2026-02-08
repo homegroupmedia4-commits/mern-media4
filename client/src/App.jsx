@@ -16,6 +16,18 @@ import PitchManagerPage from "./pages/PitchManager";
 /* ================= AGENT ================= */
 import AgentHome from "./pages/agent/AgentHome";
 import AgentLogin from "./pages/agent/AgentLogin";
+import AgentRegister from "./pages/agent/AgentRegister";
+import AgentMesDevis from "./pages/agent/AgentMesDevis";
+import AgentFaq from "./pages/agent/AgentFaq";
+
+/* ================= AUTH GUARDS ================= */
+const AGENT_TOKEN_KEY = "agent_token_v1";
+
+function RequireAgentAuth({ children }) {
+  const token = localStorage.getItem(AGENT_TOKEN_KEY);
+  if (!token) return <Navigate to="/agent/login" replace />;
+  return children;
+}
 
 export default function App() {
   return (
@@ -31,41 +43,82 @@ export default function App() {
         {/* ✅ Pitchs */}
         <Route path="pitchs" element={<Navigate to="pitchs/ajoutpitch" replace />} />
         <Route path="pitchs/:slug" element={<PitchManagerPage />} />
-
         <Route path="categories-pitch" element={<CategoriesPitch />} />
+
         <Route path="agents" element={<AdminAgents />} />
         <Route path="produits" element={<AdminProduits />} />
         <Route path="fixation" element={<AdminFixation />} />
         <Route path="finition" element={<AdminFinition />} />
 
         {/* ✅ Tailles écrans + onglets via slug */}
-        <Route path="tailles-ecrans" element={<Navigate to="tailles-ecrans/ajouterautreproduit" replace />} />
+        <Route
+          path="tailles-ecrans"
+          element={<Navigate to="tailles-ecrans/ajouterautreproduit" replace />}
+        />
         <Route path="tailles-ecrans/:slug" element={<TaillesEcrans />} />
 
-
-
-        <Route path="tailles-ecrans" element={<Navigate to="tailles-ecrans/ajouterautreproduit" replace />} />
-<Route path="tailles-ecrans/:slug" element={<TaillesEcrans />} />
-
-<Route path="valeurs-statiques" element={<Navigate to="valeurs-statiques/dureeleasing" replace />} />
-<Route path="valeurs-statiques/:slug" element={<ValeursStatiques />} />
-
-
-
+        {/* ✅ Valeurs statiques via slug */}
+        <Route
+          path="valeurs-statiques"
+          element={<Navigate to="valeurs-statiques/dureeleasing" replace />}
+        />
+        <Route path="valeurs-statiques/:slug" element={<ValeursStatiques />} />
       </Route>
 
-      {/* ✅ SHORTCUTS demandés (URLs “propres”) */}
-      <Route path="/ajouterautreproduit" element={<Navigate to="/adminmedia4/tailles-ecrans/ajouterautreproduit" replace />} />
-      <Route path="/tableauautreproduit" element={<Navigate to="/adminmedia4/tailles-ecrans/tableauautreproduit" replace />} />
-      <Route path="/ajoutememoire" element={<Navigate to="/adminmedia4/tailles-ecrans/ajoutememoire" replace />} />
-      <Route path="/tableaumemoire" element={<Navigate to="/adminmedia4/tailles-ecrans/tableaumemoire" replace />} />
+      {/* ✅ SHORTCUTS (URLs “propres”) */}
+      <Route
+        path="/ajouterautreproduit"
+        element={<Navigate to="/adminmedia4/tailles-ecrans/ajouterautreproduit" replace />}
+      />
+      <Route
+        path="/tableauautreproduit"
+        element={<Navigate to="/adminmedia4/tailles-ecrans/tableauautreproduit" replace />}
+      />
+      <Route
+        path="/ajoutememoire"
+        element={<Navigate to="/adminmedia4/tailles-ecrans/ajoutememoire" replace />}
+      />
+      <Route
+        path="/tableaumemoire"
+        element={<Navigate to="/adminmedia4/tailles-ecrans/tableaumemoire" replace />}
+      />
 
       {/* ✅ fallback ADMIN */}
       <Route path="/adminmedia4/*" element={<Navigate to="/adminmedia4" replace />} />
 
       {/* ================= AGENT ================= */}
       <Route path="/agent/login" element={<AgentLogin />} />
-      <Route path="/agent/home" element={<AgentHome />} />
+
+      {/* ✅ accessible librement */}
+      <Route path="/agent/register" element={<AgentRegister />} />
+
+      {/* ✅ pages protégées */}
+      <Route
+        path="/agent/home"
+        element={
+          <RequireAgentAuth>
+            <AgentHome />
+          </RequireAgentAuth>
+        }
+      />
+
+      <Route
+        path="/agent/mes-devis"
+        element={
+          <RequireAgentAuth>
+            <AgentMesDevis />
+          </RequireAgentAuth>
+        }
+      />
+
+      <Route
+        path="/agent/faq"
+        element={
+          <RequireAgentAuth>
+            <AgentFaq />
+          </RequireAgentAuth>
+        }
+      />
 
       {/* ================= GLOBAL FALLBACK ================= */}
       <Route path="*" element={<Navigate to="/agent/login" replace />} />
