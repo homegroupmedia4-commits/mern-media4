@@ -5,6 +5,11 @@ import "../App.css";
 
 const ADMIN_PASSWORD = "Homegroup91?";
 const STORAGE_KEY = "m4_admin_authed_v1";
+
+// ✅ token admin pour appeler /api/agents/* (requireAgentAuth)
+const ADMIN_TOKEN_KEY = "admin_token_v1";
+
+// ✅ base path admin
 const ADMIN_BASE = "/adminmedia4";
 
 export default function AdminApp() {
@@ -12,26 +17,106 @@ export default function AdminApp() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  // ✅ état token (si manque => NosDevis 401)
+  const [tokenStatus, setTokenStatus] = useState({ loading: false, ok: false, msg: "" });
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  const API = useMemo(
-    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
-    []
-  );
-
-  // ✅ groupes ouverts/fermés (comme avant)
+  // groupes ouverts/fermés
   const [openGroups, setOpenGroups] = useState(() => ({
     pitchs: true,
     autres: true,
     config: true,
   }));
 
+  const API = useMemo(
+    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
+    []
+  );
+
+  const isPathActive = (prefix) => location.pathname.startsWith(prefix);
+
+  const toggleGroup = (key) => setOpenGroups((p) => ({ ...p, [key]: !p[key] }));
+
+  const hasAgentToken = () => {
+    const t =
+      localStorage.getItem(ADMIN_TOKEN_KEY) ||
+      localStorage.getItem("agent_token_v1") ||
+      localStorage.getItem("token");
+    return !!t;
+  };
+
+  // ✅ auto-login agent admin (si tu définis VITE_ADMIN_EMAIL + VITE_ADMIN_PASS)
+  const ensureAdminApiToken = async () => {
+    // Déjà OK ?
+    if (localStorage.getItem(ADMIN_TOKEN_KEY)) {
+      setTokenStatus({ loading: false, ok: true, msg: "" });
+      return;
+    }
+
+    // Si l’utilisateur est déjà loggué agent, ça peut suffire
+    if (localStorage.getItem("agent_token_v1") || localStorage.getItem("token")) {
+      setTokenStatus({ loading: false, ok: true, msg: "" });
+      return;
+    }
+
+    const email = import.meta.env.VITE_ADMIN_EMAIL;
+    const pass = import.meta.env.VITE_ADMIN_PASS;
+
+    if (!email || !pass) {
+      setTokenStatus({
+        loading: false,
+        ok: false,
+        msg:
+          "Token API manquant. Ajoute VITE_ADMIN_EMAIL et VITE_ADMIN_PASS (compte Agent avec rôle admin/superadmin), ou connecte-toi côté /agent/login.",
+      });
+      return;
+    }
+
+    setTokenStatus({ loading: true, ok: false, msg: "" });
+
+    try {
+      const res = await fetch(`${API}/api/agents/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: pass }),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      const data = await res.json();
+      if (!data?.token) throw new Error("No token");
+
+      localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+
+      setTokenStatus({ loading: false, ok: true, msg: "" });
+    } catch (e) {
+      console.error(e);
+      setTokenStatus({
+        loading: false,
+        ok: false,
+        msg:
+          "Impossible d’obtenir le token admin (vérifie le compte agent admin/superadmin, ou les variables VITE_ADMIN_EMAIL/VITE_ADMIN_PASS).",
+      });
+    }
+  };
+
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY) === "1") setIsAuthed(true);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "1") {
+      setIsAuthed(true);
+    }
   }, []);
 
-  const handleLogin = (e) => {
+  useEffect(() => {
+    if (isAuthed) {
+      ensureAdminApiToken();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthed]);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -39,22 +124,24 @@ export default function AdminApp() {
       localStorage.setItem(STORAGE_KEY, "1");
       setIsAuthed(true);
       setPassword("");
-    } else {
-      setError("Mot de passe incorrect.");
+
+      // ✅ tente de récupérer un token pour AdminNosDevis
+      await ensureAdminApiToken();
+      return;
     }
+
+    setError("Mot de passe incorrect.");
   };
 
   const handleLogout = () => {
     localStorage.removeItem(STORAGE_KEY);
+
+    // ⚠️ ne supprime pas agent_token_v1 (si tu veux garder la session agent)
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+
     setIsAuthed(false);
     navigate("/agent/login", { replace: true });
   };
-
-  const toggleGroup = (key) => {
-    setOpenGroups((p) => ({ ...p, [key]: !p[key] }));
-  };
-
-  const isPathActive = (prefix) => location.pathname.startsWith(prefix);
 
   if (!isAuthed) {
     return (
@@ -94,10 +181,28 @@ export default function AdminApp() {
           <div className="sidebar-brand">
             <div className="sidebar-brand-title">MEDIA4</div>
 
-            <NavLink className="sidebar-agentBtn" to="/agent/home">
+            <a className="sidebar-agentBtn" href="/agent/home" target="_blank" rel="noreferrer">
               Voir la page agent
-            </NavLink>
+            </a>
           </div>
+
+          {/* ✅ Alerte token (sinon Nos devis = 401) */}
+          {!hasAgentToken() || tokenStatus?.ok === false ? (
+            <div className="alert" style={{ marginBottom: 12 }}>
+              {tokenStatus.loading
+                ? "Connexion API admin..."
+                : tokenStatus.msg ||
+                  "Token API manquant. Connecte-toi sur /agent/login avec un compte admin/superadmin, ou configure VITE_ADMIN_EMAIL/VITE_ADMIN_PASS."}
+              <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn btn-dark" type="button" onClick={ensureAdminApiToken}>
+                  Réessayer
+                </button>
+                <a className="btn btn-outline" href="/agent/login" target="_blank" rel="noreferrer">
+                  Ouvrir /agent/login
+                </a>
+              </div>
+            </div>
+          ) : null}
 
           <nav className="sidebar-nav">
             {/* 1) Nos devis */}
@@ -174,7 +279,13 @@ export default function AdminApp() {
             {/* 4) Configuration */}
             <button
               type="button"
-              className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/configuration`) || isPathActive(`${ADMIN_BASE}/valeurs-statiques`) ? "is-active" : ""}`}
+              className={`sidebar-group ${
+                isPathActive(`${ADMIN_BASE}/valeurs-statiques`) ||
+                isPathActive(`${ADMIN_BASE}/fixation`) ||
+                isPathActive(`${ADMIN_BASE}/finition`)
+                  ? "is-active"
+                  : ""
+              }`}
               onClick={() => toggleGroup("config")}
             >
               <span>Configuration</span>

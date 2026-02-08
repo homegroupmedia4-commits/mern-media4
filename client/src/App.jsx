@@ -1,3 +1,4 @@
+// client/src/App.jsx
 import { Navigate, Route, Routes } from "react-router-dom";
 
 /* ================= ADMIN ================= */
@@ -10,7 +11,7 @@ import AdminFinition from "./pages/AdminFinition";
 import TaillesEcrans from "./pages/TaillesEcrans";
 import ValeursStatiques from "./pages/ValeursStatiques";
 import CategoriesPitch from "./pages/CategoriesPitch";
-import PitchManagerPage from "./pages/PitchManager"; // ✅ ta page qui gère add/list via slug
+import PitchManagerPage from "./pages/PitchManager";
 
 /* ================= AGENT ================= */
 import AgentHome from "./pages/agent/AgentHome";
@@ -42,7 +43,7 @@ export default function App() {
         <Route path="valeurs-statiques" element={<ValeursStatiques />} />
       </Route>
 
-      {/* 👉 fallback ADMIN (évite de partir sur /agent/login si URL admin inconnue) */}
+      {/* ✅ fallback ADMIN (ne renvoie pas vers /agent/login si URL admin inconnue) */}
       <Route path="/adminmedia4/*" element={<Navigate to="/adminmedia4" replace />} />
 
       {/* ================= AGENT ================= */}

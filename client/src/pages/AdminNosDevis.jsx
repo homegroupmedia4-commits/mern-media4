@@ -20,18 +20,17 @@ const money = (n) => {
   return x.toFixed(2);
 };
 
-// ✅ essaie plusieurs clés (selon ton app)
+// ✅ admin token FIRST
 function getAuthToken() {
   return (
-    localStorage.getItem("agent_token_v1") ||
     localStorage.getItem("admin_token_v1") ||
+    localStorage.getItem("agent_token_v1") ||
     localStorage.getItem("token") ||
     ""
   );
 }
 
 export default function AdminNosDevis() {
-  // ✅ on récupère API depuis AdminApp via <Outlet context={{ API }} />
   const { API } = useOutletContext();
 
   const [tab, setTab] = useState("murs_leds");
@@ -65,7 +64,7 @@ export default function AdminNosDevis() {
   const loadAgents = async () => {
     try {
       const res = await fetch(`${API}/api/agents/agents-lite`, {
-        headers: { ...authHeaders() },
+        headers: authHeaders(),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -79,15 +78,14 @@ export default function AdminNosDevis() {
   const load = async () => {
     setLoading(true);
     setError("");
+
     try {
       const url =
         `${API}/api/agents/devis?tab=${encodeURIComponent(tab)}` +
         `&q=${encodeURIComponent(q)}` +
         `&agentId=${encodeURIComponent(agentId)}`;
 
-      const res = await fetch(url, {
-        headers: { ...authHeaders() },
-      });
+      const res = await fetch(url, { headers: authHeaders() });
 
       if (!res.ok) {
         const txt = await res.text();
@@ -100,7 +98,7 @@ export default function AdminNosDevis() {
     } catch (e) {
       console.error(e);
       if (String(e?.message) === "401") {
-        setError("Non autorisé. Connecte-toi (token manquant/expiré).");
+        setError("Non autorisé. Token manquant/expiré (admin_token_v1).");
       } else {
         setError("Impossible de charger les devis.");
       }
@@ -143,7 +141,9 @@ export default function AdminNosDevis() {
       if (!list.length) continue;
 
       for (const pi of list) {
-        const agentName = [d.agentSnapshot?.prenom, d.agentSnapshot?.nom].filter(Boolean).join(" ");
+        const agentName = [d.agentSnapshot?.prenom, d.agentSnapshot?.nom]
+          .filter(Boolean)
+          .join(" ");
         out.push({
           devisId: d._id,
           devisNumber: d.devisNumber,
@@ -170,7 +170,9 @@ export default function AdminNosDevis() {
         const checked = cfg.checked || {};
         for (const rowId of Object.keys(checked)) {
           const line = checked[rowId] || {};
-          const agentName = [d.agentSnapshot?.prenom, d.agentSnapshot?.nom].filter(Boolean).join(" ");
+          const agentName = [d.agentSnapshot?.prenom, d.agentSnapshot?.nom]
+            .filter(Boolean)
+            .join(" ");
           out.push({
             devisId: d._id,
             devisNumber: d.devisNumber,
@@ -227,7 +229,9 @@ export default function AdminNosDevis() {
       const va = get(a);
       const vb = get(b);
       if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
-      return String(va).localeCompare(String(vb), "fr", { sensitivity: "base" }) * dir;
+      return (
+        String(va).localeCompare(String(vb), "fr", { sensitivity: "base" }) * dir
+      );
     });
 
     return arr;
@@ -263,7 +267,9 @@ export default function AdminNosDevis() {
       const va = get(a);
       const vb = get(b);
       if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
-      return String(va).localeCompare(String(vb), "fr", { sensitivity: "base" }) * dir;
+      return (
+        String(va).localeCompare(String(vb), "fr", { sensitivity: "base" }) * dir
+      );
     });
 
     return arr;
@@ -293,10 +299,18 @@ export default function AdminNosDevis() {
       </div>
 
       <div className="subtabs" style={{ marginBottom: 12 }}>
-        <button className={`subtab ${tab === "murs_leds" ? "active" : ""}`} type="button" onClick={() => setTab("murs_leds")}>
+        <button
+          className={`subtab ${tab === "murs_leds" ? "active" : ""}`}
+          type="button"
+          onClick={() => setTab("murs_leds")}
+        >
           Murs leds
         </button>
-        <button className={`subtab ${tab === "autres_produits" ? "active" : ""}`} type="button" onClick={() => setTab("autres_produits")}>
+        <button
+          className={`subtab ${tab === "autres_produits" ? "active" : ""}`}
+          type="button"
+          onClick={() => setTab("autres_produits")}
+        >
           Autres produits
         </button>
       </div>
@@ -309,7 +323,12 @@ export default function AdminNosDevis() {
           placeholder="Rechercher (code devis, email, nom, société...)"
         />
 
-        <select className="input" value={agentId} onChange={(e) => setAgentId(e.target.value)} title="Filtrer par utilisateur">
+        <select
+          className="input"
+          value={agentId}
+          onChange={(e) => setAgentId(e.target.value)}
+          title="Filtrer par utilisateur"
+        >
           <option value="">Tous les utilisateurs</option>
           {agents.map((a) => (
             <option key={a._id} value={a._id}>
@@ -337,206 +356,309 @@ export default function AdminNosDevis() {
 
       {error ? <div className="alert">{error}</div> : null}
 
+      {/* =========================
+          TABLE + PAGINATION (COMPLET)
+          ========================= */}
+
+      {/* Toolbar tri + pagination */}
+      <div className="page-actions" style={{ marginBottom: 12, gap: 10 }}>
+        <div className="muted">
+          {loading ? "Chargement..." : `${total} ligne(s)`}
+          {!loading && totalPages > 1 ? ` — page ${safePage}/${totalPages}` : ""}
+        </div>
+
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            className="btn btn-outline"
+            type="button"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1 || loading}
+          >
+            ← Précédent
+          </button>
+          <button
+            className="btn btn-outline"
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages || loading}
+          >
+            Suivant →
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
       <div className="table-wrap">
         {loading ? (
           <div className="muted">Chargement...</div>
+        ) : pageRows.length === 0 ? (
+          <div className="muted">Aucune donnée.</div>
         ) : tab === "murs_leds" ? (
-          <div style={{ overflow: "auto" }}>
-            <table className="table table-wide">
-              <thead>
-                <tr>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("devisNumber")}>
-                    Code devis {sortKey === "devisNumber" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Produit</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("pitchLabel")}>
-                    Pitch {sortKey === "pitchLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("resolutionLabel")}>
-                    Catégorie {sortKey === "resolutionLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Code produit</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("agent")}>
-                    Utilisateur {sortKey === "agent" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("createdAt")}>
-                    Date et heure {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Nom</th>
-                  <th>Prénom</th>
-                  <th>Société</th>
-                  <th>Adresse</th>
-                  <th>Code Postal</th>
-                  <th>Ville</th>
-                  <th>Téléphone</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("clientEmail")}>
-                    Email {sortKey === "clientEmail" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Commentaires</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("surfaceM2")}>
-                    Surface (m²) {sortKey === "surfaceM2" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Diagonale (cm)</th>
-                  <th>Durée (mois)</th>
-                  <th>Total HT</th>
-                  <th>Quantité</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("montantHt")}>
-                    Montant HT {sortKey === "montantHt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+          <table className="table table-wide">
+            <thead>
+              <tr>
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("createdAt")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Date {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
 
-              <tbody>
-                {pageRows.map((r, idx) => {
-                  const pi = r.pi || {};
-                  const c = r.client || {};
-                  const address = [c.adresse1, c.adresse2].filter(Boolean).join(" ");
-                  return (
-                    <tr key={`${r.devisId}_${start + idx}`}>
-                      <td>{r.devisNumber || "—"}</td>
-                      <td>Murs leds</td>
-                      <td>{pi?.pitchLabel || "—"}</td>
-                      <td>{pi?.resolutionLabel || "—"}</td>
-                      <td>{pi?.pitchId || "—"}</td>
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("devisNumber")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Devis {sortKey === "devisNumber" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
 
-                      <td>{r.agentDisplay || "—"}</td>
-                      <td>{fmtDate(r.createdAt)}</td>
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("agent")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Agent {sortKey === "agent" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
 
-                      <td>{c.nom || "—"}</td>
-                      <td>{c.prenom || "—"}</td>
-                      <td>{c.societe || "—"}</td>
-                      <td>{address || "—"}</td>
-                      <td>{c.codePostal || "—"}</td>
-                      <td>{c.ville || "—"}</td>
-                      <td>{c.telephone || "—"}</td>
-                      <td>{c.email || "—"}</td>
-                      <td>{c.commentaires || "—"}</td>
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("clientEmail")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Client {sortKey === "clientEmail" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
 
-                      <td>{pi.surfaceM2 ?? "—"}</td>
-                      <td>{pi.diagonaleCm ?? "—"}</td>
-                      <td>{pi.financementMonths ?? "—"}</td>
-                      <td>{pi.prixTotalHtMois ?? "—"}</td>
-                      <td>{pi.quantite ?? "—"}</td>
-                      <td>{pi.montantHt ?? "—"}</td>
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("pitchLabel")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Pitch {sortKey === "pitchLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
 
-                      <td>
-                        <button className="btn btn-dark" type="button" onClick={() => openPdf(r.devisId)}>
-                          Voir PDF
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("resolutionLabel")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Résolution {sortKey === "resolutionLabel" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
 
-                {activeRows.length === 0 ? (
-                  <tr>
-                    <td className="muted" colSpan={22}>
-                      Aucun devis.
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("surfaceM2")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Surface m² {sortKey === "surfaceM2" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("montantHt")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Montant HT {sortKey === "montantHt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {pageRows.map((r, idx) => {
+                const pi = r.pi || {};
+                const c = r.client || {};
+
+                const devisLabel =
+                  r.devisNumber ||
+                  (r.devisId ? `DE${String(r.devisId).slice(-4).toUpperCase()}` : "—");
+
+                return (
+                  <tr key={`${r.devisId}-${idx}`}>
+                    <td>{fmtDate(r.createdAt)}</td>
+                    <td className="mono">{devisLabel}</td>
+                    <td>{r.agentDisplay || "—"}</td>
+                    <td title={c.email || ""}>{c.email || c.company || "—"}</td>
+                    <td>{pi.pitchLabel || "—"}</td>
+                    <td>{pi.resolutionLabel || "—"}</td>
+                    <td>{Number.isFinite(Number(pi.surfaceM2)) ? Number(pi.surfaceM2).toFixed(2) : "—"}</td>
+                    <td>{money(pi.montantHt)} €</td>
+                    <td>
+                      <button className="btn btn-outline" type="button" onClick={() => openPdf(r.devisId)}>
+                        PDF
+                      </button>
                     </td>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+                );
+              })}
+            </tbody>
+          </table>
         ) : (
-          <div style={{ overflow: "auto" }}>
-            <table className="table table-wide">
-              <thead>
-                <tr>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("devisNumber")}>
-                    Code devis {sortKey === "devisNumber" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("rowId")}>
-                    Taille sélectionnée {sortKey === "rowId" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Mémoire</th>
-                  <th>Prix unitaire</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("qty")}>
-                    Quantité {sortKey === "qty" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("totalPrice")}>
-                    Total {sortKey === "totalPrice" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Taille (pouces)</th>
-                  <th>Durée leasing (mois)</th>
-                  <th>Prix associé</th>
-                  <th>Commentaires</th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("agent")}>
-                    Utilisateur {sortKey === "agent" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th style={{ cursor: "pointer" }} onClick={() => toggleSort("createdAt")}>
-                    Date {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                  </th>
-                  <th>Action</th>
-                </tr>
-              </thead>
+          <table className="table table-wide">
+            <thead>
+              <tr>
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("createdAt")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Date {sortKey === "createdAt" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
 
-              <tbody>
-                {pageRows.map((r) => {
-                  const c = r.client || {};
-                  return (
-                    <tr key={`${r.devisId}_${r.productId}_${r.rowId}`}>
-                      <td>{r.devisNumber || "—"}</td>
-                      <td>{r.rowId || "—"}</td>
-                      <td>{r.memoryLabel || r.memId || "—"}</td>
-                      <td>{r.unitPrice != null ? `${money(r.unitPrice)} €` : "—"}</td>
-                      <td>{r.qty ?? 1}</td>
-                      <td>{r.totalPrice != null ? `${money(r.totalPrice)} €` : "—"}</td>
-                      <td>{r.sizeInches != null ? r.sizeInches : "—"}</td>
-                      <td>{r.leasingMonths || "—"} mois</td>
-                      <td>{r.priceLabel || "—"}</td>
-                      <td>{c.commentaires || "—"}</td>
-                      <td>{r.agentDisplay || "—"}</td>
-                      <td>{fmtDate(r.createdAt)}</td>
-                      <td>
-                        <button className="btn btn-dark" type="button" onClick={() => openPdf(r.devisId)}>
-                          Voir PDF
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("devisNumber")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Devis {sortKey === "devisNumber" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
 
-                {activeRows.length === 0 ? (
-                  <tr>
-                    <td className="muted" colSpan={13}>
-                      Aucun devis.
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("agent")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Agent {sortKey === "agent" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("clientEmail")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Client {sortKey === "clientEmail" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("rowId")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Item {sortKey === "rowId" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+
+                <th>Leasing</th>
+                <th>Mémoire</th>
+
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("qty")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Qté {sortKey === "qty" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+
+                <th>PU</th>
+
+                <th
+                  role="button"
+                  title="Trier"
+                  onClick={() => toggleSort("totalPrice")}
+                  style={{ cursor: "pointer" }}
+                >
+                  Total {sortKey === "totalPrice" ? (sortDir === "asc" ? "▲" : "▼") : ""}
+                </th>
+
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {pageRows.map((r, idx) => {
+                const c = r.client || {};
+                const devisLabel =
+                  r.devisNumber ||
+                  (r.devisId ? `DE${String(r.devisId).slice(-4).toUpperCase()}` : "—");
+
+                return (
+                  <tr key={`${r.devisId}-${r.rowId}-${idx}`}>
+                    <td>{fmtDate(r.createdAt)}</td>
+                    <td className="mono">{devisLabel}</td>
+                    <td>{r.agentDisplay || "—"}</td>
+                    <td title={c.email || ""}>{c.email || c.company || "—"}</td>
+                    <td className="mono">{r.rowId || "—"}</td>
+                    <td>{r.leasingMonths ? `${r.leasingMonths} mois` : "—"}</td>
+                    <td>{r.memoryLabel || (r.memId ? `#${r.memId}` : "—")}</td>
+                    <td>{r.qty}</td>
+                    <td>
+                      {r.priceLabel
+                        ? r.priceLabel
+                        : Number.isFinite(Number(r.unitPrice))
+                        ? `${money(r.unitPrice)} €`
+                        : "—"}
+                    </td>
+                    <td>{Number.isFinite(Number(r.totalPrice)) ? `${money(r.totalPrice)} €` : "—"}</td>
+                    <td>
+                      <button className="btn btn-outline" type="button" onClick={() => openPdf(r.devisId)}>
+                        PDF
+                      </button>
                     </td>
                   </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 
-      {!loading ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, paddingTop: 12 }}>
-          <div className="muted">{total === 0 ? "0 résultat" : `${start + 1}-${Math.min(end, total)} sur ${total} résultat(s)`}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button className="btn" type="button" disabled={safePage <= 1} onClick={() => setPage(1)}>
-              «
+      {/* Pagination bottom */}
+      {!loading && totalPages > 1 ? (
+        <div className="page-actions" style={{ marginTop: 12, gap: 10 }}>
+          <div className="muted">
+            Page {safePage} / {totalPages} — {total} ligne(s)
+          </div>
+
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              className="btn btn-outline"
+              type="button"
+              onClick={() => setPage(1)}
+              disabled={safePage === 1}
+            >
+              « Début
             </button>
-            <button className="btn" type="button" disabled={safePage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-              Préc.
+            <button
+              className="btn btn-outline"
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+            >
+              ← Précédent
             </button>
-            <div className="muted">
-              Page {safePage} / {totalPages}
-            </div>
-            <button className="btn" type="button" disabled={safePage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
-              Suiv.
+            <button
+              className="btn btn-outline"
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+            >
+              Suivant →
             </button>
-            <button className="btn" type="button" disabled={safePage >= totalPages} onClick={() => setPage(totalPages)}>
-              »
+            <button
+              className="btn btn-outline"
+              type="button"
+              onClick={() => setPage(totalPages)}
+              disabled={safePage === totalPages}
+            >
+              Fin »
             </button>
           </div>
         </div>
       ) : null}
-
-      <div className="muted" style={{ paddingTop: 10 }}>
-        Astuce : tape un code devis (ex: DE01049) ou un email pour filtrer.
-      </div>
     </div>
   );
 }
