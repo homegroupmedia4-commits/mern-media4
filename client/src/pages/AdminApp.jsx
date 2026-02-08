@@ -333,9 +333,6 @@ if (password === ADMIN_PASSWORD) {
     </NavLink>
   </div>
 ) : null}
-git add .
-
-
             <NavLink
               to={`${ADMIN_BASE}/agents`}
               className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}

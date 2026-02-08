@@ -42,7 +42,16 @@ export default function App() {
         <Route path="tailles-ecrans" element={<Navigate to="tailles-ecrans/ajouterautreproduit" replace />} />
         <Route path="tailles-ecrans/:slug" element={<TaillesEcrans />} />
 
-        <Route path="valeurs-statiques" element={<ValeursStatiques />} />
+
+
+        <Route path="tailles-ecrans" element={<Navigate to="tailles-ecrans/ajouterautreproduit" replace />} />
+<Route path="tailles-ecrans/:slug" element={<TaillesEcrans />} />
+
+<Route path="valeurs-statiques" element={<Navigate to="valeurs-statiques/dureeleasing" replace />} />
+<Route path="valeurs-statiques/:slug" element={<ValeursStatiques />} />
+
+
+
       </Route>
 
       {/* ✅ SHORTCUTS demandés (URLs “propres”) */}
