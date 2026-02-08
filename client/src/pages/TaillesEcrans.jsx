@@ -80,10 +80,11 @@ export default function TaillesEcrans() {
   }, [slug]);
 
   // tab -> URL
-  const goTab = (nextTab) => {
-    const nextSlug = TAB_TO_SLUG[nextTab] || "ajouterautreproduit";
-    navigate(`/adminmedia4/tailles-ecrans/${nextSlug}`, { replace: false });
-  };
+const goTab = (nextTab) => {
+  const nextSlug = TAB_TO_SLUG[nextTab] || "ajouterautreproduit";
+  navigate(`/${nextSlug}`, { replace: false }); // ✅ slash + route simple
+};
+
 
   const authHeaders = () => {
     const token = getAuthToken();
@@ -215,7 +216,9 @@ export default function TaillesEcrans() {
   const startEdit = (r) => {
     setEditId(r?._id);
     setEditDraft({
-      productId: r?.productId || "",
+      productId:
+  typeof r?.productId === "object" ? r.productId?._id : (r?.productId || ""),
+
       sizeInches: r?.sizeInches ?? "",
       leasingMonths: r?.leasingMonths ?? "",
       price: r?.price ?? "",
@@ -234,7 +237,11 @@ export default function TaillesEcrans() {
     setError("");
     try {
       const payload = {
-        productId: editDraft.productId || "",
+        productId:
+  typeof editDraft.productId === "object"
+    ? editDraft.productId?._id
+    : editDraft.productId || "",
+
         sizeInches: Number(editDraft.sizeInches) || 0,
         leasingMonths: Number(editDraft.leasingMonths) || 0,
         price: Number(String(editDraft.price).replace(",", ".")) || 0,
@@ -364,11 +371,17 @@ export default function TaillesEcrans() {
     }
   };
 
-  // ---------- UI HELPERS ----------
-  const productLabelById = (pid) => {
-    const p = activeProducts.find((x) => String(x?._id) === String(pid));
-    return p?.name || p?.label || pid || "—";
-  };
+const productLabelById = (pidOrObj) => {
+  // si c'est déjà un objet mongoose populate
+  if (pidOrObj && typeof pidOrObj === "object") {
+    return pidOrObj.name || pidOrObj.label || pidOrObj._id || "—";
+  }
+  // sinon c'est un id
+  const pid = String(pidOrObj || "");
+  const p = activeProducts.find((x) => String(x?._id) === pid);
+  return p?.name || p?.label || pid || "—";
+};
+
 
   const isBusy =
     savingOther || savingMem || loadingProducts || loadingDur || loadingRows || loadingMem;
