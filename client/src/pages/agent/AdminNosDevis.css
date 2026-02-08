@@ -1,0 +1,65 @@
+/* client/src/pages/AdminNosDevis.css */
+
+.m4devis-filters{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin: 10px 0 12px;
+}
+
+.m4devis-filters .input{
+  min-width: 260px;
+  max-width: 460px;
+}
+
+.m4devis-tableWrap{
+  background:#fff;
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding: 12px;
+}
+
+/* scroll vertical + horizontal comme screenshot */
+.m4devis-tableWrap{
+  overflow:auto;
+  max-height: 68vh;
+}
+
+/* table large */
+.m4devis-table{
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1600px; /* force horizontal scroll */
+}
+
+.m4devis-table th,
+.m4devis-table td{
+  padding: 12px 12px;
+  border-bottom: 1px solid #eef1f7;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.m4devis-table th{
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  z-index: 2;
+  font-weight: 900;
+}
+
+.m4devis-btn{
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: none;
+  background: #0f172a;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.m4devis-btn:hover{
+  filter: brightness(1.08);
+}
