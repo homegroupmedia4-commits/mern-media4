@@ -629,15 +629,22 @@ const clientText = clientLines.join("\n");
 
 // ✅ 1) Titre "Devis" AU-DESSUS du bloc client
 
-// ✅ 1) Titre "Devis" aligné sur la colonne droite (comme le bloc client)
-const devisOffsetX = 8; // 🔧 ajuste: 6 / 8 / 10 selon ton rendu
+// largeur légèrement réduite pour décaler le centre vers la droite
+const devisCenterNudge = 12; // 🔧 6 à 14 max (12 est souvent parfait)
 
 doc
   .font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text("Devis", clientX + devisOffsetX, titleBaseY, { width: clientW, align: "center" });
-
+  .text(
+    "Devis",
+    clientX,
+    titleBaseY,
+    {
+      width: clientW - devisCenterNudge,
+      align: "center",
+    }
+  );
 
 
 // ✅ 2) Bloc client EN DESSOUS du titre
