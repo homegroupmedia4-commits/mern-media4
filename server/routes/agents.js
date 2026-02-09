@@ -965,6 +965,15 @@ async function requireAgentAuth(req, res, next) {
 }
 
 
+function requireAdmin(req, res, next) {
+  const role = String(req.agent?.role || "");
+  const isAdmin = ["admin", "superadmin"].includes(role) || req.agent?.isAdminToken;
+  if (!isAdmin) return res.status(403).json({ message: "Forbidden" });
+  next();
+}
+
+
+
 function generate5PagePdfBuffer({ texte, agent }) {
   return new Promise((resolve, reject) => {
     try {
@@ -1395,11 +1404,13 @@ router.get("/me", requireAgentAuth, async (req, res) => {
 router.get("/admin/list", async (req, res) => {
   try {
     const agents = await Agent.find()
-      .sort({ createdAt: -1 })
-      .select(
-        "_id nom prenom email role societe siret adresse codePostal ville telephonePortable telephoneFixe pays parrainId createdAt"
-      )
-      .lean();
+  .sort({ createdAt: -1 })
+  .populate("parrainId", "_id nom prenom email")
+  .select(
+    "_id nom prenom email role societe siret adresse codePostal ville telephonePortable telephoneFixe pays parrainId createdAt"
+  )
+  .lean();
+
 
     res.json(agents);
   } catch (e) {
@@ -1407,5 +1418,55 @@ router.get("/admin/list", async (req, res) => {
     res.status(500).json({ message: "Erreur serveur." });
   }
 });
+
+// ✅ UPDATE agent (admin only)
+router.put("/admin/agents/:id", requireAgentAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const allowed = [
+      "nom",
+      "prenom",
+      "email",
+      "parrainId",
+      "societe",
+      "siret",
+      "adresse",
+      "codePostal",
+      "ville",
+      "telephonePortable",
+      "telephoneFixe",
+      "pays",
+      "role",
+    ];
+
+    const patch = {};
+    for (const k of allowed) {
+      if (Object.prototype.hasOwnProperty.call(req.body, k)) {
+        patch[k] = req.body[k];
+      }
+    }
+
+    // normalisations
+    if (patch.email) patch.email = String(patch.email).toLowerCase().trim();
+    if (patch.parrainId === "" || patch.parrainId === null) patch.parrainId = null;
+
+    const updated = await Agent.findByIdAndUpdate(id, patch, { new: true })
+      .populate("parrainId", "_id nom prenom email")
+      .lean();
+
+    if (!updated) return res.status(404).json({ message: "Agent introuvable." });
+
+    return res.json(updated);
+  } catch (e) {
+    console.error(e);
+    // cas email unique
+    if (String(e?.code) === "11000") {
+      return res.status(409).json({ message: "Email déjà utilisé." });
+    }
+    return res.status(500).json({ message: "Erreur serveur (update agent)." });
+  }
+});
+
 
 module.exports = router;

@@ -855,6 +855,23 @@ if (hasAnyLine) ht += 19.95;
   }, [otherSelections, pitchInstances, productById, otherSizeById, memById]);
 
 
+  // --- helpers label PDF ---
+const normalizeForFilename = (s) =>
+  String(s || "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // enlève accents
+    .replace(/[^a-zA-Z0-9]+/g, "_")  // tout le reste -> _
+    .replace(/^_+|_+$/g, "")        // trim _
+    .replace(/_+/g, "_");           // collapse __
+
+const buildPdfLinkLabel = ({ devisNumber, societe }) => {
+  const num = String(devisNumber || "DE----").trim();
+  const soc = normalizeForFilename(societe) || "CLIENT";
+  return `Pdf MEDIA4_${num}-1_${soc}`;
+};
+
+
   return (
 
      <>
@@ -1563,9 +1580,9 @@ if (hasAnyLine) ht += 19.95;
         <div className="agenthome-block">
        
 
-         {pdfUrl ? (
+{pdfUrl ? (
   <a className="agenthome-pdf" href={pdfUrl} target="_blank" rel="noreferrer">
-    {`Télécharger le pdf - ${lastDevisNumber || "DE----"}`}
+    {buildPdfLinkLabel({ devisNumber: lastDevisNumber, societe: client.societe })}
   </a>
 ) : null}
 
