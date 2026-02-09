@@ -833,6 +833,16 @@ next.categorieId = selectedCategoryId;
       ht += parseEuro(pi.montantHt);
     }
 
+
+    // ✅ ABOBR (comme dans le PDF) : 19,95€ si on a au moins 1 ligne
+const hasAnyLine =
+  (pitchInstances || []).some((pi) => parseEuro(pi.montantHt) > 0) ||
+  Object.keys(otherSelections || {}).length > 0;
+
+if (hasAnyLine) ht += 19.95;
+
+
+
     const tva = ht * 0.2;
     const ttc = ht + tva;
 
