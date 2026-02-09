@@ -304,12 +304,12 @@ for (const pid of Object.keys(otherSelections || {})) {
 }
 
 const sizes = checkedRowIds.length
-  ? await OtherProductSize.find({ _id: { $in: checkedRowIds } }).lean()
-  : [];
-const mems = checkedMemIds.length
-  ? await MemoryOption.find({ _id: { $in: checkedMemIds } }).lean()
+  ? await OtherProductSize.find({ _id: { $in: checkedRowIds } })
+      .populate("productId", "name")
+      .lean()
   : [];
 
+  
 const sizeById = new Map(sizes.map((s) => [String(s._id), s]));
 const memById = new Map(mems.map((m) => [String(m._id), m]));
 
