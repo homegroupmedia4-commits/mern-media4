@@ -272,6 +272,89 @@ const cat = String(
 //   }
 
 
+// // -----------------------------
+// // 2) AUTRES PRODUITS (mensualité)
+// // -----------------------------
+// const otherMonthlyLines = [];
+
+// const isOid = (v) => mongoose.Types.ObjectId.isValid(String(v));
+
+// function getCheckedBucket(sel) {
+//   if (!sel) return {};
+//   if (sel.byMonths) {
+//     const months = String(sel.leasingMonths || "").trim();
+//     return sel.byMonths?.[months]?.checked || {};
+//   }
+//   return sel.checked || {};
+// }
+
+// const checkedRowIds = [];
+// const checkedMemIds = [];
+
+// for (const pid of Object.keys(otherSelections || {})) {
+//   const sel = otherSelections?.[pid];
+//   const checked = getCheckedBucket(sel);
+
+//   for (const rowId of Object.keys(checked || {})) {
+//     if (isOid(rowId)) checkedRowIds.push(rowId);
+
+//     const memId = checked[rowId]?.memId;
+//     if (memId && isOid(memId)) checkedMemIds.push(memId);
+//   }
+// }
+
+// const sizes = checkedRowIds.length
+//   ? await OtherProductSize.find({ _id: { $in: checkedRowIds } })
+//       .populate("productId", "name")
+//       .lean()
+//   : [];
+
+
+// const sizeById = new Map(sizes.map((s) => [String(s._id), s]));
+// const memById = new Map(mems.map((m) => [String(m._id), m]));
+
+// for (const pid of Object.keys(otherSelections || {})) {
+//   const sel = otherSelections?.[pid];
+//   const checked = getCheckedBucket(sel);
+
+//   for (const rowId of Object.keys(checked || {})) {
+//     const line = checked[rowId];
+//     const size = sizeById.get(String(rowId));
+//     if (!size) continue;
+
+//     const mem = line?.memId ? memById.get(String(line.memId)) : null;
+
+//     const basePrice = Number(size.price || 0);
+//     const memPrice = Number(mem?.price || 0);
+//     const unit = basePrice + memPrice;
+
+//     const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
+//     const total = unit * qty;
+
+//    const productName = String(
+//   size.product ||
+//   size.productName ||
+//   size.productId?.name ||
+//   "Produit"
+// );
+
+//     const inches = size.sizeInches ? `${size.sizeInches} pouces` : "";
+//     const description = [productName, inches].filter(Boolean).join(" - ");
+
+//     otherMonthlyLines.push({
+//       code: size.productCode || size.codeProduit || "—",
+//       description,
+//       qty,
+//       puHt: unit,
+//       montantHt: fmt2(total),
+//       tva: tvaRate,
+//       scope: "mensualite",
+//       kind: "other",
+//     });
+//   }
+// }
+
+
 // -----------------------------
 // 2) AUTRES PRODUITS (mensualité)
 // -----------------------------
@@ -303,13 +386,25 @@ for (const pid of Object.keys(otherSelections || {})) {
   }
 }
 
-const sizes = checkedRowIds.length
-  ? await OtherProductSize.find({ _id: { $in: checkedRowIds } })
-      .populate("productId", "name")
-      .lean()
+// ✅ SIZES
+let sizes = [];
+if (checkedRowIds.length) {
+  // ✅ populate safe (évite StrictPopulateError si productId n’existe pas)
+  try {
+    sizes = await OtherProductSize.find({ _id: { $in: checkedRowIds } })
+      .populate({ path: "productId", select: "name", strictPopulate: false })
+      .lean();
+  } catch (e) {
+    // fallback sans populate
+    sizes = await OtherProductSize.find({ _id: { $in: checkedRowIds } }).lean();
+  }
+}
+
+// ✅ MEMS (tu l’avais avant, il manquait)
+const mems = checkedMemIds.length
+  ? await MemoryOption.find({ _id: { $in: checkedMemIds } }).lean()
   : [];
 
-  
 const sizeById = new Map(sizes.map((s) => [String(s._id), s]));
 const memById = new Map(mems.map((m) => [String(m._id), m]));
 
@@ -331,12 +426,13 @@ for (const pid of Object.keys(otherSelections || {})) {
     const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
     const total = unit * qty;
 
-   const productName = String(
-  size.product ||
-  size.productName ||
-  size.productId?.name ||
-  "Produit"
-);
+    // ✅ nom produit : supporte plusieurs structures
+    const productName = String(
+      size.product ||
+      size.productName ||
+      size.productId?.name ||
+      "Produit"
+    );
 
     const inches = size.sizeInches ? `${size.sizeInches} pouces` : "";
     const description = [productName, inches].filter(Boolean).join(" - ");
@@ -353,6 +449,7 @@ for (const pid of Object.keys(otherSelections || {})) {
     });
   }
 }
+
 
 
   const qtyOtherTotal = otherMonthlyLines.reduce((s, l) => s + (Number(l.qty) || 0), 0);
