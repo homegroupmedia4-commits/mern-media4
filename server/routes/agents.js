@@ -920,14 +920,44 @@ cell(tvaTxt, cols[5].w, "right", boldRow, 8.7);
      // -----------------------------
 // Mentions sous le tableau
 // -----------------------------
+// let afterMentionsY = y;
+
+// const mentions = String(docData.devisMentions || "").trim();
+// if (mentions) {
+//   doc.font("Helvetica").fontSize(8).fillColor(DARK);
+//   doc.text(mentions, left, y + 6, { width: contentW });
+//   afterMentionsY = y + 6 + doc.heightOfString(mentions, { width: contentW });
+// }
+
+// -----------------------------
+// Mentions sous le tableau (CLIPPÉ pour éviter page 2)
+// -----------------------------
 let afterMentionsY = y;
 
 const mentions = String(docData.devisMentions || "").trim();
 if (mentions) {
-  doc.font("Helvetica").fontSize(8).fillColor(DARK);
-  doc.text(mentions, left, y + 6, { width: contentW });
-  afterMentionsY = y + 6 + doc.heightOfString(mentions, { width: contentW });
+  // espace dispo jusqu'aux blocs du bas
+  const minBottomY = pageH - 120;         // ta zone "bas de page"
+  const maxMentionsH = Math.max(0, (minBottomY - 10) - (y + 6)); // 10px marge
+
+  if (maxMentionsH > 0) {
+    doc.font("Helvetica").fontSize(8).fillColor(DARK);
+
+    // ✅ height => PDFKit CLIPPE le texte au lieu de créer une nouvelle page
+    doc.text(mentions, left, y + 6, {
+      width: contentW,
+      height: maxMentionsH,
+      lineGap: 1.1,
+    });
+
+    afterMentionsY = y + 6 + doc.heightOfString(mentions, {
+      width: contentW,
+      height: maxMentionsH,
+      lineGap: 1.1,
+    });
+  }
 }
+
 
 // -----------------------------
 // BAS DE PAGE (plus proche des mentions)
