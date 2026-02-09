@@ -331,7 +331,13 @@ for (const pid of Object.keys(otherSelections || {})) {
     const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
     const total = unit * qty;
 
-    const productName = String(size.product || "Produit");
+   const productName = String(
+  size.product ||
+  size.productName ||
+  size.productId?.name ||
+  "Produit"
+);
+
     const inches = size.sizeInches ? `${size.sizeInches} pouces` : "";
     const description = [productName, inches].filter(Boolean).join(" - ");
 
@@ -629,22 +635,13 @@ const clientText = clientLines.join("\n");
 
 // ✅ 1) Titre "Devis" AU-DESSUS du bloc client
 
-// largeur légèrement réduite pour décaler le centre vers la droite
-const devisCenterNudge = 12; // 🔧 6 à 14 max (12 est souvent parfait)
-
+// ✅ 1) Titre "Devis" centré sur la page (pas sur la colonne droite)
 doc
   .font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text(
-    "Devis",
-    clientX,
-    titleBaseY,
-    {
-      width: clientW - devisCenterNudge,
-      align: "center",
-    }
-  );
+  .text("Devis", left, titleBaseY, { width: contentW, align: "center" });
+
 
 
 // ✅ 2) Bloc client EN DESSOUS du titre
