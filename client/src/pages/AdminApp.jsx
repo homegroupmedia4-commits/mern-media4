@@ -196,6 +196,14 @@ if (password === ADMIN_PASSWORD) {
               Nos devis
             </NavLink>
 
+            <NavLink
+  to={`${ADMIN_BASE}/produits`}
+  className={({ isActive }) => `sidebar-item ${isActive ? "active" : ""}`}
+>
+  Produits
+</NavLink>
+
+
             <button
               type="button"
               className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/pitchs`) ? "is-active" : ""}`}

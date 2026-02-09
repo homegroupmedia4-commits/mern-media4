@@ -50,6 +50,9 @@ export default function App() {
         <Route path="fixation" element={<AdminFixation />} />
         <Route path="finition" element={<AdminFinition />} />
 
+        <Route path="produits" element={<AdminProduits />} />
+
+
         {/* ✅ Tailles écrans + onglets via slug */}
         <Route
           path="tailles-ecrans"
