@@ -589,9 +589,10 @@ const fixationSuffix = fixationComment ? ` — ${fixationComment}` : "";
   let detail = `Devis mensuel sur la base d'un leasing de ${leasingMonths} mois\navec garantie incluse`;
 
   const clientComment = String(client?.commentaires || "").trim();
-  if (clientComment) {
-    detail += `\n\nCommentaires :\n${clientComment}`;
-  }
+if (clientComment) {
+  detail += `\n${clientComment}`;
+}
+
 
   paraDetail.push({
     code: "",
