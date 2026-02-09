@@ -319,10 +319,31 @@ export default function AgentOtherProductsBlock({
 const activeMonths = String(sel.leasingMonths || getDefaultLeasingMonths());
 const checkedActive = sel.byMonths?.[activeMonths]?.checked || {};
 
+const rowsForProduct = otherSizes.filter((r) => {
+  const rowProductName = getRowProductName(r);
+  return (
+    norm(rowProductName) === norm(productName) &&
+    String(r.leasingMonths) === String(sel.leasingMonths) &&
+    r?.isActive !== false
+  );
+});
 
-        const rowsForProduct = otherSizes.filter((r) => {
-          return norm(r.product) === norm(productName) && String(r.leasingMonths) === String(sel.leasingMonths);
-        });
+const getRowProductName = (row) => {
+  // ancien format (si jamais encore présent)
+  if (row?.product) return String(row.product);
+
+  // nouveau format (populate)
+  if (row?.productId && typeof row.productId === "object") {
+    return String(row.productId?.name || row.productId?._id || "");
+  }
+
+  // fallback si productId est juste un id
+  const pid = String(row?.productId || "");
+  const p = (products || []).find((x) => String(x?._id || x?.id) === pid);
+  return String(p?.name || p?.label || pid || "");
+};
+
+
 
         const checkedIds = Object.keys(checkedActive || {});
         const hasChecked = checkedIds.length > 0;
