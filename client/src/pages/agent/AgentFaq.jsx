@@ -1,7 +1,88 @@
 // client/src/pages/agent/AgentFaq.jsx
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import AgentHeader from "./AgentHeader";
 import { USER_KEY } from "./agentHome.helpers";
+
+function FaqItem({ q, children, isOpen, onToggle }) {
+  return (
+    <div style={{ border: "1px solid #d9dde7", background: "#fff" }}>
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          width: "100%",
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "12px 14px",
+          border: 0,
+          background: "transparent",
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+        aria-expanded={isOpen}
+      >
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>–</span>
+          <span style={{ fontWeight: 800, fontSize: 14 }}>{q}</span>
+        </div>
+
+        <span style={{ fontSize: 16, opacity: 0.8, lineHeight: 1 }}>
+          {isOpen ? "▾" : "▸"}
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div
+          style={{
+            padding: "18px 16px",
+            color: "#5d6475",
+            lineHeight: 1.7,
+            borderTop: "1px solid #d9dde7",
+          }}
+        >
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function FaqCategory({ title, qas, defaultOpenIndex = 0, singleOpen = true }) {
+  // index ouvert (accordéon)
+  const [openIdx, setOpenIdx] = useState(
+    Number.isFinite(defaultOpenIndex) ? defaultOpenIndex : 0
+  );
+
+  return (
+    <div>
+      <h3 style={{ margin: "0 0 12px 0", fontSize: 22, fontWeight: 900 }}>
+        {title}
+      </h3>
+
+      <div style={{ display: "grid", gap: 0 }}>
+        {qas.map((qa, idx) => {
+          const isOpen = singleOpen ? openIdx === idx : !!qa.__open; // (singleOpen=true par défaut)
+          return (
+            <div key={qa.q} style={{ borderTop: idx === 0 ? "1px solid #d9dde7" : 0 }}>
+              <FaqItem
+                q={qa.q}
+                isOpen={isOpen}
+                onToggle={() => {
+                  if (!singleOpen) return; // garde le mode simple
+                  setOpenIdx((prev) => (prev === idx ? -1 : idx));
+                }}
+              >
+                {qa.a}
+              </FaqItem>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function FaqSection({ title, items }) {
   return (
@@ -17,41 +98,13 @@ function FaqSection({ title, items }) {
         }}
       >
         {items.map((cat) => (
-          <div key={cat.title}>
-            <h3 style={{ margin: "0 0 12px 0", fontSize: 22, fontWeight: 900 }}>{cat.title}</h3>
-
-            <div style={{ display: "grid", gap: 0 }}>
-              {cat.qas.map((qa, idx) => (
-                <div
-                  key={qa.q}
-                  style={{
-                    border: "1px solid #d9dde7",
-                    borderTop: idx === 0 ? "1px solid #d9dde7" : "0",
-                    background: "#fff",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      alignItems: "center",
-                      padding: "12px 14px",
-                      borderBottom: "1px solid #d9dde7",
-                      fontWeight: 700,
-                      fontSize: 14,
-                    }}
-                  >
-                    <span style={{ fontSize: 18, lineHeight: 1 }}>–</span>
-                    <span>{qa.q}</span>
-                  </div>
-
-                  <div style={{ padding: "18px 16px", color: "#5d6475", lineHeight: 1.7 }}>
-                    {qa.a}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <FaqCategory
+            key={cat.title}
+            title={cat.title}
+            qas={cat.qas}
+            defaultOpenIndex={0}  // ✅ 1er ouvert
+            singleOpen={true}     // ✅ un seul ouvert à la fois
+          />
         ))}
       </div>
     </div>
@@ -73,7 +126,6 @@ export default function AgentFaq() {
   const showAgentFaq = role === "agent" || role === "responsable";
   const showTechFaq = role === "technicien" || role === "responsable";
 
-  // ✅ Données FAQ (tu modifies les textes quand tu veux)
   const AGENT_FAQ = [
     {
       title: "1 – Garantie & Fin de contrat",
