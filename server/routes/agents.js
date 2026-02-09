@@ -608,8 +608,8 @@ let cursorY = headerTopY + 70;
 // -----------------------------
 const titleBaseY = cursorY;
 
-const metaW = contentW * 0.5;
-const gap = 18;
+const metaW = contentW * 0.46; // au lieu de 0.5
+const gap = 14;               // au lieu de 18
 const clientX = left + metaW + gap;
 const clientW = contentW - metaW - gap;
 
