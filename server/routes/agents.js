@@ -603,17 +603,16 @@ function generateColoredDevisPdfBuffer({ docData }) {
 let cursorY = headerTopY + 70;
 
 
-     // -----------------------------
-// BLOC "DEVIS" + CLIENT (même zone verticale)
 // -----------------------------
-const titleBaseY = cursorY; // point de départ
+// BLOC "DEVIS" AU-DESSUS + CLIENT EN DESSOUS
+// -----------------------------
+const titleBaseY = cursorY;
 
 const metaW = contentW * 0.5;
 const gap = 18;
 const clientX = left + metaW + gap;
 const clientW = contentW - metaW - gap;
 
-// ---- client lines
 const c = docData.client || {};
 const clientLines = [
   (c.societe || "").trim(),
@@ -628,24 +627,17 @@ const clientLines = [
 doc.font("Helvetica").fontSize(9).fillColor(DARK);
 const clientText = clientLines.join("\n");
 
-// hauteur réelle bloc client
-const clientH = doc.heightOfString(clientText, {
-  width: clientW,
-  lineGap: 1.5,
-});
-
-// ✅ Titre centré par rapport au bloc client
-const titleH = 18; // ~ hauteur du "Devis" en 16px
-const titleY = titleBaseY + Math.max(0, (clientH - titleH) / 2);
-
-// ---- draw title
-doc.font("Helvetica-Bold")
+// ✅ 1) Titre "Devis" AU-DESSUS du bloc client
+doc
+  .font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text("Devis", clientX, titleY, { width: clientW, align: "center" });
+  .text("Devis", clientX, titleBaseY, { width: clientW, align: "center" });
 
-// ---- draw client block
-const clientY = titleBaseY;
+// ✅ 2) Bloc client EN DESSOUS du titre
+const titleToClientGap = 10; // ajuste si besoin
+const clientY = titleBaseY + 18 + titleToClientGap;
+
 doc.font("Helvetica").fontSize(9).fillColor(DARK);
 doc.text(clientText, clientX, clientY, {
   width: clientW,
@@ -653,7 +645,8 @@ doc.text(clientText, clientX, clientY, {
   lineGap: 1.5,
 });
 
-// ✅ cursorY après le bloc client
+// ✅ 3) cursorY après client
+const clientH = doc.heightOfString(clientText, { width: clientW, lineGap: 1.5 });
 cursorY = clientY + clientH + 12;
 
 
