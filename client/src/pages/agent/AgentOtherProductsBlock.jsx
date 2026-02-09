@@ -319,6 +319,18 @@ export default function AgentOtherProductsBlock({
 const activeMonths = String(sel.leasingMonths || getDefaultLeasingMonths());
 const checkedActive = sel.byMonths?.[activeMonths]?.checked || {};
 
+const getRowProductName = (row) => {
+  if (row?.product) return String(row.product);
+
+  if (row?.productId && typeof row.productId === "object") {
+    return String(row.productId?.name || row.productId?._id || "");
+  }
+
+  const pid = String(row?.productId || "");
+  const p = (products || []).find((x) => String(x?._id || x?.id) === pid);
+  return String(p?.name || p?.label || pid || "");
+};
+
 const rowsForProduct = otherSizes.filter((r) => {
   const rowProductName = getRowProductName(r);
   return (
@@ -328,20 +340,6 @@ const rowsForProduct = otherSizes.filter((r) => {
   );
 });
 
-const getRowProductName = (row) => {
-  // ancien format (si jamais encore présent)
-  if (row?.product) return String(row.product);
-
-  // nouveau format (populate)
-  if (row?.productId && typeof row.productId === "object") {
-    return String(row.productId?.name || row.productId?._id || "");
-  }
-
-  // fallback si productId est juste un id
-  const pid = String(row?.productId || "");
-  const p = (products || []).find((x) => String(x?._id || x?.id) === pid);
-  return String(p?.name || p?.label || pid || "");
-};
 
 
 
