@@ -608,8 +608,8 @@ let cursorY = headerTopY + 70;
 // -----------------------------
 const titleBaseY = cursorY;
 
-const metaW = contentW * 0.46; // au lieu de 0.5
-const gap = 14;               // au lieu de 18
+const metaW = contentW * 0.5;
+const gap = 18;
 const clientX = left + metaW + gap;
 const clientW = contentW - metaW - gap;
 
@@ -628,11 +628,13 @@ doc.font("Helvetica").fontSize(9).fillColor(DARK);
 const clientText = clientLines.join("\n");
 
 // ✅ 1) Titre "Devis" AU-DESSUS du bloc client
+
 doc
   .font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text("Devis", clientX, titleBaseY, { width: clientW, align: "center" });
+  .text("Devis", left, titleBaseY, { width: contentW, align: "center" });
+
 
 // ✅ 2) Bloc client EN DESSOUS du titre
 const titleToClientGap = 10; // ajuste si besoin
