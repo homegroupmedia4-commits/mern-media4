@@ -537,25 +537,42 @@ setPitchInstances((prev) =>
         
       } 
       
+    //   else {
+
+    //     const categorieName =
+    // categories.find((c) => String(c._id) === String(selectedCategoryId))?.name || "";
+
+
+    //     setPitchInstances((inst) => [
+    //       ...inst,
+
+    //        {
+    //   ...createDefaultPitchInstance({ pitch, durations }),
+    //   categorieId: selectedCategoryId,     
+    //   categorieName,                       
+    // },
+
+    //     ]);
+
+
+    //   }
+
       else {
+  const cid = String(pitch.__categoryId || selectedCategoryId || "");
+  const categorieName = categories.find((c) => String(c._id) === cid)?.name || "";
 
-        const categorieName =
-    categories.find((c) => String(c._id) === String(selectedCategoryId))?.name || "";
-
-
-        setPitchInstances((inst) => [
-          ...inst,
-
-           {
-      ...createDefaultPitchInstance({ pitch, durations }),
-      categorieId: selectedCategoryId,     // ✅ utile
-      categorieName,                       // ✅ indispensable pour le PDF
+  setPitchInstances((inst) => [
+    ...inst,
+    {
+      ...createDefaultPitchInstance({ pitch, durations, categorieId: cid, categorieName }),
+      categorieId: cid,
+      categorieName,
     },
+  ]);
+}
 
-        ]);
 
-
-      }
+      
       return next;
     });
   };
@@ -585,10 +602,19 @@ setPitchInstances((prev) =>
         // const categorieName =
         //   categories.find((c) => c._id === selectedCategoryId)?.name || "";
 
-        const categorieName =
+        const categorieId = next.categorieId || selectedCategoryId || "";
+const categorieName =
   next.categorieName ||
-  categories.find((c) => c._id === selectedCategoryId)?.name ||
+  categories.find((c) => String(c._id) === String(categorieId))?.name ||
   "";
+
+
+        
+
+  //       const categorieName =
+  // next.categorieName ||
+  // categories.find((c) => c._id === selectedCategoryId)?.name ||
+  // "";
 
 
         const pitchObj = pitches.find((x) => (x._id || x.id) === next.pitchId);
@@ -609,8 +635,12 @@ setPitchInstances((prev) =>
           categorieName,
         });
 
-        next.categorieName = categorieName;
-next.categorieId = selectedCategoryId;
+//         next.categorieName = categorieName;
+// next.categorieId = selectedCategoryId;
+
+        next.categorieId = categorieId;
+next.categorieName = categorieName;
+
 
 
         return {
