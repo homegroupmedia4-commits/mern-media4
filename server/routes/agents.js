@@ -933,31 +933,62 @@ cell(tvaTxt, cols[5].w, "right", boldRow, 8.7);
 // -----------------------------
 // Mentions sous le tableau (CLIPPÉ pour éviter page 2)
 // -----------------------------
+
+function fitTextToHeight(doc, text, { width, height, lineGap = 1.1, font = "Helvetica", fontSize = 8 }) {
+  const t = String(text || "").trim();
+  if (!t) return "";
+
+  doc.font(font).fontSize(fontSize);
+
+  const h = doc.heightOfString(t, { width, lineGap });
+  if (h <= height) return t;
+
+  // tronque progressivement (binaire) + "…"
+  let lo = 0;
+  let hi = t.length;
+  let best = "";
+
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const candidate = (t.slice(0, mid).trimEnd() + "…").trim();
+    const ch = doc.heightOfString(candidate, { width, lineGap });
+
+    if (ch <= height) {
+      best = candidate;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+
+  return best || "…";
+}
+
+
+
 let afterMentionsY = y;
 
 const mentions = String(docData.devisMentions || "").trim();
 if (mentions) {
-  // espace dispo jusqu'aux blocs du bas
-  const minBottomY = pageH - 120;         // ta zone "bas de page"
-  const maxMentionsH = Math.max(0, (minBottomY - 10) - (y + 6)); // 10px marge
+  const minBottomY = pageH - 120;               // ta zone bas de page
+  const maxMentionsH = Math.max(0, (minBottomY - 10) - (y + 6));
 
   if (maxMentionsH > 0) {
+    const fitted = fitTextToHeight(doc, mentions, {
+      width: contentW,
+      height: maxMentionsH,
+      lineGap: 1.1,
+      font: "Helvetica",
+      fontSize: 8,
+    });
+
     doc.font("Helvetica").fontSize(8).fillColor(DARK);
+    doc.text(fitted, left, y + 6, { width: contentW, lineGap: 1.1 });
 
-    // ✅ height => PDFKit CLIPPE le texte au lieu de créer une nouvelle page
-    doc.text(mentions, left, y + 6, {
-      width: contentW,
-      height: maxMentionsH,
-      lineGap: 1.1,
-    });
-
-    afterMentionsY = y + 6 + doc.heightOfString(mentions, {
-      width: contentW,
-      height: maxMentionsH,
-      lineGap: 1.1,
-    });
+    afterMentionsY = y + 6 + doc.heightOfString(fitted, { width: contentW, lineGap: 1.1 });
   }
 }
+
 
 
 // -----------------------------

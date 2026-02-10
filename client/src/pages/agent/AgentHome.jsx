@@ -956,11 +956,21 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
               </select>
             </div>
 
-            {selectedCategoryId ? (
+            {/* {selectedCategoryId ? (
               <div className="agenthome-subcard">
                 <div className="agenthome-subcardTitle">
                   {categories.find((x) => x._id === selectedCategoryId)?.name || "Catégorie"}
-                </div>
+                </div> */}
+
+                {(!showAllPitches && selectedCategoryId) ? (
+  <div className="agenthome-subcard">
+    <div className="agenthome-subcardTitle">
+      {categories.find((x) => x._id === selectedCategoryId)?.name || "Catégorie"}
+    </div>
+  
+
+
+
 
                 {loadingPitches ? (
                   <div className="agenthome-muted">Chargement...</div>
@@ -996,10 +1006,24 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                     onChange={() => togglePitch(pitch)}
                   />
 
-                  <span className="agenthome-pitchLabel">
+                  {/* <span className="agenthome-pitchLabel">
                     {pitch.name || pitch.label || "Pitch"}
                     {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
-                  </span>
+                  </span> */}
+
+                  <span className="agenthome-pitchLabel">
+  {(() => {
+    const base = String(pitch?.name || pitch?.label || "Pitch").trim();
+    const meta = [pitch?.dimensions, pitch?.luminosite, pitch?.codeProduit]
+      .filter(Boolean)
+      .join(", ");
+    return meta ? `${base} (${meta})` : base;
+  })()}
+  {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
+</span>
+
+
+
                 </label>
               );
             })}
@@ -1026,10 +1050,22 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
               onChange={() => togglePitch(pitch)}
             />
 
-            <span className="agenthome-pitchLabel">
+            {/* <span className="agenthome-pitchLabel">
               {pitch.name || pitch.label || "Pitch"}
               {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
-            </span>
+            </span> */}
+
+<span className="agenthome-pitchLabel">
+  {(() => {
+    const base = String(pitch?.name || pitch?.label || "Pitch").trim();
+    const meta = [pitch?.dimensions, pitch?.luminosite, pitch?.codeProduit]
+      .filter(Boolean)
+      .join(", ");
+    return meta ? `${base} (${meta})` : base;
+  })()}
+  {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
+</span>
+
           </label>
         );
       })}

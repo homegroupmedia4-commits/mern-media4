@@ -574,3 +574,246 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   .dash-main{ margin-left: 240px; }
   .input{ min-width: 180px; }
 }
+
+/* =========================================================
+   RESPONSIVE COMPLET — App.css
+   À COLLER À LA FIN DU FICHIER
+   (sidebar fixed -> devient topbar + drawer mobile)
+   ========================================================= */
+
+/* --- 0) Petits laptops/tablettes --- */
+@media (max-width: 1024px){
+  .dash-content{ padding: 18px; }
+
+  .page-header{
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .page-actions{
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .input{
+    min-width: 200px;
+    max-width: 100%;
+    flex: 1 1 240px;
+  }
+
+  .actions{
+    gap: 8px;
+  }
+
+  .pm-row{
+    grid-template-columns: 200px 1fr;
+    gap: 12px;
+  }
+
+  .vs-row{
+    grid-template-columns: 240px 1fr;
+    gap: 12px;
+  }
+
+  .table thead th,
+  .table tbody td{
+    padding: 12px 12px;
+  }
+}
+
+/* --- 1) Tablettes (compact) --- */
+@media (max-width: 920px){
+  /* tu as déjà width 260px ici, on ajoute le reste */
+  .sidebar-brand-title{ font-size: 28px; }
+  .sidebar-item{ font-size: 14px; }
+  .sidebar-group{ font-size: 14px; }
+  .sidebar-subitem{ font-size: 13px; }
+
+  .dash-topbar{ padding: 16px 16px; }
+  .dash-title{ font-size: 17px; }
+
+  .page-title{ font-size: 24px; }
+}
+
+/* --- 2) MOBILE : on transforme la sidebar fixed en topbar + menu scrollable
+   Sans JS: on garde la sidebar visible mais en mode "header" (hauteur fixe)
+   => la nav devient horizontale scrollable, et le contenu reprend toute la largeur.
+*/
+@media (max-width: 700px){
+  /* Sidebar devient "topbar" */
+  .sidebar.sidebar--white{
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    padding: 10px 10px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    z-index: 50;
+  }
+
+  .sidebar-inner{
+    gap: 10px;
+  }
+
+  .sidebar-brand{
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 2px 2px 6px 2px;
+  }
+
+  .sidebar-brand-title{
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .sidebar-agentBtn{
+    padding: 10px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Nav devient une rangée scrollable */
+  .sidebar-nav{
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-right: 0;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-item,
+  .sidebar-group{
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 9px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  /* subnav: sur mobile on l’affiche en "wrap" sous la ligne nav */
+  .sidebar-subnav{
+    padding-left: 0;
+    margin: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sidebar-subitem{
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 8px 10px;
+    border-radius: 999px;
+    font-size: 12.5px;
+  }
+
+  /* Logout : plus un bloc bottom, devient un bouton inline */
+  .sidebar-logout.sidebar-logout--white{
+    margin-top: 0;
+    padding: 10px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    width: 100%;
+  }
+
+  /* Main content reprend toute la largeur */
+  .dash-main{
+    margin-left: 0;
+    min-height: 100vh;
+  }
+
+  .dash-topbar{
+    padding: 14px 12px;
+  }
+
+  .dash-content{
+    padding: 14px 12px;
+    min-height: auto;
+  }
+
+  .page-title{ font-size: 22px; }
+
+  .page-actions{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .input{
+    width: 100%;
+    min-width: 0;
+  }
+
+  .btn{
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Forms */
+  .pm-row{
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .vs-row{
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .name-chip{
+    max-width: 100%;
+  }
+
+  /* Tables: on autorise scroll horizontal via wrapper */
+  .table-wrap{
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table{
+    min-width: 720px; /* garde lisible, scroll horizontal */
+  }
+}
+
+/* --- 3) PETITS MOBILES --- */
+@media (max-width: 420px){
+  .login-page{ padding: 16px; }
+  .login-card{
+    width: 100%;
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .login-title{ font-size: 20px; }
+  .login-subtitle{ font-size: 12.5px; }
+
+  .sidebar-brand-title{ font-size: 20px; }
+  .dash-title{ font-size: 16px; }
+  .page-title{ font-size: 20px; }
+
+  .card{ padding: 14px; border-radius: 12px; }
+}
+
+/* --- 4) TRÈS PETITS ÉCRANS --- */
+@media (max-width: 360px){
+  .sidebar-item,
+  .sidebar-group{
+    font-size: 12.5px;
+    padding: 8px 9px;
+  }
+
+  .sidebar-agentBtn{ font-size: 12px; }
+
+  .table{
+    min-width: 660px;
+  }
+}
+
