@@ -75,20 +75,68 @@ export function getMaxDurationMonths(durations, fallback = 63) {
 }
 
 
-export function createDefaultPitchInstance({ pitch, durations }) {
+// export function createDefaultPitchInstance({ pitch, durations }) {
+//   const id = pitch?._id || pitch?.id;
+//   return {
+//     instanceId: `${id}_${Date.now()}`,
+//     pitchId: id,
+//     pitchLabel: pitch?.label || pitch?.name || pitch?.titre || pitch?.code || "Pitch",
+//     resolutionLabel: pitch?.resolutionLabel || pitch?.resolution || pitch?.categoryName || "",
+//         prixPitch: pitch?.price ?? 0,
+//     categorieName: pitch?.categorieName || pitch?.categoryName || "",
+
+
+//     collapsed: false,
+
+//     // Dimensions (vides au départ)
+//     largeurM: "",
+//     hauteurM: "",
+//     surfaceM2: "",
+//     diagonaleCm: "",
+//     pouces: "",
+//     largeurPx: "",
+//     hauteurPx: "",
+//     container: "",
+
+//     // Finition / Fixation
+//     finitionId: "",
+//     fixationId: "",
+//    metreLineaire: "2.5",
+
+//    dimensions: pitch?.dimensions || "",
+// luminosite: pitch?.luminosite || "",
+// codeProduit: pitch?.codeProduit || "",
+// fixationComment: "",
+
+
+
+//     // Financement
+//     typeFinancement: "location_maintenance",
+// financementMonths: getMaxDurationMonths(durations, 63),
+
+
+//     // Résultat
+//     prixTotalHtMois: "97",
+//     quantite: "1",
+//     montantHt: "97.00",
+//   };
+// }
+
+export function createDefaultPitchInstance({ pitch, durations, categorieName = "" }) {
   const id = pitch?._id || pitch?.id;
+
+  const isSpecial = String(categorieName || "").trim() === SPECIAL_GROUP;
+
   return {
     instanceId: `${id}_${Date.now()}`,
     pitchId: id,
     pitchLabel: pitch?.label || pitch?.name || pitch?.titre || pitch?.code || "Pitch",
     resolutionLabel: pitch?.resolutionLabel || pitch?.resolution || pitch?.categoryName || "",
-        prixPitch: pitch?.price ?? 0,
-    categorieName: pitch?.categorieName || pitch?.categoryName || "",
-
+    prixPitch: pitch?.price ?? 0,
+    categorieName,
 
     collapsed: false,
 
-    // Dimensions (vides au départ)
     largeurM: "",
     hauteurM: "",
     surfaceM2: "",
@@ -98,29 +146,26 @@ export function createDefaultPitchInstance({ pitch, durations }) {
     hauteurPx: "",
     container: "",
 
-    // Finition / Fixation
     finitionId: "",
     fixationId: "",
-   metreLineaire: "2.5",
 
-   dimensions: pitch?.dimensions || "",
-luminosite: pitch?.luminosite || "",
-codeProduit: pitch?.codeProduit || "",
-fixationComment: "",
+    // ✅ ici : 5 si SPECIAL_GROUP sinon 2.5
+    metreLineaire: isSpecial ? "5" : "2.5",
 
+    dimensions: pitch?.dimensions || "",
+    luminosite: pitch?.luminosite || "",
+    codeProduit: pitch?.codeProduit || "",
+    fixationComment: "",
 
-
-    // Financement
     typeFinancement: "location_maintenance",
-financementMonths: getMaxDurationMonths(durations, 63),
+    financementMonths: getMaxDurationMonths(durations, 63),
 
-
-    // Résultat
     prixTotalHtMois: "97",
     quantite: "1",
     montantHt: "97.00",
   };
 }
+
 
 export async function loadPitchesByCategory({ API, categoryId, productId }) {
   const tries = [
