@@ -105,6 +105,8 @@
   font-size:14px;
   outline:none;
   resize: vertical;
+    color: #000 !important;
+  background: #8686860a !important;
 }
 
 .agenthome-textarea:focus{
@@ -327,6 +329,8 @@
   padding:0 10px;
   font-size:14px;
   outline:none;
+  color: #000 !important;
+  background: #8686860a !important;
 }
 
 .agenthome-input:focus{
