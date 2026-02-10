@@ -665,7 +665,9 @@ async function mergePdfBuffers(mainPdfBuffer, appendPdfBuffer) {
 function generateColoredDevisPdfBuffer({ docData }) {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: "A4", margin: 28 });
+      // const doc = new PDFDocument({ size: "A4", margin: 28 });
+      const doc = new PDFDocument({ size: "A4", margin: 28, bufferPages: true });
+
       const chunks = [];
       doc.on("data", (c) => chunks.push(c));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -734,11 +736,27 @@ const clientText = clientLines.join("\n");
 // ✅ 1) Titre "Devis" AU-DESSUS du bloc client
 
 // ✅ 1) Titre "Devis" centré sur la page (pas sur la colonne droite)
+
+const devisShiftX = 4; // 🔧 ajuste : 2 / 3 / 4 / 5 si besoin
+
+
+// doc
+//   .font("Helvetica-Bold")
+//   .fontSize(16)
+//   .fillColor(DARK)
+//   .text("Devis", left, titleBaseY, { width: contentW, align: "center" });
+
 doc
   .font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text("Devis", left, titleBaseY, { width: contentW, align: "center" });
+  .text(
+    "Devis",
+    left + devisShiftX,
+    titleBaseY,
+    { width: contentW, align: "center" }
+  );
+
 
 
 
@@ -1065,13 +1083,38 @@ const bottomY = Math.min(minBottomY, desiredBottomY);
       });
 
       // footer
-      doc.font("Helvetica").fontSize(8).fillColor(GREY);
-      doc.text(
-        "Siret : 93070650200018 - APE : 7311Z - N° TVA intracom : FR29930706502 - Capital : 10 000,00 €",
-        left,
-        pageH - 28,
-        { width: contentW, align: "center" }
-      );
+      // doc.font("Helvetica").fontSize(8).fillColor(GREY);
+      // doc.text(
+      //   "Siret : 93070650200018 - APE : 7311Z - N° TVA intracom : FR29930706502 - Capital : 10 000,00 €",
+      //   left,
+      //   pageH - 28,
+      //   { width: contentW, align: "center" }
+      // );
+
+
+      // ✅ FOOTER SAFE (aucune page blanche)
+const footerText =
+  "Siret : 93070650200018 - APE : 7311Z - N° TVA intracom : FR29930706502 - Capital : 10 000,00 €";
+
+const range = doc.bufferedPageRange(); // { start: 0, count: N }
+
+for (let i = range.start; i < range.start + range.count; i++) {
+  doc.switchToPage(i);
+
+  const pageW2 = doc.page.width;
+  const pageH2 = doc.page.height;
+  const left2 = doc.page.margins.left;
+  const right2 = pageW2 - doc.page.margins.right;
+  const contentW2 = right2 - left2;
+
+  doc.font("Helvetica").fontSize(8).fillColor(GREY);
+  doc.text(footerText, left2, pageH2 - 28, {
+    width: contentW2,
+    align: "center",
+  });
+}
+
+
 
       doc.end();
     } catch (err) {
