@@ -49,7 +49,7 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
 
 .login-label{
   font-size: 13px;
-  color: rgba(255,255,255,0.75);
+   color:#000000 !important ;
 }
 
 .login-input{
@@ -57,8 +57,8 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   padding: 12px 12px;
   border-radius: 10px;
   /* border: 1px solid rgba(255,255,255,0.10); */
-  background: rgba(255,255,255,0.04);
-  color: #fff;
+ background: #8686860a !important;
+  color:#000000 !important ;
   outline: none;
 }
 
