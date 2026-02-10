@@ -1,3 +1,4 @@
+/* client/src/pages/agent/AgentHeader.css */
 .agentheader{
   width:100%;
   background:#fff;
@@ -125,14 +126,17 @@
   opacity:1;
 }
 
+/* ✅ IMPORTANT : le fond cliquable doit être derrière le drawer */
 .agentheader-overlayClick{
   position:absolute;
   inset:0;
   border:none;
   background: rgba(0,0,0,.35);
   cursor:pointer;
+  z-index: 0;
 }
 
+/* Drawer au-dessus */
 .agentheader-drawer{
   position:absolute;
   top:0;
@@ -147,6 +151,7 @@
   flex-direction:column;
   padding: 14px;
   box-sizing:border-box;
+  z-index: 1;
 }
 
 .agentheader-drawer.is-open{
