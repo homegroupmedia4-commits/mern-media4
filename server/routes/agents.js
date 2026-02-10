@@ -1395,12 +1395,44 @@ docData.pdfBuffer = mergedBuffer;
 });
 
 // ✅ GET /api/agents/devis/:id/pdf (serve le PDF)
+
+
+// router.get("/devis/:id/pdf", requireAgentAuth, async (req, res) => {
+//   try {
+//     const agent = req.agent;
+//     const doc = await AgentPdf.findById(req.params.id);
+//     if (!doc) return res.status(404).send("Not found");
+//     if (String(doc.agentId) !== String(agent._id)) return res.status(403).send("Forbidden");
+//     if (!doc.pdfBuffer) return res.status(400).send("PDF not generated");
+
+//     res.setHeader("Content-Type", "application/pdf");
+//     res.setHeader(
+//       "Content-Disposition",
+//       `inline; filename="devis-${doc.devisNumber || doc._id}.pdf"`
+//     );
+//     return res.send(doc.pdfBuffer);
+//   } catch (e) {
+//     console.error(e);
+//     return res.status(500).send("Server error");
+//   }
+// });
+
+
+
+// ✅ GET /api/agents/devis/:id/pdf (serve le PDF) — admin OK
 router.get("/devis/:id/pdf", requireAgentAuth, async (req, res) => {
   try {
     const agent = req.agent;
     const doc = await AgentPdf.findById(req.params.id);
     if (!doc) return res.status(404).send("Not found");
-    if (String(doc.agentId) !== String(agent._id)) return res.status(403).send("Forbidden");
+
+    const isAdmin =
+      ["admin", "superadmin"].includes(String(agent.role || "")) || agent.isAdminToken;
+
+    if (!isAdmin && String(doc.agentId) !== String(agent._id)) {
+      return res.status(403).send("Forbidden");
+    }
+
     if (!doc.pdfBuffer) return res.status(400).send("PDF not generated");
 
     res.setHeader("Content-Type", "application/pdf");
@@ -1414,6 +1446,9 @@ router.get("/devis/:id/pdf", requireAgentAuth, async (req, res) => {
     return res.status(500).send("Server error");
   }
 });
+
+
+
 
 /**
  * POST /api/agents/pdfs
