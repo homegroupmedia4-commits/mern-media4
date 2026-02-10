@@ -225,7 +225,15 @@ export default function AgentMesDevis() {
             dateStr,
             client: c,
 
-            produit: String(sizeRow.product || "Produit"),
+            const productLabel =
+  sizeRow.productId?.name ||
+  sizeRow.productName ||
+  sizeRow.product ||
+  line?.productLabel ||
+  "Produit";
+
+produit: String(productLabel),
+
             taillePouces: sizeRow.sizeInches ?? "",
             memoire: mem?.name || "—",
             prixUnitaire: unit,
