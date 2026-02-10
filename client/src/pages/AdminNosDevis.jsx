@@ -1,9 +1,8 @@
 // client/src/pages/AdminNosDevis.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import "./AdminNosDevis.css";
 
-// ✅ admin token FIRST (comme ton ancienne base)
+// ✅ admin token FIRST
 function getAuthToken() {
   return (
     localStorage.getItem("admin_token_v1") ||
@@ -46,8 +45,8 @@ const norm = (v) => String(v || "").trim();
 
 export default function AdminNosDevis() {
   const outlet = useOutletContext?.() || {};
+
   const API = useMemo(() => {
-    // support ancien contexte `API` ou VITE_API_URL
     return (
       outlet.API ||
       import.meta.env.VITE_API_URL ||
@@ -55,17 +54,14 @@ export default function AdminNosDevis() {
     );
   }, [outlet.API]);
 
-  // onglets
   const [tab, setTab] = useState("walleds"); // "walleds" | "other"
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState("all"); // all | (optionnel, si tu veux filtrer plus tard)
 
-  // devis
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // catalogues (autres produits)
+  // catalogues autres produits
   const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
   const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
 
@@ -79,12 +75,12 @@ export default function AdminNosDevis() {
   };
 
   // -----------------------------
-  // Load ALL devis (admin)
+  // ✅ Load ALL devis (ADMIN) via /api/agents/devis
   // -----------------------------
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
-      setError("Token admin introuvable. Connecte-toi en admin.");
+      setError("Token admin introuvable. Connecte-toi via /api/agents/admin/login.");
       setRows([]);
       setLoading(false);
       return;
@@ -94,37 +90,21 @@ export default function AdminNosDevis() {
       setLoading(true);
       setError("");
       try {
-        // ✅ Fallback sur 2 endpoints possibles (selon ton agents.js)
-        const endpoints = [
-          `${API}/api/agents/pdfs/admin/list`,
-          `${API}/api/agents/devis/admin/list`,
-        ];
+        // tab backend: all | murs_leds | autres_produits
+        const backendTab = tab === "walleds" ? "murs_leds" : "autres_produits";
 
-        let data = null;
-        let lastErr = "";
+        const url = new URL(`${API}/api/agents/devis`);
+        url.searchParams.set("tab", backendTab);
 
-        for (const url of endpoints) {
-          try {
-            const res = await fetch(url, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) {
-              lastErr = await res.text();
-              continue;
-            }
-            const json = await res.json();
-            data = json;
-            break;
-          } catch (e) {
-            lastErr = e?.message || String(e);
-          }
-        }
+        // recherche (backend supporte q)
+        if (norm(q)) url.searchParams.set("q", norm(q));
 
-        if (!data) throw new Error(lastErr || "Aucun endpoint admin list n'a répondu.");
-
-        // certains endpoints renvoient {items, ...}
-        const list = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
-        setRows(list);
+        const res = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        setRows(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error(e);
         setError("Impossible de charger la liste admin des devis.");
@@ -133,7 +113,7 @@ export default function AdminNosDevis() {
         setLoading(false);
       }
     })();
-  }, [API]);
+  }, [API, tab, q]);
 
   // -----------------------------
   // Load catalogues (autres produits)
@@ -169,7 +149,7 @@ export default function AdminNosDevis() {
   }, [API]);
 
   // -----------------------------
-  // Open PDF (admin) — même logique que AgentMesDevis.downloadPdf
+  // ✅ Voir PDF (même logique que AgentMesDevis)
   // -----------------------------
   const openPdf = async (devisId) => {
     const token = getAuthToken();
@@ -198,36 +178,27 @@ export default function AdminNosDevis() {
   };
 
   // -----------------------------
-  // Flatten admin rows (walleds / other)
-  // + Ajout colonnes Agent
+  // Flatten (admin)
   // -----------------------------
   const flattened = useMemo(() => {
     const out = [];
 
     for (const d of rows) {
-      const devisId = d._id || d.id || d.devisId;
-      const devisNumber = d.devisNumber || d.number || "";
+      const devisId = d._id || d.id;
+      const devisNumber = d.devisNumber || "";
       const c = d.client || {};
-      const dateStr = fmtDateFR(d.createdAt || d.date || d.updatedAt);
+      const dateStr = fmtDateFR(d.createdAt);
 
-      // agent info (selon ce que ton endpoint renvoie)
-      const a =
-        d.agent ||
-        d.agentId ||
-        d.agentUser ||
-        safeJsonParse(d.agentJson || "", null) ||
-        {};
-      const agentNom = a?.nom || a?.lastName || "";
-      const agentPrenom = a?.prenom || a?.firstName || "";
-      const agentEmail = a?.email || "";
-      const agentSociete = a?.societe || a?.company || "";
+      // infos agent (si présentes)
+      const snap = d.agentSnapshot || {};
+      const agentObj = d.agent || safeJsonParse(d.agentJson || "", null) || {};
+      const agentNom = snap.nom || agentObj.nom || "";
+      const agentPrenom = snap.prenom || agentObj.prenom || "";
+      const agentEmail = snap.email || agentObj.email || "";
+
       const agentLabel = norm(
-        [agentPrenom, agentNom].filter(Boolean).join(" ") ||
-          agentEmail ||
-          agentSociete
+        [agentPrenom, agentNom].filter(Boolean).join(" ") || agentEmail || ""
       );
-
-      if (!devisId) continue;
 
       if (tab === "walleds") {
         const pitches = Array.isArray(d?.pitchInstances) ? d.pitchInstances : [];
@@ -242,7 +213,9 @@ export default function AdminNosDevis() {
           const fixationComment = String(pi?.fixationComment || "").trim();
           const isPlafond = fixationBase.toLowerCase().includes("plafond");
           const fixationLabel =
-            isPlafond && fixationComment ? `${fixationBase} (${fixationComment})` : fixationBase;
+            isPlafond && fixationComment
+              ? `${fixationBase} (${fixationComment})`
+              : fixationBase;
 
           const typeFinancementLabel = pi?.typeFinancement || "";
 
@@ -262,8 +235,6 @@ export default function AdminNosDevis() {
             dateStr,
 
             agentLabel,
-            agentNom,
-            agentPrenom,
             agentEmail,
 
             client: c,
@@ -288,7 +259,6 @@ export default function AdminNosDevis() {
             mensualiteHt,
             mensualiteTtc,
             montantHt: mensualiteHt,
-
             codeProduit: pi?.codeProduit || pi?.code || "",
           });
         }
@@ -304,8 +274,9 @@ export default function AdminNosDevis() {
 
         for (const rowId of Object.keys(checked || {})) {
           const line = checked[rowId];
-
-          const sizeRow = otherSizesCatalog.find((r) => String(r._id) === String(rowId));
+          const sizeRow = otherSizesCatalog.find(
+            (r) => String(r._id) === String(rowId)
+          );
           if (!sizeRow) continue;
 
           const mem = line?.memId
@@ -334,8 +305,6 @@ export default function AdminNosDevis() {
             dateStr,
 
             agentLabel,
-            agentNom,
-            agentPrenom,
             agentEmail,
 
             client: c,
@@ -357,279 +326,242 @@ export default function AdminNosDevis() {
     return out;
   }, [rows, tab, otherSizesCatalog, memOptionsCatalog]);
 
-  // filtre recherche
-  const filtered = useMemo(() => {
-    const needle = norm(q).toLowerCase();
-    if (!needle) return flattened;
-
-    return flattened.filter((r) => {
-      const c = r.client || {};
-      const hay = [
-        r.devisNumber,
-        r.agentLabel,
-        r.agentEmail,
-        c.societe,
-        c.nom,
-        c.prenom,
-        c.email,
-        c.telephone,
-        c.ville,
-        c.codePostal,
-        c.adresse1,
-        c.adresse2,
-        r.produit,
-        r.pitch,
-        r.categorie,
-        r.dimensions,
-        r.luminosite,
-        r.finition,
-        r.fixation,
-        r.typeFinancement,
-        r.frais,
-        r.codeProduit,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return hay.includes(needle);
-    });
-  }, [flattened, q]);
-
-  const hasAny = filtered.length > 0;
+  const hasAny = flattened.length > 0;
 
   return (
-    <div className="m4devis-page">
-      <div className="m4devis-wrap">
-        <div className="m4devis-head">
-          <div>
-            <h1 className="m4devis-title">Tous les devis (Admin)</h1>
-            <div className="m4devis-sub">Liste de tous les devis de tous les agents</div>
-          </div>
+    <div style={{ padding: 16 }}>
+      <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Tous les devis</h1>
+      <div style={{ marginTop: 6, color: "#666" }}>
+        Admin : liste de tous les devis de tous les agents
+      </div>
 
-          <div className="m4devis-filters">
-            <input
-              className="m4devis-search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Rechercher (agent, client, devis, produit...)"
-            />
+      <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={() => setTab("walleds")}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "1px solid #ddd",
+            background: tab === "walleds" ? "#111" : "#fff",
+            color: tab === "walleds" ? "#fff" : "#111",
+            cursor: "pointer",
+          }}
+        >
+          Murs leds
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("other")}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "1px solid #ddd",
+            background: tab === "other" ? "#111" : "#fff",
+            color: tab === "other" ? "#fff" : "#111",
+            cursor: "pointer",
+          }}
+        >
+          Autres produits
+        </button>
 
-            <select
-              className="m4devis-select"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              title="Filtre (optionnel)"
-            >
-              <option value="all">Tous</option>
-            </select>
-          </div>
-        </div>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Recherche (devis, agent, client, produit...)"
+          style={{
+            flex: "1 1 320px",
+            minWidth: 260,
+            padding: "9px 12px",
+            borderRadius: 10,
+            border: "1px solid #ddd",
+            outline: "none",
+          }}
+        />
+      </div>
 
-        <div className="m4devis-tabs">
-          <button
-            type="button"
-            className={`m4devis-tab ${tab === "walleds" ? "is-active" : ""}`}
-            onClick={() => setTab("walleds")}
-          >
-            Murs leds
-          </button>
-          <button
-            type="button"
-            className={`m4devis-tab ${tab === "other" ? "is-active" : ""}`}
-            onClick={() => setTab("other")}
-          >
-            Autres produits
-          </button>
-        </div>
+      <div style={{ marginTop: 14, border: "1px solid #eee", borderRadius: 12, overflow: "hidden" }}>
+        {loading ? <div style={{ padding: 12, color: "#666" }}>Chargement...</div> : null}
+        {error ? <div style={{ padding: 12, color: "#b00020" }}>{error}</div> : null}
 
-        <div className="m4devis-card">
-          {loading ? <div className="m4devis-muted">Chargement...</div> : null}
-          {error ? <div className="m4devis-error">{error}</div> : null}
+        {!loading && !error ? (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: "#f6f7fb" }}>
+                  <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Agent</th>
+                  <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Email agent</th>
+                  <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Télécharger le devis</th>
 
-          {!loading && !error ? (
-            <div className="m4devis-tableScroll">
-              <table className="m4devis-table">
-                <thead>
-                  <tr>
-                    {/* ✅ Agent info */}
-                    <th>Agent</th>
-                    <th>Email agent</th>
+                  <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Société</th>
+                  <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Nom</th>
+                  <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Prénom</th>
+                  <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Téléphone</th>
+                  <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Email</th>
 
-                    {/* ✅ bouton PDF */}
-                    <th>Télécharger le devis</th>
+                  {tab === "walleds" ? (
+                    <>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Produit</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Pitch</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Catégorie</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Dimensions</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Luminosité</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Surface (m²)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Finition</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Fixation</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Type financement</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Frais</th>
 
-                    {/* ✅ Client */}
-                    <th>Société</th>
-                    <th>Nom</th>
-                    <th>Prénom</th>
-                    <th>Téléphone</th>
-                    <th>Email</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Largeur (m)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Hauteur (m)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Largeur (px)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Hauteur (px)</th>
 
-                    {tab === "walleds" ? (
-                      <>
-                        <th>Produit</th>
-                        <th>Pitch</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Durée (mois)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Quantité</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Mensualité HT</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Mensualité TTC</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Montant HT</th>
 
-                        <th>Catégorie</th>
-                        <th>Dimensions</th>
-                        <th>Luminosité</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Code devis</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Code produit</th>
 
-                        <th>Surface (m²)</th>
-                        <th>Finition</th>
-                        <th>Fixation</th>
-                        <th>Type financement</th>
-                        <th>Frais</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Adresse</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Adresse 2</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Code Postal</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Ville</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Commentaires</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Date</th>
+                    </>
+                  ) : (
+                    <>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Produit</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Taille sélectionnée</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Mémoire</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Prix unitaire</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Quantité</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Total (HT)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Durée leasing (mois)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Prix associé</th>
 
-                        <th>Largeur (m)</th>
-                        <th>Hauteur (m)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Code devis</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Code produit</th>
 
-                        <th>Largeur (px)</th>
-                        <th>Hauteur (px)</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Adresse</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Adresse 2</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Code Postal</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Ville</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Commentaires</th>
+                      <th style={{ padding: 10, textAlign: "left", borderBottom: "1px solid #eee" }}>Date</th>
+                    </>
+                  )}
+                </tr>
+              </thead>
 
-                        <th>Durée (mois)</th>
-                        <th>Quantité</th>
-
-                        <th>Mensualité HT</th>
-                        <th>Mensualité TTC</th>
-
-                        <th>Montant HT</th>
-                        <th>Code devis</th>
-                        <th>Code produit</th>
-
-                        <th>Adresse</th>
-                        <th>Adresse 2</th>
-                        <th>Code Postal</th>
-                        <th>Ville</th>
-                        <th>Commentaires</th>
-                        <th>Date</th>
-                      </>
-                    ) : (
-                      <>
-                        <th>Produit</th>
-                        <th>Taille sélectionnée</th>
-                        <th>Mémoire</th>
-                        <th>Prix unitaire</th>
-                        <th>Quantité</th>
-                        <th>Total (HT)</th>
-                        <th>Durée leasing (mois)</th>
-                        <th>Prix associé</th>
-                        <th>Code devis</th>
-                        <th>Code produit</th>
-
-                        <th>Adresse</th>
-                        <th>Adresse 2</th>
-                        <th>Code Postal</th>
-                        <th>Ville</th>
-                        <th>Commentaires</th>
-                        <th>Date</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filtered.map((r) => {
-                    const c = r.client || {};
-                    return (
-                      <tr key={r.key}>
-                        {/* Agent */}
-                        <td>{r.agentLabel || "—"}</td>
-                        <td>{r.agentEmail || "—"}</td>
-
-                        {/* PDF */}
-                        <td>
-                          <button
-                            className="m4devis-btn"
-                            type="button"
-                            onClick={() => openPdf(r.devisId)}
-                          >
-                            Voir
-                          </button>
-                        </td>
-
-                        {/* Client */}
-                        <td>{c.societe || ""}</td>
-                        <td>{c.nom || ""}</td>
-                        <td>{c.prenom || ""}</td>
-                        <td>{c.telephone || ""}</td>
-                        <td>{c.email || ""}</td>
-
-                        {tab === "walleds" ? (
-                          <>
-                            <td>{r.produit}</td>
-                            <td>{r.pitch}</td>
-
-                            <td>{r.categorie}</td>
-                            <td>{r.dimensions}</td>
-                            <td>{r.luminosite}</td>
-
-                            <td>{r.surfaceM2 ?? ""}</td>
-                            <td>{r.finition || ""}</td>
-                            <td>{r.fixation || ""}</td>
-                            <td>{r.typeFinancement || ""}</td>
-                            <td>{r.frais || ""}</td>
-
-                            <td>{r.largeurM}</td>
-                            <td>{r.hauteurM}</td>
-
-                            <td>{r.largeurPx}</td>
-                            <td>{r.hauteurPx}</td>
-
-                            <td>{r.dureeMois}</td>
-                            <td>{r.qty}</td>
-
-                            <td>{fmt2(r.mensualiteHt)}</td>
-                            <td>{fmt2(r.mensualiteTtc)}</td>
-
-                            <td>{fmt2(r.montantHt)}</td>
-                            <td>{r.devisNumber}</td>
-                            <td>{r.codeProduit}</td>
-
-                            <td>{c.adresse1 || ""}</td>
-                            <td>{c.adresse2 || ""}</td>
-                            <td>{c.codePostal || ""}</td>
-                            <td>{c.ville || ""}</td>
-                            <td>{c.commentaires || ""}</td>
-                            <td>{r.dateStr}</td>
-                          </>
-                        ) : (
-                          <>
-                            <td>{r.produit}</td>
-                            <td>{r.taillePouces !== "" ? `${r.taillePouces} pouces` : ""}</td>
-                            <td>{r.memoire}</td>
-                            <td>{fmt2(r.prixUnitaire)}</td>
-                            <td>{r.quantite}</td>
-                            <td>{fmt2(r.totalHt)}</td>
-                            <td>{r.dureeMois}</td>
-                            <td>{fmt2(r.prixAssocie)}</td>
-                            <td>{r.devisNumber}</td>
-                            <td>{r.codeProduit}</td>
-
-                            <td>{c.adresse1 || ""}</td>
-                            <td>{c.adresse2 || ""}</td>
-                            <td>{c.codePostal || ""}</td>
-                            <td>{c.ville || ""}</td>
-                            <td>{c.commentaires || ""}</td>
-                            <td>{r.dateStr}</td>
-                          </>
-                        )}
-                      </tr>
-                    );
-                  })}
-
-                  {!hasAny && !loading ? (
-                    <tr>
-                      <td colSpan={tab === "walleds" ? 31 : 25} className="m4devis-empty">
-                        Aucun devis.
+              <tbody>
+                {flattened.map((r) => {
+                  const c = r.client || {};
+                  return (
+                    <tr key={r.key}>
+                      <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.agentLabel || "—"}</td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.agentEmail || "—"}</td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>
+                        <button
+                          type="button"
+                          onClick={() => openPdf(r.devisId)}
+                          style={{
+                            padding: "7px 10px",
+                            borderRadius: 10,
+                            border: "1px solid #ddd",
+                            background: "#fff",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Voir
+                        </button>
                       </td>
+
+                      <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.societe || ""}</td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.nom || ""}</td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.prenom || ""}</td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.telephone || ""}</td>
+                      <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.email || ""}</td>
+
+                      {tab === "walleds" ? (
+                        <>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.produit}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.pitch}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.categorie}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.dimensions}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.luminosite}</td>
+
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.surfaceM2 ?? ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.finition || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.fixation || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.typeFinancement || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.frais || ""}</td>
+
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.largeurM}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.hauteurM}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.largeurPx}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.hauteurPx}</td>
+
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.dureeMois}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.qty}</td>
+
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{fmt2(r.mensualiteHt)}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{fmt2(r.mensualiteTtc)}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{fmt2(r.montantHt)}</td>
+
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.devisNumber}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.codeProduit}</td>
+
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.adresse1 || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.adresse2 || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.codePostal || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.ville || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.commentaires || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.dateStr}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.produit}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>
+                            {r.taillePouces !== "" ? `${r.taillePouces} pouces` : ""}
+                          </td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.memoire}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{fmt2(r.prixUnitaire)}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.quantite}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{fmt2(r.totalHt)}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.dureeMois}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{fmt2(r.prixAssocie)}</td>
+
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.devisNumber}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.codeProduit}</td>
+
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.adresse1 || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.adresse2 || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.codePostal || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.ville || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{c.commentaires || ""}</td>
+                          <td style={{ padding: 10, borderBottom: "1px solid #f0f0f0" }}>{r.dateStr}</td>
+                        </>
+                      )}
                     </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
-        </div>
+                  );
+                })}
+
+                {!hasAny && !loading ? (
+                  <tr>
+                    <td style={{ padding: 14, color: "#666" }} colSpan={tab === "walleds" ? 30 : 22}>
+                      Aucun devis.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </div>
     </div>
   );
