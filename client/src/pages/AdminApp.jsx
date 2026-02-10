@@ -9,6 +9,9 @@ const STORAGE_KEY = "m4_admin_authed_v1";
 // ✅ token admin pour appeler /api/agents/* (requireAgentAuth)
 const ADMIN_TOKEN_KEY = "admin_token_v1";
 
+const [sidebarOpen, setSidebarOpen] = useState(false);
+
+
 // ✅ base path admin
 const ADMIN_BASE = "/adminmedia4";
 
@@ -85,6 +88,19 @@ const ensureAdminApiToken = async (pwd = "") => {
   }
 };
 
+useEffect(() => {
+  setSidebarOpen(false);
+}, [location.pathname]);
+
+
+useEffect(() => {
+  if (!sidebarOpen) return;
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  return () => { document.body.style.overflow = prev || ""; };
+}, [sidebarOpen]);
+
+
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "1") setIsAuthed(true);
@@ -153,7 +169,35 @@ if (password === ADMIN_PASSWORD) {
 
   return (
     <div className="dash-shell">
-      <aside className="sidebar sidebar--white">
+
+      <div className="admin-topbar-mobile">
+  <button
+    className={`admin-burger ${sidebarOpen ? "is-open" : ""}`}
+    type="button"
+    aria-label={sidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}
+    aria-expanded={sidebarOpen ? "true" : "false"}
+    aria-controls="admin-sidebar"
+    onClick={() => setSidebarOpen((v) => !v)}
+  >
+    <span className="burger-line" />
+    <span className="burger-line" />
+    <span className="burger-line" />
+  </button>
+
+  <div className="admin-topbar-title">Admin</div>
+
+  <a className="admin-topbar-agent" href="/agent/home" target="_blank" rel="noopener noreferrer">
+    Agent
+  </a>
+</div>
+
+
+
+     <aside
+  id="admin-sidebar"
+  className={`sidebar sidebar--white ${sidebarOpen ? "is-open" : ""}`}
+>
+
         <div className="sidebar-inner">
           <div className="sidebar-brand">
             <div className="sidebar-brand-title">MEDIA4</div>
@@ -354,6 +398,14 @@ if (password === ADMIN_PASSWORD) {
           </button>
         </div>
       </aside>
+
+      <button
+  className={`admin-overlay ${sidebarOpen ? "is-open" : ""}`}
+  type="button"
+  aria-label="Fermer le menu"
+  onClick={() => setSidebarOpen(false)}
+/>
+
 
       <main className="dash-main">
         <div className="dash-topbar">
