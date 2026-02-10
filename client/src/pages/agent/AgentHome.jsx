@@ -1229,7 +1229,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                             type="radio"
                             name={`finition_${pi.instanceId}`}
                             checked={pi.finitionId === f._id}
-                            onChange={() => updatePitchInstance(pi.instanceId, { finitionId: f._id })}
+                            onChange={() => updatePitchInstance(pi.instanceId, { finitionId: f._id,  finitionName: f.name, })}
                           />
                           <span>{f.name}</span>
                         </label>
