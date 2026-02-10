@@ -122,7 +122,7 @@ export default function AdminAgents() {
     <div className="card">
       <div className="card-title">Agents inscrits</div>
       <div className="card-text" style={{ marginBottom: 12 }}>
-        Liste de tous les agents enregistrés via <code>/agent/register</code>.
+        Liste de tous les agents enregistrés.
       </div>
 
       {loading ? <div className="card-text">Chargement…</div> : null}
