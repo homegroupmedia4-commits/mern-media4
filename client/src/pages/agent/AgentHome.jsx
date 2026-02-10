@@ -956,17 +956,16 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
               </select>
             </div>
 
-            {/* {selectedCategoryId ? (
-              <div className="agenthome-subcard">
-                <div className="agenthome-subcardTitle">
-                  {categories.find((x) => x._id === selectedCategoryId)?.name || "Catégorie"}
-                </div> */}
+            {selectedCategoryId ? (
 
-                {(!showAllPitches && selectedCategoryId) ? (
-  <div className="agenthome-subcard">
+
+            <div className="agenthome-subcard">
+  {!showAllPitches && (
     <div className="agenthome-subcardTitle">
       {categories.find((x) => x._id === selectedCategoryId)?.name || "Catégorie"}
     </div>
+  )}
+
   
 
 
