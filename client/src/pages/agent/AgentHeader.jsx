@@ -1,3 +1,4 @@
+// client/src/pages/agent/AgentHeader.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { TOKEN_KEY, USER_KEY } from "./agentHome.helpers";
@@ -42,9 +43,7 @@ export default function AgentHeader({ agent }) {
       { to: "/agent/faq", label: "F.A.Q" },
     ];
 
-    if (!isAuthed) {
-      base.push({ to: "/agent/login", label: "Connexion" });
-    }
+    if (!isAuthed) base.push({ to: "/agent/login", label: "Connexion" });
 
     return base;
   }, [isAuthed]);
@@ -57,7 +56,10 @@ export default function AgentHeader({ agent }) {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="agentheader-nav agentheader-nav--desktop" aria-label="Navigation agent">
+        <nav
+          className="agentheader-nav agentheader-nav--desktop"
+          aria-label="Navigation agent"
+        >
           {links.map((l) => (
             <Link
               key={l.to}
@@ -96,6 +98,14 @@ export default function AgentHeader({ agent }) {
 
       {/* Mobile menu overlay */}
       <div className={`agentheader-overlay ${menuOpen ? "is-open" : ""}`}>
+        {/* ✅ IMPORTANT : le click-outside DOIT être derrière le drawer */}
+        <button
+          className="agentheader-overlayClick"
+          type="button"
+          aria-label="Fermer le menu"
+          onClick={() => setMenuOpen(false)}
+        />
+
         <div
           className={`agentheader-drawer ${menuOpen ? "is-open" : ""}`}
           id="agent-mobile-menu"
@@ -115,7 +125,10 @@ export default function AgentHeader({ agent }) {
             </button>
           </div>
 
-          <nav className="agentheader-nav agentheader-nav--mobile" aria-label="Navigation mobile">
+          <nav
+            className="agentheader-nav agentheader-nav--mobile"
+            aria-label="Navigation mobile"
+          >
             {links.map((l) => (
               <Link
                 key={l.to}
@@ -146,14 +159,6 @@ export default function AgentHeader({ agent }) {
             </div>
           ) : null}
         </div>
-
-        {/* click outside drawer closes */}
-        <button
-          className="agentheader-overlayClick"
-          type="button"
-          aria-label="Fermer le menu"
-          onClick={() => setMenuOpen(false)}
-        />
       </div>
 
       {agent ? (
