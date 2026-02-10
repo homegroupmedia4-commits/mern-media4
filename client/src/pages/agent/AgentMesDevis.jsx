@@ -178,6 +178,7 @@ export default function AgentMesDevis() {
             categorie: pi?.categorieName || pi?.categoryName || "",
             dimensions: pi?.dimensions || "",
             luminosite: pi?.luminosite || "",
+             surfaceM2: pi?.surfaceM2 ?? "",
             largeurM: pi?.largeurM ?? "",
             hauteurM: pi?.hauteurM ?? "",
             largeurPx: pi?.largeurPx ?? "",
