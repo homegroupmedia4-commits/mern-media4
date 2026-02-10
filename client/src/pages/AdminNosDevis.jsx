@@ -69,16 +69,33 @@ export default function AdminNosDevis() {
   // -----------------------------
   // ✅ Helpers (autres produits)
   // -----------------------------
-  const getCheckedBucket = (sel) => {
-    if (!sel) return {};
-    // ✅ nouveau format: byMonths
-    if (sel.byMonths) {
-      const months = String(sel.leasingMonths || "").trim();
-      return sel.byMonths?.[months]?.checked || {};
+const getCheckedBucket = (sel, monthsHint = "") => {
+  if (!sel) return {};
+
+  // nouveau format: byMonths
+  if (sel.byMonths) {
+    const months = String(monthsHint || sel.leasingMonths || "").trim();
+
+    // 1) si on a un mois précis, on le prend
+    if (months && sel.byMonths?.[months]?.checked) {
+      return sel.byMonths[months].checked || {};
     }
-    // ancien format: checked
-    return sel.checked || {};
-  };
+
+    // 2) sinon on fusionne TOUS les mois (pour ne rien perdre)
+    const merged = {};
+    for (const k of Object.keys(sel.byMonths || {})) {
+      const chk = sel.byMonths?.[k]?.checked || {};
+      for (const rowId of Object.keys(chk)) {
+        merged[rowId] = chk[rowId];
+      }
+    }
+    return merged;
+  }
+
+  // ancien format
+  return sel.checked || {};
+};
+
 
   const getOtherSelectionsObj = (d) => {
     // peut arriver en objet OU en string (json)
@@ -110,10 +127,12 @@ export default function AdminNosDevis() {
       setError("");
       try {
         // tab backend: all | murs_leds | autres_produits
-        const backendTab = tab === "walleds" ? "murs_leds" : "autres_produits";
+        
 
         const url = new URL(`${API}/api/agents/devis`);
-        url.searchParams.set("tab", backendTab);
+
+url.searchParams.set("tab", "all");
+
 
         // recherche (backend supporte q)
         if (norm(q)) url.searchParams.set("q", norm(q));
@@ -288,8 +307,9 @@ export default function AdminNosDevis() {
 
       for (const pid of Object.keys(otherSelections || {})) {
         const sel = otherSelections[pid];
-        const months = String(sel?.leasingMonths || "").trim();
-        const checked = getCheckedBucket(sel);
+ const months = String(sel?.leasingMonths || "").trim();
+const checked = getCheckedBucket(sel, months);
+
 
         for (const rowId of Object.keys(checked || {})) {
           const line = checked[rowId];
