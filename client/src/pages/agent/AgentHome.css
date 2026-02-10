@@ -423,6 +423,7 @@
   background:#fff;
   cursor:pointer;
   font-weight:700;
+  color: #000 !important;
 }
 
 .agenthome-offers{
@@ -624,6 +625,7 @@
     width: 100%;
     justify-content: center;
     height: 36px;
+    color: #000 !important;
   }
 
   .agenthome-dupBtn{
