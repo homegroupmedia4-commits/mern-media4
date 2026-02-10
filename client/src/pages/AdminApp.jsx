@@ -9,13 +9,16 @@ const STORAGE_KEY = "m4_admin_authed_v1";
 // ✅ token admin pour appeler /api/agents/* (requireAgentAuth)
 const ADMIN_TOKEN_KEY = "admin_token_v1";
 
-const [sidebarOpen, setSidebarOpen] = useState(false);
+
 
 
 // ✅ base path admin
 const ADMIN_BASE = "/adminmedia4";
 
 export default function AdminApp() {
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [isAuthed, setIsAuthed] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
