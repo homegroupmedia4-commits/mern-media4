@@ -20,6 +20,7 @@
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 14px;
+  color:#111;
 }
 
 .agent-form{
@@ -50,7 +51,7 @@ label{
 }
 
 input, select{
-  width: 340px;
+  /* width: 340px; */
   height: 40px;
   border: 1px solid #d8dbe6;
   border-radius: 10px;
@@ -65,12 +66,17 @@ input:focus, select:focus{
   border-color:#b9bfd6;
 }
 
+.btn{
+
+  color:#000000 !important;
+}
+
 .agent-btn{
   width: 140px;
   height: 44px;
   border:none;
   border-radius:8px;
-  background:#2f6fed;
+  background:#78b13a;;
   color:#fff;
   font-weight:600;
   cursor:pointer;
@@ -91,7 +97,7 @@ input:focus, select:focus{
   font-size: 13px;
   color:#333;
 }
-.agent-foot a{ color:#2f6fed; text-decoration:none; }
+.agent-foot a{ color:#000000; text-decoration:none; }
 
 
 /* =========================================================

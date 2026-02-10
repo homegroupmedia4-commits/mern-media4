@@ -14,13 +14,13 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#0f1418;
+  background:#f1f1f1;
   padding:24px;
 }
 
 .login-card{
   width: 420px;
-  background:#12181d;
+  background:#f8f8f8;
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 14px;
   padding: 22px;
@@ -31,12 +31,14 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   font-size: 22px;
   font-weight: 700;
   margin-bottom: 6px;
+  color: #000000;
 }
 
 .login-subtitle{
   font-size: 13px;
   color: rgba(255,255,255,0.7);
   margin-bottom: 18px;
+  color: #000000;
 }
 
 .login-form{
@@ -80,8 +82,8 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   border: none;
   cursor: pointer;
   font-weight: 700;
-  background: #ffffff;
-  color: #0f1418;
+  background: #000000;
+  color: #ffffff;
 }
 
 .login-btn:hover{

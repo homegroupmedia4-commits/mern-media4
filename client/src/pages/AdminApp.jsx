@@ -144,7 +144,7 @@ if (password === ADMIN_PASSWORD) {
       <div className="login-page">
         <div className="login-card">
           <div className="login-title">Connexion Admin</div>
-          <div className="login-subtitle">Accès réservé</div>
+          {/* <div className="login-subtitle">Accès réservé</div> */}
 
           <form onSubmit={handleLogin} className="login-form">
             <label className="login-label">Mot de passe</label>
@@ -162,9 +162,9 @@ if (password === ADMIN_PASSWORD) {
             </button>
           </form>
 
-          <div className="login-hint">
+          {/* <div className="login-hint">
             Accès admin : <span className="mono">{ADMIN_BASE}</span>
-          </div>
+          </div> */}
         </div>
       </div>
     );

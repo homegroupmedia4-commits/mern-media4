@@ -20,6 +20,7 @@
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 12px;
+  color: #111 !important;
 }
 
 .login-agent-form{
@@ -63,10 +64,15 @@ input{
   padding: 0 18px;
   border:none;
   border-radius:8px;
-  background:#2f6fed;
+background:#78b13a;
   color:#fff;
   font-weight:600;
   cursor:pointer;
+}
+
+.input, select{
+
+      color: rgb(0, 0, 0) !important;
 }
 
 .login-agent-register{
@@ -79,6 +85,7 @@ input{
   color:#fff;
   text-decoration:none;
   font-weight:600;
+  display:none !important;
 }
 
 .login-agent-error{
