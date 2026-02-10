@@ -3,7 +3,7 @@ export const TOKEN_KEY = "agent_token_v1";
 export const USER_KEY = "agent_user_v1";
 
 // ⚠️ même logique que ton CF7
-export const SPECIAL_GROUP = "Exterieur fixe haute luminosité";
+export const SPECIAL_GROUP = "Exterieur haute luminosité";
 
 export function toNum(v, def = 0) {
   const n = Number(String(v ?? "").replace(",", "."));
