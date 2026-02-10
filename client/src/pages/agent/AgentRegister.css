@@ -59,7 +59,8 @@ input, select{
   font-size: 14px;
   font-weight: 400;
   outline: none;
-  background:#fff;
+  background: #8686860a !important;
+  color: #000 !important;
 }
 
 input:focus, select:focus{
