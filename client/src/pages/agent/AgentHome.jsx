@@ -52,7 +52,8 @@ export default function AgentHome() {
     []
   );
 
-  const DEFAULT_CATEGORY_NAME = "Exterieur fixe haute luminosité";
+const DEFAULT_CATEGORY_NAME = "Exterieur haute luminosité";
+
 
 
   const [lastDevisNumber, setLastDevisNumber] = useState("");
