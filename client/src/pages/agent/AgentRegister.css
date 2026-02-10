@@ -67,10 +67,10 @@ input:focus, select:focus{
   border-color:#b9bfd6;
 }
 
-.btn{
+/* .btn{
 
   color:#000000 !important;
-}
+} */
 
 .agent-btn{
   width: 140px;
