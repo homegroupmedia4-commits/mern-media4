@@ -164,6 +164,24 @@ export default function AgentMesDevis() {
           const mensualiteHt = Number(pi?.montantHt || 0) || 0;
           const mensualiteTtc = mensualiteHt * 1.2;
 
+          const finitionLabel = pi?.finitionName || pi?.finitionId || "";
+
+const fixationBase = pi?.fixationName || "";
+const fixationComment = String(pi?.fixationComment || "").trim();
+const isPlafond = fixationBase.toLowerCase().includes("plafond");
+const fixationLabel =
+  isPlafond && fixationComment ? `${fixationBase} (${fixationComment})` : fixationBase;
+
+const typeFinancementLabel = pi?.typeFinancement || "";
+
+const fraisLabel = [
+  c?.fraisInstallationOfferts ? "Installation offerte" : null,
+  c?.fraisParametrageOfferts ? "Paramétrage offert" : null,
+  c?.fraisPortOfferts ? "Port offert" : null,
+].filter(Boolean).join(" • ");
+
+          
+
           out.push({
             kind: "walleds",
             key: `${devisId}_pi_${pi?.instanceId || pi?.pitchId || Math.random()}`,
@@ -179,6 +197,11 @@ export default function AgentMesDevis() {
             dimensions: pi?.dimensions || "",
             luminosite: pi?.luminosite || "",
              surfaceM2: pi?.surfaceM2 ?? "",
+            finition: finitionLabel,
+fixation: fixationLabel,
+typeFinancement: typeFinancementLabel,
+frais: fraisLabel,
+
             largeurM: pi?.largeurM ?? "",
             hauteurM: pi?.hauteurM ?? "",
             largeurPx: pi?.largeurPx ?? "",
@@ -304,6 +327,11 @@ produit: String(productLabel),
                           <th>Luminosité</th>
 
                           <th>Surface (m²)</th>
+                          <th>Finition</th>
+<th>Fixation</th>
+<th>Type financement</th>
+<th>Frais</th>
+
                           <th>Largeur (m)</th>
                           <th>Hauteur (m)</th>
 
@@ -381,6 +409,11 @@ produit: String(productLabel),
                               <td>{r.luminosite}</td>
 
                               <td>{r.surfaceM2 ?? ""}</td>
+                              <td>{r.finition || ""}</td>
+<td>{r.fixation || ""}</td>
+<td>{r.typeFinancement || ""}</td>
+<td>{r.frais || ""}</td>
+
                               <td>{r.largeurM}</td>
                               <td>{r.hauteurM}</td>
 
