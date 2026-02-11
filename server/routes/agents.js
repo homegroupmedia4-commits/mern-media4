@@ -23,7 +23,7 @@ router.post("/admin/login", async (req, res) => {
       return res.status(401).json({ message: "Mot de passe admin invalide." });
     }
 
-    // ✅ Token "admin" (pas lié à Agent)
+    // ✅ Token "adffmin" (pas lié à Agent)
     const token = jwt.sign(
       { admin: true, role: "superadmin" },
       JWT_SECRET,
