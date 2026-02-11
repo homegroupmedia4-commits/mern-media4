@@ -772,9 +772,10 @@ const titleToClientGap = 10; // ajuste si besoin
 const clientY = titleBaseY + 18 + titleToClientGap;
 
 doc.font("Helvetica").fontSize(9).fillColor(DARK);
+      
 doc.text(clientText, clientX, clientY, {
   width: clientW,
-  align: "left",
+  align: "center", // ✅ ici
   lineGap: 1.5,
 });
 
