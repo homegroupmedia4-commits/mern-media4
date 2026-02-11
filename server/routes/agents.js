@@ -1130,10 +1130,18 @@ for (let i = range.start; i < range.start + range.count; i++) {
   const contentW2 = right2 - left2;
 
   doc.font("Helvetica").fontSize(8).fillColor(GREY);
-  doc.text(footerText, left2, pageH2 - 28, {
-    width: contentW2,
-    align: "center",
-  });
+
+  
+const footerY = Math.min(pageH2 - 40, bottomY + 110); 
+// -40 = garde une marge du bas
+// bottomY + 110 = le met "plus haut" sous les blocs (TVA/totaux)
+
+doc.text(footerText, left2, footerY, {
+  width: contentW2,
+  align: "center",
+});
+
+  
 }
 
 
