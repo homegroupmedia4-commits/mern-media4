@@ -417,8 +417,7 @@ const checked = getCheckedBucket(sel, months);
             <table className="table table-wide">
               <thead>
                 <tr>
-                  <th>Agent</th>
-                  <th>Email agent</th>
+                
                   <th>Télécharger le devis</th>
 
                   <th>Société</th>
@@ -491,8 +490,7 @@ const checked = getCheckedBucket(sel, months);
                   const c = r.client || {};
                   return (
                     <tr key={r.key}>
-                      <td>{r.agentLabel || "—"}</td>
-                      <td>{r.agentEmail || "—"}</td>
+                     
                       <td>
                         <button
                           className="btn btn-outline"
@@ -574,7 +572,7 @@ const checked = getCheckedBucket(sel, months);
 
                 {!hasAny && !loading ? (
                   <tr>
-                    <td colSpan={tab === "walleds" ? 30 : 22} className="muted">
+                    <td colSpan={tab === "walleds" ? 28 : 20} className="muted">
                       Aucun devis.
                     </td>
                   </tr>
