@@ -716,8 +716,11 @@ const titleBaseY = cursorY;
 
 const metaW = contentW * 0.5;
 const gap = 18;
-const clientX = left + metaW + gap;
-const clientW = contentW - metaW - gap;
+
+      const clientW = Math.min(320, contentW * 0.45); 
+const clientX = left + (contentW - clientW) / 2;
+// const clientX = left + metaW + gap;
+// const clientW = contentW - metaW - gap;
 
 const c = docData.client || {};
 const clientLines = [
