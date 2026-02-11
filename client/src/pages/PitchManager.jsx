@@ -47,6 +47,21 @@ export default function PitchManagerPage() {
   const [editingId, setEditingId] = useState(null);
   const [editingValue, setEditingValue] = useState("");
 
+  const [editOpen, setEditOpen] = useState(false);
+
+const [editForm, setEditForm] = useState({
+  id: "",
+  name: "",
+  codeProduit: "",
+  dimensions: "",
+  luminosite: "",
+  price: "",
+  categoryId: "",
+  productId: "",
+  isActive: true,
+});
+
+
   const activeCats = useMemo(() => cats.filter((c) => c.isActive), [cats]);
 
   useEffect(() => {
@@ -173,10 +188,72 @@ export default function PitchManagerPage() {
     setEditingValue(row.name || "");
   };
 
+  
+  
+
   const cancelEdit = () => {
     setEditingId(null);
     setEditingValue("");
   };
+
+  const openEdit = (row) => {
+  setError("");
+  setEditForm({
+    id: row._id,
+    name: row.name || "",
+    codeProduit: row.codeProduit || "",
+    dimensions: row.dimensions || "",
+    luminosite: row.luminosite || "",
+    price: String(row.price ?? ""),
+    categoryId: row?.categoryId?._id || row?.categoryId || "",
+    productId: row?.productId?._id || row?.productId || "",
+    isActive: !!row.isActive,
+  });
+  setEditOpen(true);
+};
+
+const onEditChange = (key) => (e) =>
+  setEditForm((p) => ({ ...p, [key]: e.target.value }));
+
+
+  const saveEdit = async () => {
+  setError("");
+
+  const payload = {
+    name: editForm.name.trim(),
+    codeProduit: editForm.codeProduit.trim(),
+    dimensions: editForm.dimensions.trim(),
+    luminosite: editForm.luminosite.trim(),
+    price: Number(editForm.price),
+    categoryId: editForm.categoryId,
+    productId: editForm.productId,
+    isActive: !!editForm.isActive,
+  };
+
+  if (!payload.name || !payload.codeProduit || !payload.dimensions || !payload.luminosite) {
+    return setError("Merci de remplir tous les champs.");
+  }
+  if (!Number.isFinite(payload.price)) return setError("Le prix doit être un nombre.");
+  if (!payload.productId) return setError("Merci de choisir un produit.");
+  if (!payload.categoryId) return setError("Merci de choisir une catégorie.");
+
+  try {
+    const res = await fetch(`${API}/api/pitches/${editForm.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const updated = await res.json();
+
+    setPitches((prev) => prev.map((p) => (p._id === updated._id ? updated : p)));
+    setEditOpen(false);
+  } catch (e) {
+    console.error(e);
+    setError("Modification impossible.");
+  }
+};
+
 
   const saveRename = async (id) => {
     const name = editingValue.trim();
@@ -367,9 +444,10 @@ export default function PitchManagerPage() {
                             </>
                           ) : (
                             <>
-                              <button className="btn btn-outline" type="button" onClick={() => startEdit(row)}>
-                                Renommer
-                              </button>
+                            <button className="btn btn-outline" type="button" onClick={() => openEdit(row)}>
+  Modifier
+</button>
+
 
                               <button className={`btn ${row.isActive ? "btn-danger" : "btn-dark"}`} type="button" onClick={() => toggleActive(row)}>
                                 {row.isActive ? "Désactiver" : "Activer"}
@@ -398,6 +476,94 @@ export default function PitchManagerPage() {
           )}
         </div>
       )}
+
+      {editOpen ? (
+  <div className="modal-backdrop">
+    <div className="modal-card">
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+        <h3 style={{ margin: 0 }}>Modifier le pitch</h3>
+        <button className="btn btn-outline" type="button" onClick={() => setEditOpen(false)}>
+          Fermer
+        </button>
+      </div>
+
+      <div className="pm-form" style={{ marginTop: 12 }}>
+        <div className="pm-row">
+          <label className="pm-label">Nom</label>
+          <input className="input pm-input" value={editForm.name} onChange={onEditChange("name")} />
+        </div>
+
+        <div className="pm-row">
+          <label className="pm-label">Code produit</label>
+          <input className="input pm-input" value={editForm.codeProduit} onChange={onEditChange("codeProduit")} />
+        </div>
+
+        <div className="pm-row">
+          <label className="pm-label">Dimensions</label>
+          <input className="input pm-input" value={editForm.dimensions} onChange={onEditChange("dimensions")} />
+        </div>
+
+        <div className="pm-row">
+          <label className="pm-label">Luminosité</label>
+          <input className="input pm-input" value={editForm.luminosite} onChange={onEditChange("luminosite")} />
+        </div>
+
+        <div className="pm-row">
+          <label className="pm-label">Prix</label>
+          <input className="input pm-input" type="number" step="0.01" value={editForm.price} onChange={onEditChange("price")} />
+        </div>
+
+        <div className="pm-row">
+          <label className="pm-label">Produit</label>
+          <select className="input pm-input" value={editForm.productId} onChange={onEditChange("productId")} disabled={productsLoading}>
+            <option value="">{productsLoading ? "Chargement..." : "-- Choisir un produit --"}</option>
+            {products.filter((p) => p?.isActive !== false).map((p) => (
+              <option key={p._id} value={p._id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="pm-row">
+          <label className="pm-label">Catégorie</label>
+          <select className="input pm-input" value={editForm.categoryId} onChange={onEditChange("categoryId")} disabled={catsLoading}>
+            <option value="">{catsLoading ? "Chargement..." : "-- Choisir une catégorie --"}</option>
+            {activeCats.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="pm-row" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <input
+            id="edit_active"
+            type="checkbox"
+            checked={!!editForm.isActive}
+            onChange={(e) => setEditForm((p) => ({ ...p, isActive: e.target.checked }))}
+          />
+          <label htmlFor="edit_active" className="pm-label" style={{ margin: 0 }}>
+            Actif
+          </label>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+          <button className="btn btn-dark" type="button" onClick={saveEdit}>
+            Enregistrer
+          </button>
+          <button className="btn btn-outline" type="button" onClick={() => setEditOpen(false)}>
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+) : null}
+
+
+      
     </div>
   );
 }
