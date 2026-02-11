@@ -746,11 +746,14 @@ const clientText = clientLines.join("\n");
 //   .fillColor(DARK)
 //   .text("Devis", left, titleBaseY, { width: contentW, align: "center" });
 
-      doc
+const devisBlockX = left + metaW + gap; // même colonne que ton client
+
+doc
   .font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text("Devis", clientX, titleBaseY, { width: clientW, align: "center" });
+  .text("Devis", devisBlockX, titleBaseY);
+
 
 
 // doc
@@ -773,11 +776,22 @@ const clientY = titleBaseY + 18 + titleToClientGap;
 
 doc.font("Helvetica").fontSize(9).fillColor(DARK);
       
-doc.text(clientText, clientX, clientY, {
-  width: clientW,
-  align: "center", // ✅ ici
-  lineGap: 1.5,
-});
+// doc.text(clientText, clientX, clientY, {
+//   width: clientW,
+//   align: "center", // ✅ ici
+//   lineGap: 1.5,
+// });
+
+      doc
+  .font("Helvetica")
+  .fontSize(9)
+  .fillColor(DARK)
+  .text(clientText, devisBlockX, clientY, {
+    width: clientW,
+    align: "left",   // ⚠️ très important
+    lineGap: 1.5,
+  });
+
 
 // ✅ 3) cursorY après client
 const clientH = doc.heightOfString(clientText, { width: clientW, lineGap: 1.5 });
