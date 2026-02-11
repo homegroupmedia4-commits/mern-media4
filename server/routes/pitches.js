@@ -74,10 +74,21 @@ if (!productId) return res.status(400).json({ message: "Le champ 'productId' est
 });
 
 // PATCH /api/pitches/:id -> rename / toggle / update
+// PATCH /api/pitches/:id -> update fields (name/code/dim/lumi/price/category/product/isActive)
 router.patch("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, isActive } = req.body;
+
+    const {
+      name,
+      codeProduit,
+      dimensions,
+      luminosite,
+      price,
+      categoryId,
+      productId,
+      isActive,
+    } = req.body;
 
     const update = {};
 
@@ -87,20 +98,56 @@ router.patch("/:id", async (req, res) => {
       update.name = n;
     }
 
+    if (typeof codeProduit !== "undefined") {
+      const c = String(codeProduit || "").trim();
+      if (!c) return res.status(400).json({ message: "Le code produit ne peut pas être vide." });
+      update.codeProduit = c;
+    }
+
+    if (typeof dimensions !== "undefined") {
+      const d = String(dimensions || "").trim();
+      if (!d) return res.status(400).json({ message: "Les dimensions ne peuvent pas être vides." });
+      update.dimensions = d;
+    }
+
+    if (typeof luminosite !== "undefined") {
+      const l = String(luminosite || "").trim();
+      if (!l) return res.status(400).json({ message: "La luminosité ne peut pas être vide." });
+      update.luminosite = l;
+    }
+
+    if (typeof price !== "undefined") {
+      const p = Number(price);
+      if (!Number.isFinite(p)) return res.status(400).json({ message: "Le prix doit être un nombre." });
+      update.price = p;
+    }
+
+    if (typeof categoryId !== "undefined") {
+      if (!categoryId) return res.status(400).json({ message: "categoryId est requis." });
+      const cat = await PitchCategory.findById(categoryId);
+      if (!cat) return res.status(400).json({ message: "Catégorie invalide." });
+      update.categoryId = categoryId;
+    }
+
+    if (typeof productId !== "undefined") {
+      if (!productId) return res.status(400).json({ message: "productId est requis." });
+      // (Optionnel) tu pourrais vérifier Product ici, mais tu ne l'as pas importé dans ce fichier.
+      update.productId = productId;
+    }
+
     if (typeof isActive !== "undefined") {
       update.isActive = !!isActive;
     }
 
-    const doc = await Pitch.findByIdAndUpdate(id, update, { new: true }).populate(
-      "categoryId",
-      "name isActive"
-    );
+    const doc = await Pitch.findByIdAndUpdate(id, update, { new: true })
+      .populate("categoryId", "name isActive")
+      .populate("productId", "name isActive");
 
     if (!doc) return res.status(404).json({ message: "Pitch introuvable." });
     res.json(doc);
   } catch (e) {
     if (e?.code === 11000) {
-      return res.status(409).json({ message: "Conflit (doublon)." });
+      return res.status(409).json({ message: "Conflit (doublon code produit)." });
     }
     console.error(e);
     res.status(500).json({ message: "Erreur serveur." });
