@@ -717,10 +717,8 @@ const titleBaseY = cursorY;
 const metaW = contentW * 0.5;
 const gap = 18;
 
-      const clientW = Math.min(320, contentW * 0.45); 
-const clientX = left + (contentW - clientW) / 2;
-// const clientX = left + metaW + gap;
-// const clientW = contentW - metaW - gap;
+const clientX = left + metaW + gap;
+const clientW = contentW - metaW - gap;
 
 const c = docData.client || {};
 const clientLines = [
@@ -740,8 +738,7 @@ const clientText = clientLines.join("\n");
 
 // ✅ 1) Titre "Devis" centré sur la page (pas sur la colonne droite)
 
-const devisShiftX = 4; // 🔧 ajuste : 2 / 3 / 4 / 5 si besoin
-
+// const devisShiftX = 4; 
 
 // doc
 //   .font("Helvetica-Bold")
@@ -749,16 +746,23 @@ const devisShiftX = 4; // 🔧 ajuste : 2 / 3 / 4 / 5 si besoin
 //   .fillColor(DARK)
 //   .text("Devis", left, titleBaseY, { width: contentW, align: "center" });
 
-doc
+      doc
   .font("Helvetica-Bold")
   .fontSize(16)
   .fillColor(DARK)
-  .text(
-    "Devis",
-    left + devisShiftX,
-    titleBaseY,
-    { width: contentW, align: "center" }
-  );
+  .text("Devis", clientX, titleBaseY, { width: clientW, align: "center" });
+
+
+// doc
+//   .font("Helvetica-Bold")
+//   .fontSize(16)
+//   .fillColor(DARK)
+//   .text(
+//     "Devis",
+//     left + devisShiftX,
+//     titleBaseY,
+//     { width: contentW, align: "center" }
+//   );
 
 
 
