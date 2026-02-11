@@ -3,6 +3,26 @@
    + RESPONSIVE AVEC MENU HAMBURGER (drawer) POUR ADMIN
    ========================================================= */
 
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  z-index: 9999;
+}
+.modal-card{
+  width: 720px;
+  max-width: 95vw;
+  background:#fff;
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding:16px;
+}
+
+
 /* reset léger */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
