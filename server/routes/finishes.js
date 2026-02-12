@@ -12,7 +12,9 @@ router.post("/", async (req, res) => {
     const name = String(req.body?.name || "").trim();
     if (!name) return res.status(400).json({ message: "Nom requis." });
 
-    const created = await Finish.create({ name, isActive: true });
+    const priceMonthlyHt = Number(req.body?.priceMonthlyHt || 0) || 0;
+
+    const created = await Finish.create({ name, priceMonthlyHt, isActive: true });
     res.status(201).json(created);
   } catch (e) {
     console.error(e);
@@ -26,7 +28,15 @@ router.patch("/:id", async (req, res) => {
     if (req.body?.name !== undefined) patch.name = String(req.body.name).trim();
     if (req.body?.isActive !== undefined) patch.isActive = !!req.body.isActive;
 
-    const updated = await Finish.findByIdAndUpdate(req.params.id, patch, { new: true, runValidators: true });
+    // ✅ prix
+    if (req.body?.priceMonthlyHt !== undefined) {
+      patch.priceMonthlyHt = Number(req.body.priceMonthlyHt || 0) || 0;
+    }
+
+    const updated = await Finish.findByIdAndUpdate(req.params.id, patch, {
+      new: true,
+      runValidators: true,
+    });
     if (!updated) return res.status(404).json({ message: "Not found" });
     res.json(updated);
   } catch (e) {
