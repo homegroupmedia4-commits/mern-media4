@@ -812,12 +812,17 @@ next.categorieName = categorieName;
       const priceLabel =
         pi.typeFinancement === "achat" ? "Prix total HT (achat)" : "Prix total HT (/mois)";
 
+      const finLabel = pi.finitionName ? `Finition : ${pi.finitionName}` : "Finition : —";
+const finPrice = parseEuro(pi.finitionPriceMonthlyHt);
+const finPart =
+  finPrice > 0 ? ` – Prix finition (/mois) : ${fmtEuro(finPrice)}` : "";
+
       lines.push({
         kind: "pitch",
         key: `pitch_${pi.instanceId}`,
         text:
           `Murs leds – ${pitchTitle} – Largeur (m) : ${pi.largeurM || "—"} – Hauteur (m) : ${pi.hauteurM || "—"} ` +
-          `– Largeur/Hauteur(px) : ${pi.largeurPx || "—"}x${pi.hauteurPx || "—"} px – ${pi.financementMonths || "—"} mois ` +
+          `– Largeur/Hauteur(px) : ${pi.largeurPx || "—"}x${pi.hauteurPx || "—"} px – ${pi.financementMonths || "—"} mois – ${finLabel}${finPart}` +
           `– Surface (m²) : ${pi.surfaceM2 || "—"} – ${priceLabel} : ${pi.prixTotalHtMois || "—"} – Quantité d'écrans : ${pi.quantite || "1"} ` +
           `${pi.categorieName ? `– Catégorie : ${pi.categorieName} ` : ""}` +
           `– Montant HT : ${fmtEuro(montant)}`,
@@ -863,6 +868,14 @@ next.categorieName = categorieName;
     for (const pi of pitchInstances || []) {
       ht += parseEuro(pi.montantHt);
     }
+
+    // ✅ ht finitions (mensuel) : somme (prix finition * quantité d'écrans)
+for (const pi of pitchInstances || []) {
+  const q = Math.max(1, parseInt(String(pi.quantite || "1"), 10) || 1);
+  const finPrice = parseEuro(pi.finitionPriceMonthlyHt);
+  ht += finPrice * q;
+}
+
 
 
     // ✅ ABOBR (comme dans le PDF) : 19,95€ si on a au moins 1 ligne
@@ -1260,7 +1273,12 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                             type="radio"
                             name={`finition_${pi.instanceId}`}
                             checked={pi.finitionId === f._id}
-                            onChange={() => updatePitchInstance(pi.instanceId, { finitionId: f._id,  finitionName: f.name, })}
+                            onChange={() => updatePitchInstance(pi.instanceId, { 
+                              finitionId: f._id, 
+                              finitionName: f.name,
+                              finitionPriceMonthlyHt: Number(f.priceMonthlyHt || 0),
+                            
+                            })}
                           />
                           <span>{f.name}</span>
                         </label>
