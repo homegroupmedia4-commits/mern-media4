@@ -203,6 +203,43 @@ const cat = String(
 
   const qtyPitchTotal = pitchLines.reduce((s, l) => s + (Number(l.qty) || 0), 0);
 
+  // -----------------------------
+// 1bis) FINITIONS (mensualité)
+// -----------------------------
+const finishMonthlyLines = [];
+
+for (const pi of pitchInstances || []) {
+  const finishName = String(pi.finitionName || "").trim();
+  const finishPrice = Number(pi.finitionPriceMonthlyHt || 0) || 0;
+  if (!finishName || finishPrice <= 0) continue;
+
+  const qty = parseInt(pi.quantite || "1", 10) || 1;
+
+  // ✅ texte demandé dans le devis
+  // mapping exact :
+  // Bois MDF brut -> "Finition MDF brut"
+  // Bois MDF noir -> "Finition MDF peint noir"
+  // Bois MDF + végétation -> "Finition MDF brut + végétation"
+  let devisLabel = finishName;
+  if (finishName === "Bois MDF brut") devisLabel = "Finition MDF brut";
+  else if (finishName === "Bois MDF noir") devisLabel = "Finition MDF peint noir";
+  else if (finishName === "Bois MDF + végétation") devisLabel = "Finition MDF brut + végétation";
+
+  finishMonthlyLines.push({
+    code: "FIN", // ou "FINMDF" si tu veux
+    description: devisLabel,
+    qty,
+    puHt: finishPrice,
+    montantHt: fmt2(finishPrice * qty),
+    tva: tvaRate,
+    scope: "mensualite",
+    kind: "finish",
+  });
+}
+
+
+  
+
 //   // -----------------------------
 //   // 2) AUTRES PRODUITS (mensualité)
 //   // -----------------------------
@@ -614,6 +651,7 @@ if (clientComment) {
 const mensualiteBase =
   pitchLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
   otherMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
+   finishMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
   (abobrLine.length ? 19.95 : 0);
 
 
@@ -624,6 +662,7 @@ const mensualiteBase =
   const lines = [
     ...pitchLines,
     ...otherMonthlyLines,
+      ...finishMonthlyLines,
     ...playerLine,
     ...abobrLine,
     ...infoLine,
