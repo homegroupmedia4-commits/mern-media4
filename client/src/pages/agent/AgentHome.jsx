@@ -642,6 +642,17 @@ const categorieName =
         next.categorieId = categorieId;
 next.categorieName = categorieName;
 
+        const qScreens = Math.max(1, parseInt(String(next.quantite || "1"), 10) || 1);
+
+// ✅ prix finition mensuel (par écran) choisi
+const finUnit = Number(next.finitionPriceMonthlyHt || 0) || 0;
+
+// ✅ total mensuel “unitaire” (comme ton champ Prix total HT /mois)
+const totalUnitWithFin = Number(quote.total || 0) + finUnit;
+
+// ✅ montant mensuel HT (avec quantité)
+const montantWithFin = Number(quote.montant || 0) + finUnit * qScreens;
+
 
 
         return {
@@ -653,8 +664,17 @@ next.categorieName = categorieName;
           hauteurPx: quote.hauteurPx,
           metreLineaire: String(quote.lineaireUsed),
           container: quote.container,
-          prixTotalHtMois: quote.total,
-          montantHt: quote.montant,
+
+          
+          // prixTotalHtMois: quote.total,
+          // montantHt: quote.montant,
+
+            // ✅ maintenant ça bouge quand tu changes la finition
+  prixTotalHtMois: totalUnitWithFin,
+
+  montantHt: montantWithFin,
+
+          
         };
       })
     );
