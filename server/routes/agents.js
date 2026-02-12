@@ -122,6 +122,24 @@ function guessFixationName(pi = {}) {
  *   "Devis mensuel sur la base d'un leasing de 63 mois
  *    avec garantie incluse"
  */
+
+
+function mapFinishLabel(finishName = "") {
+  const n = String(finishName || "").trim();
+  if (!n) return "";
+
+  if (n === "Bois MDF brut") return "Finition MDF brut";
+  if (n === "Bois MDF noir") return "Finition MDF peint noir";
+  if (n === "Bois MDF + végétation") return "Finition MDF brut + végétation";
+
+  // fallback : si tu as déjà stocké directement "Finition MDF ..."
+  if (n.toLowerCase().startsWith("finition")) return n;
+
+  return n;
+}
+
+
+
 async function buildLinesAndTotals({
   pitchInstances = [],
   otherSelections = {},
@@ -560,6 +578,10 @@ const fixationLabel = guessFixationName(pi0);
 const fixationComment = String(pi0.fixationComment || "").trim();
 const fixationSuffix = fixationComment ? ` — ${fixationComment}` : "";
 
+  const finishLabel = mapFinishLabel(pi0.finitionName || "");
+const finishSuffix = finishLabel ? ` - ${finishLabel}` : "";
+
+
 
   const portLine =
     portQty > 0
@@ -581,7 +603,8 @@ const fixationSuffix = fixationComment ? ` — ${fixationComment}` : "";
   if (qtyPitchTotal > 0) {
     instLines.push({
       code: "INST",
-      description: `INSTALLATION (Murs leds) - ${fixationLabel}${fixationSuffix}`,
+     description: `INSTALLATION (Murs leds) - ${fixationLabel}${fixationSuffix}${finishSuffix}`,
+
       qty: qtyPitchTotal,
       puHt: 600,
       montantHt: instOffert ? "OFFERT" : fmt2(qtyPitchTotal * 600),
