@@ -15,6 +15,10 @@ export default function AdminFinition() {
   const { API } = useOutletContext();
 
   const [name, setName] = useState("");
+
+  const [priceMonthlyHt, setPriceMonthlyHt] = useState("");
+
+  
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,7 +54,12 @@ export default function AdminFinition() {
 
   const add = async () => {
     setError("");
-    const payload = { name: String(name || "").trim() };
+    const payload = { 
+      
+      name: String(name || "").trim(),
+      priceMonthlyHt: Number(String(priceMonthlyHt || "").replace(",", ".")) || 0,
+                    
+                    };
     if (!payload.name) return setError("Nom requis.");
 
     setSaving(true);
@@ -64,6 +73,8 @@ export default function AdminFinition() {
       const created = await res.json();
       setRows((p) => [created, ...p]);
       setName("");
+      setPriceMonthlyHt("");
+
     } catch (e) {
       console.error(e);
       setError("Ajout impossible (doublon ou erreur serveur).");
@@ -93,6 +104,34 @@ export default function AdminFinition() {
       setError("Renommage impossible.");
     }
   };
+
+  const edit = async (row) => {
+  const nextName = prompt("Nom :", row.name);
+  if (nextName == null) return;
+
+  const nextPrice = prompt("Prix HT / mois :", String(row.priceMonthlyHt ?? 0));
+  if (nextPrice == null) return;
+
+  const newName = String(nextName).trim();
+  const newPrice = Number(String(nextPrice).replace(",", ".")) || 0;
+  if (!newName) return;
+
+  setError("");
+  try {
+    const res = await fetch(`${API}/api/finishes/${row._id}`, {
+      method: "PATCH",
+      headers: authHeaders(true),
+      body: JSON.stringify({ name: newName, priceMonthlyHt: newPrice }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const updated = await res.json();
+    setRows((p) => p.map((r) => (r._id === row._id ? updated : r)));
+  } catch (e) {
+    console.error(e);
+    setError("Modification impossible.");
+  }
+};
+
 
   const toggle = async (row) => {
     setError("");
@@ -141,6 +180,14 @@ export default function AdminFinition() {
           onChange={(e) => setName(e.target.value)}
         />
 
+        <input
+  className="input"
+  placeholder="Prix HT / mois (ex: 8)"
+  value={priceMonthlyHt}
+  onChange={(e) => setPriceMonthlyHt(e.target.value)}
+/>
+
+
         <button className="btn btn-dark" type="button" onClick={add} disabled={saving}>
           {saving ? "Ajout..." : "Ajouter"}
         </button>
@@ -160,6 +207,8 @@ export default function AdminFinition() {
             <thead>
               <tr>
                 <th>Nom</th>
+                <th style={{ width: 140 }}>Prix HT/mois</th>
+
                 <th style={{ width: 120 }}>Statut</th>
                 <th style={{ width: 320 }}>Actions</th>
               </tr>
@@ -168,6 +217,8 @@ export default function AdminFinition() {
               {rows.map((row) => (
                 <tr key={row._id}>
                   <td>{row.name}</td>
+                  <td>{Number(row.priceMonthlyHt || 0).toFixed(2)} €</td>
+
                   <td>
                     <span className={`badge ${row.isActive ? "on" : "off"}`}>
                       {row.isActive ? "Actif" : "Inactif"}
@@ -175,9 +226,10 @@ export default function AdminFinition() {
                   </td>
                   <td>
                     <div className="actions">
-                      <button className="btn btn-outline" type="button" onClick={() => rename(row)}>
-                        Renommer
-                      </button>
+                      <button className="btn btn-outline" type="button" onClick={() => edit(row)}>
+  Modifier
+</button>
+
                       <button
                         className={`btn ${row.isActive ? "btn-dark" : "btn-outline"}`}
                         type="button"
@@ -195,7 +247,7 @@ export default function AdminFinition() {
 
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="muted">
+                  <td colSpan={4} className="muted">
                     Aucune finition.
                   </td>
                 </tr>
