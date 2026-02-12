@@ -127,14 +127,32 @@ export default function AgentOtherProductsBlock({
 
         if (!next[pid]) {
   const m = getDefaultLeasingMonths();
-  next[pid] = { leasingMonths: m, byMonths: { [m]: { checked: {} } } };
+  next[pid] = {
+    leasingMonths: m,
+    typeFinancement: "location_maintenance", // ✅ NEW
+    byMonths: { [m]: { checked: {} } },
+  };
 } else {
-  // ✅ assure la structure byMonths
   const current = next[pid].leasingMonths || getDefaultLeasingMonths();
   if (!next[pid].byMonths) next[pid].byMonths = {};
   if (!next[pid].byMonths[current]) next[pid].byMonths[current] = { checked: {} };
   if (!next[pid].leasingMonths) next[pid].leasingMonths = current;
+
+  // ✅ NEW fallback
+  if (!next[pid].typeFinancement) next[pid].typeFinancement = "location_maintenance";
 }
+
+
+//         if (!next[pid]) {
+//   const m = getDefaultLeasingMonths();
+//   next[pid] = { leasingMonths: m, byMonths: { [m]: { checked: {} } } };
+// } else {
+//   // ✅ assure la structure byMonths
+//   const current = next[pid].leasingMonths || getDefaultLeasingMonths();
+//   if (!next[pid].byMonths) next[pid].byMonths = {};
+//   if (!next[pid].byMonths[current]) next[pid].byMonths[current] = { checked: {} };
+//   if (!next[pid].leasingMonths) next[pid].leasingMonths = current;
+// }
 
 
 
@@ -185,6 +203,25 @@ export default function AgentOtherProductsBlock({
     };
   });
 };
+
+  const setOtherTypeFinancement = (productId, typeFinancement) => {
+  setOtherSelections((prev) => {
+    const curr = prev[productId] || {
+      leasingMonths: getDefaultLeasingMonths(),
+      typeFinancement: "location_maintenance",
+      byMonths: {},
+    };
+
+    return {
+      ...prev,
+      [productId]: {
+        ...curr,
+        typeFinancement: String(typeFinancement || "location_maintenance"),
+      },
+    };
+  });
+};
+
 
 
   // const toggleOtherSize = (productId, row) => {
@@ -287,13 +324,29 @@ export default function AgentOtherProductsBlock({
 };
 
 
+  const computeOtherLine = ({ basePrice, memId, qty, typeFinancement }) => {
+  const memPrice = memOptions.find((m) => m._id === memId)?.price ?? 0;
 
-  const computeOtherLine = ({ basePrice, memId, qty }) => {
-    const memPrice = memOptions.find((m) => m._id === memId)?.price ?? 0;
-    const unit = Number(basePrice || 0) + Number(memPrice || 0);
-    const q = Math.max(1, parseInt(String(qty || 1), 10) || 1);
-    return { unit, total: unit * q };
-  };
+  const unitBase = Number(basePrice || 0) + Number(memPrice || 0);
+
+  // ✅ Achat => -40% (x0.6). Location => inchangé
+  const coef = String(typeFinancement) === "achat" ? 0.6 : 1;
+
+  const unit = unitBase * coef;
+
+  const q = Math.max(1, parseInt(String(qty || 1), 10) || 1);
+  return { unit, total: unit * q };
+};
+
+
+
+  // const computeOtherLine = ({ basePrice, memId, qty }) => {
+  //   const memPrice = memOptions.find((m) => m._id === memId)?.price ?? 0;
+  //   const unit = Number(basePrice || 0) + Number(memPrice || 0);
+    
+  //   const q = Math.max(1, parseInt(String(qty || 1), 10) || 1);
+  //   return { unit, total: unit * q };
+  // };
 
   // -----------------------------
   // UI
@@ -352,7 +405,29 @@ const rowsForProduct = otherSizes.filter((r) => {
 
             <div className="agenthome-muted" style={{ marginBottom: 8 }}>
               {productName}
-            </div><div className="agenthome-selectCol">
+
+              
+            </div>
+
+            {/* Type financement (Autres produits) */}
+<div className="agenthome-selectCol" style={{ marginTop: 6 }}>
+  <label className="agenthome-label">Type de financement :</label>
+
+  <select
+    className="agenthome-select"
+    value={sel.typeFinancement || "location_maintenance"}
+    onChange={(e) => setOtherTypeFinancement(productId, e.target.value)}
+  >
+    <option value="location_maintenance">Location maintenance</option>
+    <option value="location_evenementiel">Location événementiel</option>
+    <option value="achat">Achat</option>
+  </select>
+</div>
+
+            
+            
+            
+            <div className="agenthome-selectCol">
   <label className="agenthome-label">
     Durée de leasing :
   </label>
@@ -410,6 +485,7 @@ const rowsForProduct = otherSizes.filter((r) => {
                     basePrice: row.price,
                     memId: line.memId,
                     qty: line.qty,
+                      typeFinancement: sel.typeFinancement || "location_maintenance",
                   });
 
                   return (
