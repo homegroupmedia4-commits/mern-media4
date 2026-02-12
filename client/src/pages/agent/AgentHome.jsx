@@ -156,7 +156,8 @@ const DEFAULT_CATEGORY_NAME = "Exterieur haute luminosité";
           pitchInstances,
           validityDays: 30,
             otherSelections,
-          finalType: "location_maintenance",
+          finalType: pitchInstances?.[0]?.typeFinancement || "location_maintenance",
+
         }),
       });
 
