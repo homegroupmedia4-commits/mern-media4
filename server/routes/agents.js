@@ -661,8 +661,8 @@ const mensualiteBase =
 
   const lines = [
     ...pitchLines,
+     ...finishMonthlyLines,
     ...otherMonthlyLines,
-      ...finishMonthlyLines,
     ...playerLine,
     ...abobrLine,
     ...infoLine,
