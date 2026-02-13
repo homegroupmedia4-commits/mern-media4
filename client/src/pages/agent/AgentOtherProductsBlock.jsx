@@ -324,19 +324,38 @@ export default function AgentOtherProductsBlock({
 };
 
 
-  const computeOtherLine = ({ basePrice, memId, qty, typeFinancement }) => {
+//   const computeOtherLine = ({ basePrice, memId, qty, typeFinancement }) => {
+//   const memPrice = memOptions.find((m) => m._id === memId)?.price ?? 0;
+
+//   const unitBase = Number(basePrice || 0) + Number(memPrice || 0);
+
+//   // ✅ Achat => -40% (x0.6). Location => inchangé
+//   const coef = String(typeFinancement) === "achat" ? 0.6 : 1;
+
+//   const unit = unitBase * coef;
+
+//   const q = Math.max(1, parseInt(String(qty || 1), 10) || 1);
+//   return { unit, total: unit * q };
+// };
+
+  const computeOtherLine = ({ basePrice, memId, qty, typeFinancement, leasingMonths }) => {
   const memPrice = memOptions.find((m) => m._id === memId)?.price ?? 0;
 
-  const unitBase = Number(basePrice || 0) + Number(memPrice || 0);
+  // ✅ 1) Mensualité de base (location) = price + mémoire
+  const monthly = Number(basePrice || 0) + Number(memPrice || 0);
 
-  // ✅ Achat => -40% (x0.6). Location => inchangé
-  const coef = String(typeFinancement) === "achat" ? 0.6 : 1;
+  const months = Math.max(1, parseInt(String(leasingMonths || 1), 10) || 1);
 
-  const unit = unitBase * coef;
+  // ✅ 2) Achat = (mensualité * mois) * 0.6
+  const unit =
+    String(typeFinancement) === "achat"
+      ? (monthly * months) * 0.6
+      : monthly;
 
   const q = Math.max(1, parseInt(String(qty || 1), 10) || 1);
   return { unit, total: unit * q };
 };
+
 
 
 
@@ -482,11 +501,12 @@ const rowsForProduct = otherSizes.filter((r) => {
                   if (!row || !line) return null;
 
                   const calc = computeOtherLine({
-                    basePrice: row.price,
-                    memId: line.memId,
-                    qty: line.qty,
-                      typeFinancement: sel.typeFinancement || "location_maintenance",
-                  });
+  basePrice: row.price,
+  memId: line.memId,
+  qty: line.qty,
+  typeFinancement: sel.typeFinancement || "location_maintenance",
+  leasingMonths: sel.leasingMonths, // ✅ NEW
+});
 
                   return (
                     <div key={rowId} className="agenthome-pitchCard" style={{ marginTop: 10 }}>
