@@ -482,15 +482,43 @@ for (const pid of Object.keys(otherSelections || {})) {
     // const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
     // const total = unit * qty;
 
+    
+
+//     const unitBase = basePrice + memPrice;
+
+
+// const coef = String(sel?.typeFinancement || "location_maintenance") === "achat" ? 0.6 : 1;
+
+// const unit = unitBase * coef;
+
+// const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
+// const total = unit * qty;
+
     const unitBase = basePrice + memPrice;
 
-// ✅ NEW : Achat => x0.6, sinon x1
-const coef = String(sel?.typeFinancement || "location_maintenance") === "achat" ? 0.6 : 1;
+// ✅ Achat = (mensualité * mois) * 0.6
+const months = Math.max(
+  1,
+  parseInt(String(sel?.leasingMonths || 1), 10) || 1
+);
 
-const unit = unitBase * coef;
+const isAchat =
+  String(sel?.typeFinancement || "location_maintenance") === "achat";
 
-const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
+const unit = isAchat
+  ? (unitBase * months) * 0.6
+  : unitBase;
+
+const qty = Math.max(
+  1,
+  parseInt(String(line?.qty || 1), 10) || 1
+);
+
 const total = unit * qty;
+
+
+
+    
 
 
     // ✅ nom produit : supporte plusieurs structures
