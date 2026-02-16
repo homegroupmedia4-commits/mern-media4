@@ -1,5 +1,5 @@
 // client/src/pages/AdminPages.jsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 const safe = (v) => String(v ?? "").trim();
@@ -13,11 +13,19 @@ function getAdminToken() {
   );
 }
 
+function normSlug(s) {
+  return safe(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9-_/]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^\/+|\/+$/g, "");
+}
+
 export default function AdminPages() {
-  const { API } = useOutletContext(); // comme tes autres pages admin
+  const { API } = useOutletContext();
 
   const [list, setList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingList, setLoadingList] = useState(true);
   const [err, setErr] = useState("");
 
   // form
@@ -28,73 +36,89 @@ export default function AdminPages() {
   const [pwaName, setPwaName] = useState("");
   const [pwaThemeColor, setPwaThemeColor] = useState("#000000");
 
-  const normSlug = (s) =>
-    safe(s)
-      .toLowerCase()
-      .replace(/[^a-z0-9-_/]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^\/+|\/+$/g, "");
+  const [saving, setSaving] = useState(false);
 
-  async function fetchList() {
-    setLoading(true);
-    setErr("");
-
+  const authHeaders = useCallback(() => {
     const token = getAdminToken();
-    if (!token) {
-      setLoading(false);
-      setErr("Token manquant. Connecte-toi (admin) pour charger les pages.");
-      return;
-    }
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, []);
 
+  const fetchList = useCallback(async () => {
+    setLoadingList(true);
+    setErr("");
     try {
       const r = await fetch(`${API}/api/pages`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { ...authHeaders() },
       });
+
+      // 401 => token manquant/invalid
+      if (r.status === 401) {
+        setList([]);
+        setErr(
+          "Impossible de charger les pages (401). Connecte-toi sur /adminmedia4 pour générer le token admin."
+        );
+        return;
+      }
+
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || "ERR");
-      setList(j.pages || []);
+      setList(Array.isArray(j.pages) ? j.pages : []);
     } catch (e) {
-      setErr("Impossible de charger les pages (token ?)");
+      setErr("Impossible de charger les pages.");
+      setList([]);
     } finally {
-      setLoading(false);
+      setLoadingList(false);
     }
-  }
+  }, [API, authHeaders]);
 
   useEffect(() => {
     fetchList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+    // Bonus UX : rafraîchir quand tu reviens sur l’onglet
+    const onFocus = () => fetchList();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchList]);
 
   async function createPage(e) {
     e.preventDefault();
     setErr("");
 
-    const token = getAdminToken();
-    if (!token) return alert("Token manquant. Connecte-toi (admin).");
+    const finalSlug = normSlug(slug || title);
+    if (!finalSlug) return alert("Slug requis");
 
     const payload = {
-      slug: normSlug(slug || title),
-      title: safe(title),
-      content: safe(content) || safe(title),
+      slug: finalSlug,
+      title: safe(title) || finalSlug,
+      content: safe(content) || safe(title) || finalSlug,
       isPwa: !!isPwa,
-      pwaName: safe(pwaName) || safe(title) || normSlug(slug || title),
+      pwaName: safe(pwaName) || safe(title) || finalSlug,
       pwaThemeColor: safe(pwaThemeColor) || "#000000",
     };
 
-    if (!payload.slug) return alert("Slug requis");
-
+    setSaving(true);
     try {
       const r = await fetch(`${API}/api/pages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...authHeaders(),
         },
         body: JSON.stringify(payload),
       });
 
+      if (r.status === 401) {
+        setErr(
+          "Création impossible (401). Connecte-toi sur /adminmedia4 pour générer le token admin."
+        );
+        return;
+      }
+
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) return alert(j?.error || "Erreur création");
+      if (!r.ok) {
+        alert(j?.error || "Erreur création");
+        return;
+      }
 
       // reset
       setSlug("");
@@ -104,43 +128,57 @@ export default function AdminPages() {
       setPwaName("");
       setPwaThemeColor("#000000");
 
-      fetchList();
-    } catch {
-      alert("Erreur réseau");
+      await fetchList();
+    } finally {
+      setSaving(false);
     }
   }
 
   async function removePage(s) {
-    setErr("");
-    const token = getAdminToken();
-    if (!token) return alert("Token manquant. Connecte-toi (admin).");
+    const ss = normSlug(s);
+    if (!ss) return;
+    if (!window.confirm(`Supprimer /${ss} ?`)) return;
 
-    if (!window.confirm(`Supprimer /${s} ?`)) return;
+    const r = await fetch(`${API}/api/pages/${encodeURIComponent(ss)}`, {
+      method: "DELETE",
+      headers: { ...authHeaders() },
+    });
 
-    try {
-      const r = await fetch(`${API}/api/pages/${encodeURIComponent(s)}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) return alert(j?.error || "Erreur suppression");
-
-      fetchList();
-    } catch {
-      alert("Erreur réseau");
+    if (r.status === 401) {
+      setErr(
+        "Suppression impossible (401). Connecte-toi sur /adminmedia4 pour générer le token admin."
+      );
+      return;
     }
+
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return alert(j?.error || "Erreur suppression");
+    fetchList();
   }
 
   function openPage(s) {
-    window.open(`/${s}/`, "_blank");
+    const ss = normSlug(s);
+    window.open(`/${ss}/`, "_blank");
   }
+
+  function openManifest(s) {
+    const ss = normSlug(s);
+    window.open(`/${ss}/manifest.webmanifest`, "_blank");
+  }
+
+  function openSw(s) {
+    const ss = normSlug(s);
+    window.open(`/${ss}/sw.js`, "_blank");
+  }
+
+  const previewSlug = useMemo(() => normSlug(slug || title), [slug, title]);
 
   return (
     <div style={{ padding: 18 }}>
       <h2 style={{ margin: 0 }}>Pages dynamiques</h2>
       <p style={{ marginTop: 6, opacity: 0.8 }}>
-        Crée une page par slug (ex: <b>/electo</b>). Si <b>PWA</b> est activé, la page devient installable.
+        Crée une page par slug (ex: <b>/electo</b>). Si <b>PWA</b> est activé, la
+        page devient installable (scope: <b>/{`{slug}`}/</b>).
       </p>
 
       <div
@@ -213,11 +251,32 @@ export default function AdminPages() {
             style={styles.input}
           />
 
-          <button type="submit" style={styles.btn}>
-            Créer
+          <button type="submit" style={styles.btn} disabled={saving}>
+            {saving ? "Création..." : "Créer"}
           </button>
 
-          {err && <div style={{ marginTop: 10, color: "#b00020" }}>{err}</div>}
+          {previewSlug ? (
+            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85 }}>
+              Aperçu :{" "}
+              <b>/{previewSlug}/</b>
+              {isPwa ? (
+                <>
+                  {" "}
+                  •{" "}
+                  <a href={`/${previewSlug}/manifest.webmanifest`} target="_blank" rel="noreferrer">
+                    manifest
+                  </a>
+                  {" "}
+                  •{" "}
+                  <a href={`/${previewSlug}/sw.js`} target="_blank" rel="noreferrer">
+                    sw
+                  </a>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+
+          {err ? <div style={{ marginTop: 10, color: "#b00020" }}>{err}</div> : null}
         </form>
 
         {/* LIST */}
@@ -229,34 +288,73 @@ export default function AdminPages() {
             background: "#fff",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
             <h3 style={{ margin: 0 }}>Pages existantes</h3>
             <button onClick={fetchList} style={styles.btnSmall} type="button">
               Rafraîchir
             </button>
           </div>
 
-          {loading ? (
+          {loadingList ? (
             <div style={{ padding: 10 }}>Chargement…</div>
           ) : list.length === 0 ? (
             <div style={{ padding: 10 }}>Aucune page.</div>
           ) : (
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               {list.map((p) => (
-                <div key={p.slug} style={{ border: "1px solid #eef0f6", borderRadius: 10, padding: 10 }}>
+                <div
+                  key={p.slug}
+                  style={{ border: "1px solid #eef0f6", borderRadius: 10, padding: 10 }}
+                >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                     <div>
-                      <div style={{ fontWeight: 700 }}>/{p.slug}</div>
+                      <div style={{ fontWeight: 800 }}>/{p.slug}</div>
                       <div style={{ opacity: 0.8 }}>{safe(p.title) || p.slug}</div>
                       <div style={{ marginTop: 4, fontSize: 12, opacity: 0.8 }}>
                         PWA: <b>{p.isPwa ? "oui" : "non"}</b>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <button type="button" style={styles.btnSmall} onClick={() => openPage(p.slug)}>
+
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        style={styles.btnSmall}
+                        onClick={() => openPage(p.slug)}
+                      >
                         Ouvrir
                       </button>
-                      <button type="button" style={styles.btnDanger} onClick={() => removePage(p.slug)}>
+
+                      {p.isPwa ? (
+                        <>
+                          <button
+                            type="button"
+                            style={styles.btnSmall}
+                            onClick={() => openManifest(p.slug)}
+                          >
+                            Manifest
+                          </button>
+                          <button
+                            type="button"
+                            style={styles.btnSmall}
+                            onClick={() => openSw(p.slug)}
+                          >
+                            SW
+                          </button>
+                        </>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        style={styles.btnDanger}
+                        onClick={() => removePage(p.slug)}
+                      >
                         Supprimer
                       </button>
                     </div>
@@ -265,6 +363,11 @@ export default function AdminPages() {
               ))}
             </div>
           )}
+
+          <div style={{ marginTop: 12, fontSize: 12, opacity: 0.75 }}>
+            Astuce : si tu actives PWA, ouvre la page puis va dans DevTools →
+            Application → Manifest / Service Worker.
+          </div>
         </div>
       </div>
     </div>
@@ -298,7 +401,8 @@ const styles = {
     cursor: "pointer",
     background: "#0b5",
     color: "#fff",
-    fontWeight: 700,
+    fontWeight: 800,
+    opacity: 1,
   },
   btnSmall: {
     height: 34,
