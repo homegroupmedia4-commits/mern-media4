@@ -1,9 +1,7 @@
 // server/routes/pages.js
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const Page = require("../models/Page");
-
-// ✅ utilise le même système de token que tes routes /api/agents/*
-const requireAgentAuth = require("../middleware/requireAgentAuth");
 
 const router = express.Router();
 
@@ -26,23 +24,50 @@ router.get("/public/:slug", async (req, res) => {
 });
 
 // =========================
-// ADMIN (protégé JWT)
+// ADMIN AUTH (JWT)
 // =========================
-router.use(requireAgentAuth);
+function requireAdminJwt(req, res, next) {
+  try {
+    const raw = String(req.headers.authorization || "");
+    const token = raw.startsWith("Bearer ") ? raw.slice(7).trim() : raw.trim();
+    if (!token) return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
 
-router.get("/", async (req, res) => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret)
+      return res.status(500).json({ ok: false, error: "MISSING_JWT_SECRET" });
+
+    const decoded = jwt.verify(token, secret);
+
+    // ✅ option : si tu veux restreindre uniquement au token "admin"
+    // (si ton payload contient un flag/role)
+    // Exemple:
+    // if (!decoded?.isAdmin && decoded?.role !== "admin") {
+    //   return res.status(403).json({ ok: false, error: "FORBIDDEN" });
+    // }
+
+    req.user = decoded;
+    return next();
+  } catch (e) {
+    return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+  }
+}
+
+// =========================
+// ADMIN CRUD (protégé)
+// =========================
+router.get("/", requireAdminJwt, async (req, res) => {
   const list = await Page.find({}).sort({ updatedAt: -1 }).lean();
   res.json({ ok: true, pages: list });
 });
 
-router.get("/:slug", async (req, res) => {
+router.get("/:slug", requireAdminJwt, async (req, res) => {
   const slug = normSlug(req.params.slug);
   const page = await Page.findOne({ slug }).lean();
   if (!page) return res.status(404).json({ ok: false, error: "NOT_FOUND" });
   res.json({ ok: true, page });
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireAdminJwt, async (req, res) => {
   const title = String(req.body?.title || "").trim();
   const content = String(req.body?.content || "").trim();
   const slug = normSlug(req.body?.slug || title);
@@ -66,7 +91,7 @@ router.post("/", async (req, res) => {
   res.json({ ok: true, page });
 });
 
-router.put("/:slug", async (req, res) => {
+router.put("/:slug", requireAdminJwt, async (req, res) => {
   const slug = normSlug(req.params.slug);
 
   const patch = {
@@ -88,7 +113,7 @@ router.put("/:slug", async (req, res) => {
   res.json({ ok: true, page: updated });
 });
 
-router.delete("/:slug", async (req, res) => {
+router.delete("/:slug", requireAdminJwt, async (req, res) => {
   const slug = normSlug(req.params.slug);
   const del = await Page.deleteOne({ slug });
   res.json({ ok: true, deleted: del.deletedCount || 0 });
