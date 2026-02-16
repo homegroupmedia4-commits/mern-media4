@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+// client/src/pages/AdminPages.jsx
+import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
 const safe = (v) => String(v ?? "").trim();
@@ -14,7 +15,6 @@ function getAdminToken() {
 
 export default function AdminPages() {
   const { API } = useOutletContext(); // comme tes autres pages admin
-  const token = useMemo(() => getAdminToken(), []);
 
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,14 +28,29 @@ export default function AdminPages() {
   const [pwaName, setPwaName] = useState("");
   const [pwaThemeColor, setPwaThemeColor] = useState("#000000");
 
+  const normSlug = (s) =>
+    safe(s)
+      .toLowerCase()
+      .replace(/[^a-z0-9-_/]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^\/+|\/+$/g, "");
+
   async function fetchList() {
     setLoading(true);
     setErr("");
+
+    const token = getAdminToken();
+    if (!token) {
+      setLoading(false);
+      setErr("Token manquant. Connecte-toi (admin) pour charger les pages.");
+      return;
+    }
+
     try {
       const r = await fetch(`${API}/api/pages`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const j = await r.json();
+      const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j?.error || "ERR");
       setList(j.pages || []);
     } catch (e) {
@@ -50,56 +65,71 @@ export default function AdminPages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const normSlug = (s) =>
-    safe(s)
-      .toLowerCase()
-      .replace(/[^a-z0-9-_/]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^\/+|\/+$/g, "");
-
   async function createPage(e) {
     e.preventDefault();
+    setErr("");
+
+    const token = getAdminToken();
+    if (!token) return alert("Token manquant. Connecte-toi (admin).");
+
     const payload = {
       slug: normSlug(slug || title),
       title: safe(title),
       content: safe(content) || safe(title),
       isPwa: !!isPwa,
-      pwaName: safe(pwaName) || safe(title) || normSlug(slug),
+      pwaName: safe(pwaName) || safe(title) || normSlug(slug || title),
       pwaThemeColor: safe(pwaThemeColor) || "#000000",
     };
+
     if (!payload.slug) return alert("Slug requis");
 
-    const r = await fetch(`${API}/api/pages`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    const j = await r.json();
-    if (!r.ok) return alert(j?.error || "Erreur création");
+    try {
+      const r = await fetch(`${API}/api/pages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    // reset
-    setSlug("");
-    setTitle("");
-    setContent("");
-    setIsPwa(true);
-    setPwaName("");
-    setPwaThemeColor("#000000");
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return alert(j?.error || "Erreur création");
 
-    fetchList();
+      // reset
+      setSlug("");
+      setTitle("");
+      setContent("");
+      setIsPwa(true);
+      setPwaName("");
+      setPwaThemeColor("#000000");
+
+      fetchList();
+    } catch {
+      alert("Erreur réseau");
+    }
   }
 
   async function removePage(s) {
+    setErr("");
+    const token = getAdminToken();
+    if (!token) return alert("Token manquant. Connecte-toi (admin).");
+
     if (!window.confirm(`Supprimer /${s} ?`)) return;
-    const r = await fetch(`${API}/api/pages/${encodeURIComponent(s)}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const j = await r.json();
-    if (!r.ok) return alert(j?.error || "Erreur suppression");
-    fetchList();
+
+    try {
+      const r = await fetch(`${API}/api/pages/${encodeURIComponent(s)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return alert(j?.error || "Erreur suppression");
+
+      fetchList();
+    } catch {
+      alert("Erreur réseau");
+    }
   }
 
   function openPage(s) {
@@ -113,30 +143,75 @@ export default function AdminPages() {
         Crée une page par slug (ex: <b>/electo</b>). Si <b>PWA</b> est activé, la page devient installable.
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "420px 1fr", gap: 16, alignItems: "start" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "420px 1fr",
+          gap: 16,
+          alignItems: "start",
+        }}
+      >
         {/* FORM */}
-        <form onSubmit={createPage} style={{ border: "1px solid #e6e8ef", borderRadius: 12, padding: 14, background: "#fff" }}>
+        <form
+          onSubmit={createPage}
+          style={{
+            border: "1px solid #e6e8ef",
+            borderRadius: 12,
+            padding: 14,
+            background: "#fff",
+          }}
+        >
           <h3 style={{ marginTop: 0 }}>Créer une page</h3>
 
           <label>Slug (optionnel)</label>
-          <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="electo" style={styles.input} />
+          <input
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            placeholder="electo"
+            style={styles.input}
+          />
 
           <label>Titre</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Electo" style={styles.input} required />
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Electo"
+            style={styles.input}
+            required
+          />
 
           <label>Contenu (texte)</label>
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Electo" style={styles.textarea} />
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Electo"
+            style={styles.textarea}
+          />
 
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 10 }}>
-            <input type="checkbox" checked={isPwa} onChange={(e) => setIsPwa(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={isPwa}
+              onChange={(e) => setIsPwa(e.target.checked)}
+            />
             <span>Activer PWA</span>
           </div>
 
           <label style={{ marginTop: 10 }}>Nom PWA (optionnel)</label>
-          <input value={pwaName} onChange={(e) => setPwaName(e.target.value)} placeholder="Electo" style={styles.input} />
+          <input
+            value={pwaName}
+            onChange={(e) => setPwaName(e.target.value)}
+            placeholder="Electo"
+            style={styles.input}
+          />
 
           <label>Theme color</label>
-          <input value={pwaThemeColor} onChange={(e) => setPwaThemeColor(e.target.value)} placeholder="#000000" style={styles.input} />
+          <input
+            value={pwaThemeColor}
+            onChange={(e) => setPwaThemeColor(e.target.value)}
+            placeholder="#000000"
+            style={styles.input}
+          />
 
           <button type="submit" style={styles.btn}>
             Créer
@@ -146,7 +221,14 @@ export default function AdminPages() {
         </form>
 
         {/* LIST */}
-        <div style={{ border: "1px solid #e6e8ef", borderRadius: 12, padding: 14, background: "#fff" }}>
+        <div
+          style={{
+            border: "1px solid #e6e8ef",
+            borderRadius: 12,
+            padding: 14,
+            background: "#fff",
+          }}
+        >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
             <h3 style={{ margin: 0 }}>Pages existantes</h3>
             <button onClick={fetchList} style={styles.btnSmall} type="button">
