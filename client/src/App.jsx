@@ -22,6 +22,8 @@ import AgentFaq from "./pages/agent/AgentFaq";
 
 
 import DynamicPage from "./pages/DynamicPage";
+import AdminPages from "./pages/AdminPages";
+
 
 
 
@@ -45,6 +47,9 @@ export default function App() {
       <Route path="/adminmedia4" element={<AdminApp />}>
         <Route index element={<Navigate to="nosdevis" replace />} />
         <Route path="nosdevis" element={<AdminNosDevis />} />
+
+        <Route path="pages" element={<AdminPages />} />
+
 
         {/* ✅ Pitchs */}
         <Route path="pitchs" element={<Navigate to="pitchs/ajoutpitch" replace />} />
