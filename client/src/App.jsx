@@ -20,6 +20,12 @@ import AgentRegister from "./pages/agent/AgentRegister";
 import AgentMesDevis from "./pages/agent/AgentMesDevis";
 import AgentFaq from "./pages/agent/AgentFaq";
 
+
+import DynamicPage from "./pages/DynamicPage";
+
+
+
+
 /* ================= AUTH GUARDS ================= */
 const AGENT_TOKEN_KEY = "agent_token_v1";
 
@@ -122,6 +128,9 @@ export default function App() {
           </RequireAgentAuth>
         }
       />
+
+      <Route path="/:slug" element={<DynamicPage />} />
+
 
       {/* ================= GLOBAL FALLBACK ================= */}
       <Route path="*" element={<Navigate to="/agent/login" replace />} />
