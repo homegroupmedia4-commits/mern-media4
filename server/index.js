@@ -45,6 +45,10 @@ app.use("/api/finishes", finishesRouter);
 app.use("/api/fixations", fixationsRouter);
 
 
+app.use("/api/pages", require("./routes/pages"));
+
+
+
 
 
 
