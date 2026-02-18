@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
-// ✅ admin token FIRkkST
+// ✅ admin token FIRST
 function getAuthToken() {
   return (
     localStorage.getItem("admin_token_v1") ||
@@ -69,37 +69,37 @@ export default function AdminNosDevis() {
   // -----------------------------
   // ✅ Helpers (autres produits)
   // -----------------------------
-const getCheckedBucket = (sel, monthsHint = "") => {
-  if (!sel) return {};
+  const getCheckedBucket = (sel, monthsHint = "") => {
+    if (!sel) return {};
 
-  // nouveau format: byMonths
-  if (sel.byMonths) {
-    const months = String(monthsHint || sel.leasingMonths || "").trim();
+    // nouveau format: byMonths
+    if (sel.byMonths) {
+      const months = String(monthsHint || sel.leasingMonths || "").trim();
 
-    // 1) si on a un mois précis, on le prend
-    if (months && sel.byMonths?.[months]?.checked) {
-      return sel.byMonths[months].checked || {};
-    }
-
-    // 2) sinon on fusionne TOUS les mois (pour ne rien perdre)
-    const merged = {};
-    for (const k of Object.keys(sel.byMonths || {})) {
-      const chk = sel.byMonths?.[k]?.checked || {};
-      for (const rowId of Object.keys(chk)) {
-        merged[rowId] = chk[rowId];
+      // 1) si on a un mois précis, on le prend
+      if (months && sel.byMonths?.[months]?.checked) {
+        return sel.byMonths[months].checked || {};
       }
+
+      // 2) sinon on fusionne TOUS les mois (pour ne rien perdre)
+      const merged = {};
+      for (const k of Object.keys(sel.byMonths || {})) {
+        const chk = sel.byMonths?.[k]?.checked || {};
+        for (const rowId of Object.keys(chk)) {
+          merged[rowId] = chk[rowId];
+        }
+      }
+      return merged;
     }
-    return merged;
-  }
 
-  // ancien format
-  return sel.checked || {};
-};
-
+    // ancien format
+    return sel.checked || {};
+  };
 
   const getOtherSelectionsObj = (d) => {
     // peut arriver en objet OU en string (json)
-    if (d && typeof d.otherSelections === "object" && d.otherSelections) return d.otherSelections;
+    if (d && typeof d.otherSelections === "object" && d.otherSelections)
+      return d.otherSelections;
     if (d && typeof d.otherSelections === "string") {
       return safeJsonParse(d.otherSelections, {}) || {};
     }
@@ -116,7 +116,9 @@ const getCheckedBucket = (sel, monthsHint = "") => {
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
-      setError("Token admin introuvable. Connecte-toi via /api/agents/admin/login.");
+      setError(
+        "Token admin introuvable. Connecte-toi via /api/agents/admin/login."
+      );
       setRows([]);
       setLoading(false);
       return;
@@ -126,13 +128,8 @@ const getCheckedBucket = (sel, monthsHint = "") => {
       setLoading(true);
       setError("");
       try {
-        // tab backend: all | murs_leds | autres_produits
-        
-
         const url = new URL(`${API}/api/agents/devis`);
-
-url.searchParams.set("tab", "all");
-
+        url.searchParams.set("tab", "all");
 
         // recherche (backend supporte q)
         if (norm(q)) url.searchParams.set("q", norm(q));
@@ -235,7 +232,9 @@ url.searchParams.set("tab", "all");
       const agentPrenom = snap.prenom || agentObj.prenom || "";
       const agentEmail = snap.email || agentObj.email || "";
 
-      const agentLabel = norm([agentPrenom, agentNom].filter(Boolean).join(" ") || agentEmail || "");
+      const agentLabel = norm(
+        [agentPrenom, agentNom].filter(Boolean).join(" ") || agentEmail || ""
+      );
 
       if (tab === "walleds") {
         const pitches = Array.isArray(d?.pitchInstances) ? d.pitchInstances : [];
@@ -250,7 +249,9 @@ url.searchParams.set("tab", "all");
           const fixationComment = String(pi?.fixationComment || "").trim();
           const isPlafond = fixationBase.toLowerCase().includes("plafond");
           const fixationLabel =
-            isPlafond && fixationComment ? `${fixationBase} (${fixationComment})` : fixationBase;
+            isPlafond && fixationComment
+              ? `${fixationBase} (${fixationComment})`
+              : fixationBase;
 
           const typeFinancementLabel = pi?.typeFinancement || "";
 
@@ -307,22 +308,26 @@ url.searchParams.set("tab", "all");
 
       for (const pid of Object.keys(otherSelections || {})) {
         const sel = otherSelections[pid];
- const months = String(sel?.leasingMonths || "").trim();
-const checked = getCheckedBucket(sel, months);
 
+        const months = String(sel?.leasingMonths || "").trim();
+        const checked = getCheckedBucket(sel, months);
 
         for (const rowId of Object.keys(checked || {})) {
           const line = checked[rowId];
 
           const sizeRow =
-            otherSizesCatalog.find((r) => String(r._id) === String(rowId)) || null;
+            otherSizesCatalog.find((r) => String(r._id) === String(rowId)) ||
+            null;
 
           // ✅ ne pas casser si catalogue pas encore chargé / row manquante
           const sizeInches = sizeRow?.sizeInches ?? "";
           const basePrice = Number(sizeRow?.price || 0);
 
           // memId peut parfois être { _id } selon sérialisation
-          const memId = line?.memId?._id ? String(line.memId._id) : String(line?.memId || "");
+          const memId = line?.memId?._id
+            ? String(line.memId._id)
+            : String(line?.memId || "");
+
           const mem = memId
             ? memOptionsCatalog.find((m) => String(m._id) === String(memId))
             : null;
@@ -372,15 +377,27 @@ const checked = getCheckedBucket(sel, months);
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h2 className="page-title">Tous les devis</h2>
-          <div className="muted" style={{ padding: 0 }}>
-            Admin : liste de tous les devis de tous les agents
+      {/* ✅ HEADER: recherche à gauche + onglets à droite */}
+      <div className="page-header page-header--compact">
+        <div className="page-header__left">
+          <div>
+            <h2 className="page-title">Tous les devis</h2>
+            <div className="muted" style={{ padding: 0 }}>
+              Admin : liste de tous les devis de tous les agents
+            </div>
+          </div>
+
+          <div className="page-header__search">
+            <input
+              className="input input-inline"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Recherche (devis, agent, client, produit...)"
+            />
           </div>
         </div>
 
-        <div className="page-actions m4devis-filters">
+        <div className="page-actions m4devis-filters m4devis-filters--right">
           <div className="subtabs">
             <button
               className={`subtab ${tab === "walleds" ? "active" : ""}`}
@@ -397,13 +414,6 @@ const checked = getCheckedBucket(sel, months);
               Autres produits
             </button>
           </div>
-
-          <input
-            className="input"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Recherche (devis, agent, client, produit...)"
-          />
         </div>
       </div>
 
@@ -414,10 +424,10 @@ const checked = getCheckedBucket(sel, months);
 
         {!loading && !error ? (
           <div style={{ overflowX: "auto" }}>
-            <table className="table table-wide">
+            {/* ✅ table-compact */}
+            <table className="table table-wide table-compact">
               <thead>
                 <tr>
-                
                   <th>Télécharger le devis</th>
 
                   <th>Société</th>
@@ -490,7 +500,6 @@ const checked = getCheckedBucket(sel, months);
                   const c = r.client || {};
                   return (
                     <tr key={r.key}>
-                     
                       <td>
                         <button
                           className="btn btn-outline"
@@ -547,7 +556,11 @@ const checked = getCheckedBucket(sel, months);
                       ) : (
                         <>
                           <td>{r.produit}</td>
-                          <td>{r.taillePouces !== "" ? `${r.taillePouces} pouces` : ""}</td>
+                          <td>
+                            {r.taillePouces !== ""
+                              ? `${r.taillePouces} pouces`
+                              : ""}
+                          </td>
                           <td>{r.memoire}</td>
                           <td>{fmt2(r.prixUnitaire)}</td>
                           <td>{r.quantite}</td>
