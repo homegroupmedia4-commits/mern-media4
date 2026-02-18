@@ -856,3 +856,915 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
 
   .table{ min-width: 640px; }
 }
+
+/* =========================================================
+   ADMIN NOS DEVIS — TABLE COMPACT + RECHERCHE À GAUCHE
+   ========================================================= */
+
+.page-header--compact{
+  align-items: flex-start;
+}
+
+.page-header__left{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.page-header__search{
+  max-width: 520px;
+}
+
+.m4devis-filters--right{
+  margin-bottom: 0 !important;
+  justify-content: flex-end;
+}
+
+/* Table plus compacte */
+.table-compact thead th{
+  padding: 10px 10px;
+  font-size: 13px;
+}
+
+.table-compact tbody td{
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
+/* Bouton “Voir” plus compact */
+.table-compact .btn{
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+/* Un peu moins d’air dans le wrap */
+.table-wrap{
+  border-radius: 12px;
+}
+
+/* (optionnel) Sur desktop, garde les filters bien alignés */
+@media (max-width: 1024px){
+  .page-header__search{ max-width: 100%; }
+  .m4devis-filters--right{ width: 100%; justify-content: flex-start; }
+}
+
+
+/* =========================================================
+   src/App.css — VERSION À JOUR (sidebar blanche + fixed)
+   + RESPONSIVE AVEC MENU HAMBURGER (drawer) POUR ADMIN
+   ========================================================= */
+
+.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  z-index: 9999;
+}
+.modal-card{
+  width: 720px;
+  max-width: 95vw;
+  background:#fff;
+  border:1px solid #e6e8ef;
+  border-radius:14px;
+  padding:16px;
+}
+
+
+/* reset léger */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
+
+/* ---------- LOGIN ---------- */
+.login-page{
+  min-height: 100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#f1f1f1;
+  padding:24px;
+}
+
+.login-card{
+  width: 420px;
+  background:#f8f8f8;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 22px;
+  color:#e8eef2;
+}
+
+.login-title{
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #000000;
+}
+
+.login-subtitle{
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 18px;
+  color: #000000;
+}
+
+.login-form{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.login-label{
+  font-size: 13px;
+   color:#000000 !important ;
+}
+
+.login-input{
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 10px;
+  /* border: 1px solid rgba(255,255,255,0.10); */
+ background: #8686860a !important;
+  color:#000000 !important ;
+  outline: none;
+}
+
+.login-input:focus{
+  border-color: rgba(255,255,255,0.25);
+}
+
+.login-error{
+  font-size: 13px;
+  color: #ffb3b3;
+  background: rgba(255, 74, 74, 0.12);
+  border: 1px solid rgba(255, 74, 74, 0.25);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.login-btn{
+  margin-top: 4px;
+  padding: 12px 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  background: #000000;
+  color: #ffffff;
+}
+
+.login-btn:hover{
+  opacity: 0.95;
+}
+
+.login-hint{
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+}
+
+.mono{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* ---------- DASHBOARD SHELL ---------- */
+.dash-shell{
+  min-height: 100vh;
+  display: flex;
+  background: #f4f6f8; /* fond clair global */
+  color: #111;
+}
+
+/* ---------- SIDEBAR BLANCHE FIXE ---------- */
+.sidebar.sidebar--white{
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 280px;
+  background: #ffffff;
+  border-right: 1px solid rgba(0,0,0,0.08);
+  padding: 18px 14px;
+  z-index: 20;
+}
+
+.sidebar-inner{
+  height: 100%;
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+}
+
+/* Header sidebar */
+.sidebar-brand{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+  padding: 6px 6px 10px 6px;
+}
+
+.sidebar-brand-title{
+  font-size: 32px;
+  font-weight: 900;
+  color: #111;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
+
+.sidebar-agentBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  background: #59ff00;
+  color: #0f1418;
+  margin-bottom: 10px;
+}
+
+.sidebar-agentBtn:hover{
+  opacity: 0.95;
+}
+
+/* Nav */
+.sidebar-nav{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+/* item (NavLink) */
+.sidebar-item{
+  text-align:left;
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(0,0,0,0.85);
+  cursor:pointer;
+  font-size: 15px;
+  text-decoration:none;
+  display:block;
+}
+
+.sidebar-item:hover{
+  background: rgba(0,0,0,0.05);
+  color: rgba(0,0,0,0.85);
+}
+
+.sidebar-item.active{
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.10);
+  font-weight: 800;
+  color: rgba(0,0,0,0.85);
+}
+
+/* group header */
+.sidebar-group{
+  text-align:left;
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(0,0,0,0.85);
+  cursor:pointer;
+  font-size: 15px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.sidebar-group:hover{ background: rgba(0,0,0,0.05); }
+
+.sidebar-group.is-active{
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.08);
+  font-weight: 800;
+}
+
+.chev{
+  display:inline-block;
+  transform: rotate(-90deg);
+  transition: transform 0.15s ease;
+  opacity: 0.7;
+}
+
+.chev.open{ transform: rotate(0deg); }
+
+/* subnav */
+.sidebar-subnav{
+  margin-top: -2px;
+  margin-bottom: 6px;
+  padding-left: 10px;
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+
+.sidebar-subitem{
+  text-decoration:none;
+  color: rgba(0,0,0,0.80);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  display:block;
+}
+
+.sidebar-subitem:hover{ background: rgba(0,0,0,0.05); }
+
+.sidebar-subitem.active{
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.10);
+  font-weight: 800;
+}
+
+/* logout bottom */
+.sidebar-logout.sidebar-logout--white{
+  margin-top: auto;
+  padding: 12px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: #ffffff;
+  color: rgba(0,0,0,0.85);
+  cursor:pointer;
+  font-weight: 800;
+}
+
+.sidebar-logout.sidebar-logout--white:hover{ background: rgba(0,0,0,0.04); }
+
+/* ---------- MAIN CONTENT (poussé à droite) ---------- */
+.dash-main{
+  flex: 1;
+  margin-left: 280px; /* important car sidebar fixed */
+  display:flex;
+  flex-direction:column;
+  min-height: 100vh;
+}
+
+.dash-topbar{
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background: #ffffff;
+}
+
+.dash-title{
+  margin:0;
+  font-size: 18px;
+  font-weight: 900;
+  color: #111;
+}
+
+/* Zone de contenu à droite : fond clair style SaaS */
+.dash-content{
+  padding: 22px;
+  background: #f4f6f8;
+  min-height: calc(100vh - 62px);
+}
+
+/* ---------- UI tables/cards ---------- */
+.card{
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.card-title{
+  font-weight: 900;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+.card-text{
+  color: rgba(0,0,0,0.7);
+  font-size: 14px;
+}
+
+/* ---------- PAGE (Catégories de pitch / listes) ---------- */
+.page { max-width: none; width: 100%; }
+
+.page-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:14px;
+}
+
+.m4devis-filters{
+  margin-bottom:20px !important;
+  gap: 10px;
+}
+
+.page-title{
+  margin:0;
+  font-size: 28px;
+  font-weight: 900;
+  color:#111;
+}
+
+.page-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.input{
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.18);
+  background: #fff;
+  color: #111;
+  outline: none;
+  min-width: 240px;
+}
+
+.input-inline{
+  min-width: 100%;
+}
+
+.btn{
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  border: 1px solid rgba(0,0,0,0.2);
+  background: #fff;
+}
+
+.btn:hover{ opacity: 0.95; }
+
+.btn-outline{
+  background:#fff;
+  color:#000000 !important;
+  border-color:#000000 !important;
+}
+
+.btn-dark{
+  background:#0f1418;
+  color:#fff !important;
+  border-color:#0f1418;
+}
+
+.btn-danger{
+  background: #e74c3c;
+  color: #fff !important;
+  border-color: #e74c3c;
+}
+
+.btn-soft-danger{
+  background: rgba(231, 76, 60, 0.10);
+  border: 1px solid rgba(231, 76, 60, 0.35);
+  color: #c0392b !important;
+  font-weight: 800;
+}
+
+.alert{
+  margin: 10px 0 14px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 74, 74, 0.12);
+  border: 1px solid rgba(255, 74, 74, 0.25);
+  color: #7a1212;
+}
+
+.table-wrap{
+  background:#fff;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 14px;
+  overflow:hidden;
+}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.table thead th{
+  text-align:left;
+  font-weight: 900;
+  padding: 14px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.10);
+  background:#f7f8fa;
+  color:#111;
+}
+
+.table tbody td{
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  vertical-align: middle;
+  color:#111;
+}
+
+.muted{
+  padding: 14px;
+  color: rgba(0,0,0,0.6);
+}
+
+.name-chip{
+  border: 1px solid rgba(0,0,0,0.18);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background:#fff;
+  max-width: 520px;
+}
+
+.badge{
+  display:inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.badge.on{
+  background: rgba(20, 180, 90, 0.12);
+  color: #0f7a3a;
+  border: 1px solid rgba(20, 180, 90, 0.25);
+}
+
+.badge.off{
+  background: rgba(0,0,0,0.06);
+  color: rgba(0,0,0,0.65);
+  border: 1px solid rgba(0,0,0,0.12);
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* ---- Pitch Manager subtabs ---- */
+.subtabs{
+  display:flex;
+  gap:10px;
+}
+
+.subtab{
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  color: rgba(0,0,0,0.75);
+}
+
+.subtab.active{
+  background:#0f1418;
+  border-color:#0f1418;
+  color:#fff;
+}
+
+/* ---- Pitch Manager form layout ---- */
+.pm-form{
+  display:flex;
+  flex-direction:column;
+  gap: 16px;
+  padding-top: 6px;
+}
+
+.pm-row{
+  display:grid;
+  grid-template-columns: 220px 1fr;
+  align-items:center;
+  gap: 16px;
+}
+
+.pm-label{
+  font-weight: 800;
+  color: rgba(0,0,0,0.75);
+}
+
+.pm-input{
+  min-width: 100%;
+}
+
+/* Table plus large */
+.table-wide td, .table-wide th{
+  white-space: nowrap;
+}
+
+.table-wide td:nth-child(7), .table-wide th:nth-child(7){
+  white-space: normal;
+}
+
+/* Valeurs statiques */
+.vs-grid{
+  max-width: 980px;
+}
+
+.vs-card{
+  background:#fff;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.vs-card-title{
+  font-weight: 900;
+  font-size: 18px;
+  margin-bottom: 14px;
+  color:#111;
+}
+
+.vs-form{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.vs-row{
+  display:grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items:center;
+}
+
+.vs-label{
+  font-weight: 800;
+  color: rgba(0,0,0,0.75);
+}
+
+.vs-input{
+  min-width: 100%;
+}
+
+/* util */
+.input-inline{
+  width: 100%;
+  max-width: 360px;
+}
+
+/* ---------- RESPONSIVE (desktop/tablette) ---------- */
+@media (max-width: 920px){
+  .sidebar.sidebar--white{ width: 260px; }
+  .dash-main{ margin-left: 260px; }
+
+  .sidebar-brand-title{ font-size: 28px; }
+  .sidebar-item{ font-size: 14px; }
+  .sidebar-group{ font-size: 14px; }
+  .sidebar-subitem{ font-size: 13px; }
+
+  .dash-topbar{ padding: 16px 16px; }
+  .dash-title{ font-size: 17px; }
+
+  .page-title{ font-size: 24px; }
+}
+
+@media (max-width: 780px){
+  .sidebar.sidebar--white{ width: 240px; padding: 14px 10px; }
+  .dash-main{ margin-left: 240px; }
+  .input{ min-width: 180px; }
+}
+
+/* =========================================================
+   ADMIN MOBILE — TOPBAR + DRAWER (hamburger)
+   Nécessite: <div class="admin-topbar-mobile"> + .admin-overlay
+   et <aside class="sidebar ... {is-open}">
+   ========================================================= */
+
+.admin-topbar-mobile{
+  display:none;
+}
+
+.admin-burger{
+  width:42px;
+  height:42px;
+  border:1px solid rgba(0,0,0,0.10);
+  border-radius:12px;
+  background:#fff;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:10px;
+}
+
+.admin-burger .burger-line{
+  display:block;
+  width:18px;
+  height:2px;
+  background:#111;
+  border-radius:999px;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.admin-burger.is-open .burger-line:nth-child(1){
+  transform: translateY(6px) rotate(45deg);
+}
+.admin-burger.is-open .burger-line:nth-child(2){
+  opacity:0;
+}
+.admin-burger.is-open .burger-line:nth-child(3){
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+.admin-topbar-title{
+  font-weight:900;
+  font-size:16px;
+  color:#111;
+}
+
+.admin-topbar-agent{
+  text-decoration:none;
+  font-weight:800;
+  font-size:13px;
+  padding:9px 10px;
+  border-radius:10px;
+  background:#59ff00;
+  color:#0f1418;
+  border:1px solid rgba(0,0,0,0.08);
+}
+
+.admin-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.35);
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .18s ease;
+  z-index: 1000;
+  border:none;
+}
+
+/* OPEN state */
+.admin-overlay.is-open{
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* --- 0) Petits laptops/tablettes --- */
+@media (max-width: 1024px){
+  .dash-content{ padding: 18px; }
+
+  .page-header{
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .page-actions{
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .input{
+    min-width: 200px;
+    max-width: 100%;
+    flex: 1 1 240px;
+  }
+
+  .actions{ gap: 8px; }
+
+  .pm-row{
+    grid-template-columns: 200px 1fr;
+    gap: 12px;
+  }
+
+  .vs-row{
+    grid-template-columns: 240px 1fr;
+    gap: 12px;
+  }
+
+  .table thead th,
+  .table tbody td{
+    padding: 12px 12px;
+  }
+}
+
+/* --- MOBILE (drawer) --- */
+@media (max-width: 900px){
+  /* Topbar visible */
+  .admin-topbar-mobile{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    position: sticky;
+    top:0;
+    z-index: 1100;
+    padding: 10px 12px;
+    background:#fff;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+  }
+
+  /* Main content full width */
+  .dash-main{
+    margin-left: 0;
+    min-height: 100vh;
+  }
+
+  .dash-topbar{
+    padding: 14px 12px;
+  }
+
+  .dash-content{
+    padding: 14px 12px;
+    min-height: auto;
+  }
+
+  /* Sidebar => drawer */
+  .sidebar.sidebar--white{
+    position: fixed;
+    top:0;
+    left:0;
+    height: 100vh;
+    width: min(86vw, 320px);
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    z-index: 1101; /* au-dessus overlay */
+    border-right: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .sidebar.sidebar--white.is-open{
+    transform: translateX(0);
+  }
+
+  /* Overlay active */
+  .admin-overlay{
+    display:block;
+  }
+
+  /* Inputs/buttons full width friendly */
+  .page-actions{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .input{
+    width: 100%;
+    min-width: 0;
+  }
+
+  .btn{
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Forms */
+  .pm-row{ grid-template-columns: 1fr; gap: 8px; }
+  .vs-row{ grid-template-columns: 1fr; gap: 8px; }
+
+  .name-chip{ max-width: 100%; }
+
+  /* Tables: horizontal scroll */
+  .table-wrap{
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table{
+    min-width: 720px;
+  }
+}
+
+/* --- 3) PETITS MOBILES --- */
+@media (max-width: 420px){
+  .login-page{ padding: 16px; }
+  .login-card{
+    width: 100%;
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .login-title{ font-size: 20px; }
+  .login-subtitle{ font-size: 12.5px; }
+
+  .dash-title{ font-size: 16px; }
+  .page-title{ font-size: 20px; }
+
+  .card{ padding: 14px; border-radius: 12px; }
+
+  .table{ min-width: 660px; }
+}
+
+/* --- 4) TRÈS PETITS ÉCRANS --- */
+@media (max-width: 360px){
+  .sidebar-item,
+  .sidebar-group{
+    font-size: 12.5px;
+    padding: 8px 9px;
+  }
+
+  .sidebar-agentBtn{ font-size: 12px; }
+
+  .table{ min-width: 640px; }
+}
