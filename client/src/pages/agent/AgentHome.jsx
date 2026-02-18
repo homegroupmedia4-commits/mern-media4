@@ -139,6 +139,34 @@ const DEFAULT_CATEGORY_NAME = "Exterieur haute luminosité";
     setError("");
     setPdfUrl("");
 
+    // ✅ VALIDATION CLIENT (tout obligatoire sauf adresse2)
+const requiredFields = [
+  ["nom", "Nom"],
+  ["prenom", "Prénom"],
+  ["societe", "Société"],
+  ["adresse1", "Adresse 1"],
+  ["codePostal", "Code postal"],
+  ["ville", "Ville"],
+  ["telephone", "Téléphone"],
+  ["email", "E-mail"],
+  ["votreEmail", "Votre e-mail"],
+  ["commentaires", "Commentaires"],
+];
+
+const missing = requiredFields.filter(([k]) => !String(client?.[k] || "").trim());
+
+const isEmailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").trim());
+if (!missing.length && (!isEmailOk(client.email) || !isEmailOk(client.votreEmail))) {
+  setError("Merci de renseigner des e-mails valides (client et votre e-mail).");
+  return;
+}
+
+if (missing.length) {
+  setError(`Champs obligatoires manquants : ${missing.map(([, label]) => label).join(", ")}.`);
+  return;
+}
+
+
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return navigate("/agent/login");
 
@@ -1275,95 +1303,173 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                     </div>
                   </div>
 
-                  {/* Finition */}
-                  <div className="agenthome-subsection">
-                    <div className="agenthome-subsectionTitle">Finition :</div>
+         {/* Finition */}
+<div className="agenthome-subsection">
+  <div className="agenthome-subsectionTitle">Finition :</div>
 
-                    <div className="agenthome-radioGrid">
-                      {(finishes.length
-                        ? finishes
-                        : [
-                            { _id: "sans", name: "Sans" },
-                            { _id: "brut", name: "Brut" },
-                            { _id: "blanc", name: "Blanc" },
-                            { _id: "autre", name: "Autre couleur" },
-                          ]
-                      ).map((f) => (
-                        <label key={f._id} className="agenthome-radio">
-                          <input
-                            type="radio"
-                            name={`finition_${pi.instanceId}`}
-                            checked={pi.finitionId === f._id}
-                            onChange={() => updatePitchInstance(pi.instanceId, { 
-                              finitionId: f._id, 
-                              finitionName: f.name,
-                              finitionPriceMonthlyHt: Number(f.priceMonthlyHt || 0),
-                            
-                            })}
-                          />
-                          <span>{f.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+  {(() => {
+    const baseList = finishes.length
+      ? finishes
+      : [
+          { _id: "sans", name: "Sans", priceMonthlyHt: 0 },
+          { _id: "brut", name: "Brut", priceMonthlyHt: 0 },
+          { _id: "blanc", name: "Blanc", priceMonthlyHt: 0 },
+          { _id: "autre", name: "Autre couleur", priceMonthlyHt: 0 },
+        ];
+
+    const norm = (s) =>
+      String(s || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+
+    // ✅ "Sans" en premier
+    const finishList = baseList.slice().sort((a, b) => {
+      const an = norm(a?.name);
+      const bn = norm(b?.name);
+      const aIsSans = an === "sans";
+      const bIsSans = bn === "sans";
+      if (aIsSans && !bIsSans) return -1;
+      if (!aIsSans && bIsSans) return 1;
+      return an.localeCompare(bn);
+    });
+
+    // ✅ si pas encore de finitionId -> on coche "Sans"
+    const isSans = (f) => norm(f?.name) === "sans" || String(f?._id) === "sans";
+    const currentFinitionId = pi.finitionId || "";
+
+    return (
+      <div className="agenthome-radioGrid">
+        {finishList.map((f) => {
+          const checked = currentFinitionId
+            ? String(currentFinitionId) === String(f._id)
+            : isSans(f);
+
+          return (
+            <label key={f._id} className="agenthome-radio">
+              <input
+                type="radio"
+                name={`finition_${pi.instanceId}`}
+                checked={checked}
+                onChange={() =>
+                  updatePitchInstance(pi.instanceId, {
+                    finitionId: f._id,
+                    finitionName: f.name,
+                    finitionPriceMonthlyHt: Number(f.priceMonthlyHt || 0),
+                  })
+                }
+              />
+              <span>{f.name}</span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  })()}
+</div>
+
 
                   {/* Fixation */}
-                  <div className="agenthome-subsection">
-                    <div className="agenthome-subsectionTitle">Fixation :</div>
+<div className="agenthome-subsection">
+  <div className="agenthome-subsectionTitle">Fixation :</div>
 
-                    <div className="agenthome-radioGrid">
-                      {(fixations.length
-                        ? fixations
-                        : [
-                            { _id: "plafond", name: "Support plafond" },
-                            { _id: "fixe", name: "Support fixe" },
-                            { _id: "special", name: "Support spécial" },
-                          ]
-                      ).map((f) => (
-                        <label key={f._id} className="agenthome-radio">
-                          <input
-                            type="radio"
-                            name={`fixation_${pi.instanceId}`}
-                            checked={pi.fixationId === f._id}
-                          onChange={() =>
-  updatePitchInstance(pi.instanceId, {
-    fixationId: f._id,
-    fixationName: f.name, // ✅ indispensable
-  })
-}
+  {(() => {
+    const baseList = fixations.length
+      ? fixations
+      : [
+          { _id: "fixe", name: "Support fixe" },
+          { _id: "plafond", name: "Support plafond" },
+          { _id: "special", name: "Support spécial" },
+        ];
 
-                          />
-                          <span>{f.name}</span>
-                        </label>
-                      ))}
-                    </div>
+    const norm = (s) =>
+      String(s || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
 
-                    <div className="agenthome-field agenthome-field--full">
-                      <label>Mètre linéaire du sol au plafond :</label>
-                      <input
-                        value={pi.metreLineaire}
-                        onChange={(e) =>
-                          updatePitchInstance(pi.instanceId, { metreLineaire: e.target.value })
-                        }
-                        className="agenthome-input"
-                      />
-                    </div>
-{showFixationComment ? (
-  <div className="agenthome-field agenthome-field--full" style={{ marginTop: 10 }}>
-    <label>Commentaires (si support plafond) :</label>
-    <input
-      className="agenthome-input"
-      placeholder="préciser environnement de fixation"
-      value={pi.fixationComment || ""}
-      onChange={(e) =>
-        updatePitchInstance(pi.instanceId, { fixationComment: e.target.value })
-      }
-    />
-  </div>
-) : null}
+    // ✅ "Support fixe" en premier
+    const fixationList = baseList.slice().sort((a, b) => {
+      const an = norm(a?.name);
+      const bn = norm(b?.name);
 
+      const aIsFixe = an.includes("fixe") || String(a?._id) === "fixe";
+      const bIsFixe = bn.includes("fixe") || String(b?._id) === "fixe";
 
-                  </div>
+      if (aIsFixe && !bIsFixe) return -1;
+      if (!aIsFixe && bIsFixe) return 1;
+      return an.localeCompare(bn);
+    });
+
+    const isPlafond = (f) => norm(f?.name).includes("plafond") || String(f?._id) === "plafond";
+
+    // ✅ si pas encore de fixationId -> on coche "Support fixe"
+    const currentFixationId = pi.fixationId || "";
+    const isFixe = (f) => norm(f?.name).includes("fixe") || String(f?._id) === "fixe";
+
+    const selectedFix = fixationList.find((f) =>
+      currentFixationId
+        ? String(f._id) === String(currentFixationId)
+        : isFixe(f)
+    );
+
+    const showFixationComment = isPlafond(selectedFix);
+
+    return (
+      <>
+        <div className="agenthome-radioGrid">
+          {fixationList.map((f) => {
+            const checked = currentFixationId
+              ? String(currentFixationId) === String(f._id)
+              : isFixe(f);
+
+            return (
+              <label key={f._id} className="agenthome-radio">
+                <input
+                  type="radio"
+                  name={`fixation_${pi.instanceId}`}
+                  checked={checked}
+                  onChange={() =>
+                    updatePitchInstance(pi.instanceId, {
+                      fixationId: f._id,
+                      fixationName: f.name, // ✅ indispensable
+                    })
+                  }
+                />
+                <span>{f.name}</span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="agenthome-field agenthome-field--full">
+          <label>Mètre linéaire du sol au plafond :</label>
+          <input
+            value={pi.metreLineaire}
+            onChange={(e) =>
+              updatePitchInstance(pi.instanceId, { metreLineaire: e.target.value })
+            }
+            className="agenthome-input"
+          />
+        </div>
+
+        {showFixationComment ? (
+          <div className="agenthome-field agenthome-field--full" style={{ marginTop: 10 }}>
+            <label>Commentaires (si support plafond) :</label>
+            <input
+              className="agenthome-input"
+              placeholder="préciser environnement de fixation"
+              value={pi.fixationComment || ""}
+              onChange={(e) =>
+                updatePitchInstance(pi.instanceId, { fixationComment: e.target.value })
+              }
+            />
+          </div>
+        ) : null}
+      </>
+    );
+  })()}
+</div>
 
                   {/* Type financement */}
                   <div className="agenthome-subsection">
@@ -1481,6 +1587,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 className="agenthome-input"
                 placeholder="Entrez le nom du client"
                 value={client.nom}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, nom: e.target.value }))}
               />
             </div>
@@ -1491,6 +1598,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 className="agenthome-input"
                 placeholder="Entrez le prénom du client"
                 value={client.prenom}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, prenom: e.target.value }))}
               />
             </div>
@@ -1501,6 +1609,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 className="agenthome-input"
                 placeholder="Société du client"
                 value={client.societe}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, societe: e.target.value }))}
               />
             </div>
@@ -1511,6 +1620,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 className="agenthome-input"
                 placeholder="Adresse du client"
                 value={client.adresse1}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, adresse1: e.target.value }))}
               />
             </div>
@@ -1521,6 +1631,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 className="agenthome-input"
                 placeholder="Code postal du client"
                 value={client.codePostal}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, codePostal: e.target.value }))}
               />
             </div>
@@ -1531,6 +1642,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 className="agenthome-input"
                 placeholder="Ville du client"
                 value={client.ville}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, ville: e.target.value }))}
               />
             </div>
@@ -1541,6 +1653,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 className="agenthome-input"
                 placeholder="Numéro du client"
                 value={client.telephone}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, telephone: e.target.value }))}
               />
             </div>
@@ -1551,6 +1664,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 className="agenthome-input"
                 placeholder="adresse e-mail du client"
                 value={client.email}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, email: e.target.value }))}
               />
             </div>
@@ -1560,6 +1674,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
               <input
                 className="agenthome-input"
                 value={client.votreEmail}
+                required
                 onChange={(e) => setClient((p) => ({ ...p, votreEmail: e.target.value }))}
               />
             </div>
@@ -1580,6 +1695,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
               <input
                 type="checkbox"
                 checked={client.fraisInstallationOfferts}
+                required
                 onChange={(e) =>
                   setClient((p) => ({ ...p, fraisInstallationOfferts: e.target.checked }))
                 }
@@ -1590,6 +1706,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
             <label className="agenthome-check">
               <input
                 type="checkbox"
+                required
                 checked={client.fraisParametrageOfferts}
                 onChange={(e) =>
                   setClient((p) => ({ ...p, fraisParametrageOfferts: e.target.checked }))
@@ -1601,6 +1718,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
             <label className="agenthome-check">
               <input
                 type="checkbox"
+                required
                 checked={client.fraisPortOfferts}
                 onChange={(e) =>
                   setClient((p) => ({ ...p, fraisPortOfferts: e.target.checked }))
