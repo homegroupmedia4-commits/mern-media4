@@ -425,7 +425,7 @@ export default function AdminNosDevis() {
             <table className="table table-wide table-compact">
               <thead>
                 <tr>
-                  <th>Télécharger le devis</th>
+                  <th>Télécharger</th>
 
                   <th>Société</th>
                   <th>Nom</th>
@@ -443,7 +443,7 @@ export default function AdminNosDevis() {
                       <th>Surface (m²)</th>
                       <th>Finition</th>
                       <th>Fixation</th>
-                      <th>Type financement</th>
+                      <th>financement</th>
                       <th>Frais</th>
 
                       <th>Largeur (m)</th>
@@ -470,12 +470,12 @@ export default function AdminNosDevis() {
                   ) : (
                     <>
                       <th>Produit</th>
-                      <th>Taille sélectionnée</th>
+                      <th>Taille </th>
                       <th>Mémoire</th>
                       <th>Prix unitaire</th>
                       <th>Quantité</th>
                       <th>Total (HT)</th>
-                      <th>Durée leasing (mois)</th>
+                      <th>Durée (mois)</th>
                       <th>Prix associé</th>
 
                       <th>Code devis</th>
