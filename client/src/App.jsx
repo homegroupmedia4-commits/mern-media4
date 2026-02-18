@@ -46,7 +46,7 @@ export default function App() {
         <Route index element={<Navigate to="nosdevis" replace />} />
         <Route path="nosdevis" element={<AdminNosDevis />} />
 
-        <Route path="pages" element={<AdminPages />} />
+      
 
 
         {/* ✅ Pitchs */}
