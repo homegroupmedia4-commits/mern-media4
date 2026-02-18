@@ -21,8 +21,6 @@ import AgentMesDevis from "./pages/agent/AgentMesDevis";
 import AgentFaq from "./pages/agent/AgentFaq";
 
 
-import DynamicPage from "./pages/DynamicPage";
-import AdminPages from "./pages/AdminPages";
 
 
 
@@ -134,7 +132,7 @@ export default function App() {
         }
       />
 
-      <Route path="/:slug" element={<DynamicPage />} />
+    
 
 
       {/* ================= GLOBAL FALLBACK ================= */}
