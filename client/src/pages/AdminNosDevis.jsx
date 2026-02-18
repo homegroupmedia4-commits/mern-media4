@@ -152,7 +152,6 @@ export default function AdminNosDevis() {
 
   // -----------------------------
   // Load catalogues (autres produits)
-  // (on les charge tout le temps => pas de flash quand tu switches)
   // -----------------------------
   useEffect(() => {
     (async () => {
@@ -185,7 +184,7 @@ export default function AdminNosDevis() {
   }, [API]);
 
   // -----------------------------
-  // ✅ Voir PDF (même logique que AgentMesDevis)
+  // ✅ Voir PDF
   // -----------------------------
   const openPdf = async (devisId) => {
     const token = getAuthToken();
@@ -302,7 +301,7 @@ export default function AdminNosDevis() {
       }
 
       // -----------------------------
-      // ✅ AUTRES PRODUITS (corrigé)
+      // ✅ AUTRES PRODUITS
       // -----------------------------
       const otherSelections = getOtherSelectionsObj(d);
 
@@ -319,11 +318,9 @@ export default function AdminNosDevis() {
             otherSizesCatalog.find((r) => String(r._id) === String(rowId)) ||
             null;
 
-          // ✅ ne pas casser si catalogue pas encore chargé / row manquante
           const sizeInches = sizeRow?.sizeInches ?? "";
           const basePrice = Number(sizeRow?.price || 0);
 
-          // memId peut parfois être { _id } selon sérialisation
           const memId = line?.memId?._id
             ? String(line.memId._id)
             : String(line?.memId || "");
@@ -377,13 +374,33 @@ export default function AdminNosDevis() {
 
   return (
     <div className="page">
-      {/* ✅ HEADER: recherche à gauche + onglets à droite */}
+      {/* ✅ HEADER: tabs à gauche AU-DESSUS de la recherche */}
       <div className="page-header page-header--compact">
         <div className="page-header__left">
           <div>
             <h2 className="page-title">Tous les devis</h2>
             <div className="muted" style={{ padding: 0 }}>
               Admin : liste de tous les devis de tous les agents
+            </div>
+          </div>
+
+          {/* ✅ Tabs à gauche avant et au-dessus de la recherche */}
+          <div className="page-actions m4devis-filters m4devis-filters--left">
+            <div className="subtabs">
+              <button
+                className={`subtab ${tab === "walleds" ? "active" : ""}`}
+                type="button"
+                onClick={() => setTab("walleds")}
+              >
+                Murs leds
+              </button>
+              <button
+                className={`subtab ${tab === "other" ? "active" : ""}`}
+                type="button"
+                onClick={() => setTab("other")}
+              >
+                Autres produits
+              </button>
             </div>
           </div>
 
@@ -396,25 +413,6 @@ export default function AdminNosDevis() {
             />
           </div>
         </div>
-
-        <div className="page-actions m4devis-filters m4devis-filters--right">
-          <div className="subtabs">
-            <button
-              className={`subtab ${tab === "walleds" ? "active" : ""}`}
-              type="button"
-              onClick={() => setTab("walleds")}
-            >
-              Murs leds
-            </button>
-            <button
-              className={`subtab ${tab === "other" ? "active" : ""}`}
-              type="button"
-              onClick={() => setTab("other")}
-            >
-              Autres produits
-            </button>
-          </div>
-        </div>
       </div>
 
       {error ? <div className="alert">{error}</div> : null}
@@ -424,7 +422,6 @@ export default function AdminNosDevis() {
 
         {!loading && !error ? (
           <div style={{ overflowX: "auto" }}>
-            {/* ✅ table-compact */}
             <table className="table table-wide table-compact">
               <thead>
                 <tr>
