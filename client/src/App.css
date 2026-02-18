@@ -3,6 +3,13 @@
    + RESPONSIVE AVEC MENU HAMBURGER (drawer) POUR ADMIN
    ========================================================= */
 
+.m4devis-filters--left{
+  margin-bottom: 0 !important;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+
 .modal-backdrop{
   position: fixed;
   inset: 0;
