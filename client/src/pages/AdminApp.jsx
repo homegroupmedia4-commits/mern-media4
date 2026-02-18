@@ -211,7 +211,7 @@ if (password === ADMIN_PASSWORD) {
   target="_blank"
   rel="noopener noreferrer"
 >
-  Voir la page agent
+  Voir la page agents
 </a>
 
           </div>
