@@ -18,6 +18,9 @@ const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 
 const ADMIN_UI_PASSWORD = process.env.ADMIN_UI_PASSWORD || "Homegroup91?";
 
+const CGV_META_PATH = path.join(__dirname, "..", "assets", "CGV-location-maintenance.custom.meta.json");
+
+
 
 router.post("/admin/login", async (req, res) => {
   try {
@@ -1623,6 +1626,21 @@ router.post(
       }
 
       fs.writeFileSync(CGV_CUSTOM_PATH, f.buffer);
+
+      fs.writeFileSync(
+  CGV_META_PATH,
+  JSON.stringify(
+    {
+      originalName: f.originalname,
+      size: f.size || (f.buffer ? f.buffer.length : 0),
+      uploadedAt: new Date().toISOString(),
+    },
+    null,
+    2
+  ),
+  "utf-8"
+);
+
 
       return res.json({
         ok: true,
