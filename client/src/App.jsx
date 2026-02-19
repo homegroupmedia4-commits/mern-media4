@@ -8,6 +8,7 @@ import AdminAgents from "./pages/AdminAgents";
 import AdminProduits from "./pages/AdminProduits";
 import AdminFixation from "./pages/AdminFixation";
 import AdminFinition from "./pages/AdminFinition";
+import AdminPdf from "./pages/AdminPdf";
 import TaillesEcrans from "./pages/TaillesEcrans";
 import ValeursStatiques from "./pages/ValeursStatiques";
 import CategoriesPitch from "./pages/CategoriesPitch";
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="produits" element={<AdminProduits />} />
         <Route path="fixation" element={<AdminFixation />} />
         <Route path="finition" element={<AdminFinition />} />
+        <Route path="pdf" element={<AdminPdf />} />
 
         <Route path="produits" element={<AdminProduits />} />
 
