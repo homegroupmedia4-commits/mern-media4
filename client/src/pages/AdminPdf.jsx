@@ -19,6 +19,9 @@ export default function AdminPdf() {
   const [err, setErr] = useState("");
   const [info, setInfo] = useState(null); // {active, filename, size, updatedAt}
 
+  const [customInfo, setCustomInfo] = useState(null); // {filename,size,updatedAt} ou null
+
+
   const canAct = useMemo(() => !!getAuthToken(), []);
 
   // ✅ base routes: le backend expose /api/agents/*
@@ -35,6 +38,11 @@ export default function AdminPdf() {
       if (!r.ok) throw new Error("Impossible de charger l’état du CGV.");
       const data = await r.json();
       setInfo(data);
+
+      const c = await fetchCustomMeta();
+setCustomInfo(c);
+
+      
     } catch (e) {
       setErr(e?.message || "Erreur.");
     } finally {
@@ -103,6 +111,37 @@ export default function AdminPdf() {
     }
   }
 
+
+  function fmtBytes(n) {
+  const x = Number(n || 0);
+  if (!x) return "—";
+  return `${Math.round(x / 1024)} KB`;
+}
+
+async function fetchCustomMeta() {
+  try {
+    const token = getAuthToken();
+    // ⚠️ ton backend accepte déjà ?token=...
+    // ✅ on force custom avec active=custom
+    const url = `${CGV_BASE}/download?active=custom&token=${encodeURIComponent(token)}`;
+
+    const r = await fetch(url, { method: "HEAD" });
+    if (!r.ok) return null;
+
+    const len = r.headers.get("content-length");
+    const lm = r.headers.get("last-modified");
+
+    return {
+      filename: "CGV-location-maintenance.custom.pdf",
+      size: len ? Number(len) : 0,
+      updatedAt: lm ? new Date(lm).toISOString() : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+
   return (
     <div style={{ padding: 16, maxWidth: 780 }}>
       <h2 style={{ margin: 0 }}>PDF — CGV associé</h2>
@@ -158,30 +197,68 @@ export default function AdminPdf() {
                 alignItems: "center",
               }}
             >
-              <div style={{ flex: 1, minWidth: 260 }}>
-                <div style={{ fontWeight: 700 }}>
-                  CGV actif :{" "}
-                  <span style={{ fontWeight: 800 }}>
-                    {info?.active === "custom" ? "CUSTOM" : "DÉFAUT"}
-                  </span>
-                </div>
-                <div style={{ marginTop: 6, opacity: 0.85 }}>
-                  Fichier : <b>{info?.filename || "—"}</b>
-                </div>
-                <div style={{ marginTop: 6, opacity: 0.85 }}>
-                  Taille :{" "}
-                  <b>
-                    {info?.size ? `${Math.round(info.size / 1024)} KB` : "—"}
-                  </b>
-                  {" • "}
-                  Maj :{" "}
-                  <b>
-                    {info?.updatedAt
-                      ? new Date(info.updatedAt).toLocaleString("fr-FR")
-                      : "—"}
-                  </b>
-                </div>
-              </div>
+
+
+         <div style={{ flex: 1, minWidth: 260 }}>
+  <div style={{ fontWeight: 700 }}>
+    CGV actif :{" "}
+    <span style={{ fontWeight: 800 }}>
+      {info?.active === "custom" ? "CUSTOM" : "DÉFAUT"}
+    </span>
+  </div>
+
+  {/* ✅ Infos PDF par défaut (celles renvoyées par /admin/cgv quand active=default) */}
+  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #eee" }}>
+    <div style={{ fontWeight: 700, marginBottom: 6 }}>PDF par défaut</div>
+
+    <div style={{ marginTop: 6, opacity: 0.85 }}>
+      Fichier :{" "}
+      <b>
+        {info?.active === "default" ? (info?.filename || "—") : "CGV-location-maintenance.pdf"}
+      </b>
+    </div>
+
+    <div style={{ marginTop: 6, opacity: 0.85 }}>
+      Taille : <b>{info?.active === "default" ? fmtBytes(info?.size) : "—"}</b>
+      {" • "}
+      Maj :{" "}
+      <b>
+        {info?.active === "default" && info?.updatedAt
+          ? new Date(info.updatedAt).toLocaleString("fr-FR")
+          : "—"}
+      </b>
+    </div>
+  </div>
+
+  {/* ✅ Infos PDF importé (custom) */}
+  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #eee" }}>
+    <div style={{ fontWeight: 700, marginBottom: 6 }}>PDF importé (custom)</div>
+
+    <div style={{ marginTop: 6, opacity: 0.85 }}>
+      Fichier : <b>{customInfo?.filename || "—"}</b>
+    </div>
+
+    <div style={{ marginTop: 6, opacity: 0.85 }}>
+      Taille : <b>{customInfo ? fmtBytes(customInfo.size) : "—"}</b>
+      {" • "}
+      Maj :{" "}
+      <b>
+        {customInfo?.updatedAt
+          ? new Date(customInfo.updatedAt).toLocaleString("fr-FR")
+          : "—"}
+      </b>
+    </div>
+
+    {!customInfo && (
+      <div style={{ marginTop: 6, opacity: 0.65, fontSize: 13 }}>
+        Aucun PDF custom trouvé.
+      </div>
+    )}
+  </div>
+</div>
+
+
+              
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button
