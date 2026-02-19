@@ -21,12 +21,15 @@ export default function AdminPdf() {
 
   const canAct = useMemo(() => !!getAuthToken(), []);
 
+  // ✅ base routes: le backend expose /api/agents/*
+  const CGV_BASE = `${API}/api/agents/admin/cgv`;
+
   async function fetchInfo() {
     setErr("");
     setLoading(true);
     try {
       const token = getAuthToken();
-      const r = await fetch(`${API}/agents/admin/cgv`, {
+      const r = await fetch(CGV_BASE, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!r.ok) throw new Error("Impossible de charger l’état du CGV.");
@@ -56,7 +59,7 @@ export default function AdminPdf() {
       const fd = new FormData();
       fd.append("file", file);
 
-      const r = await fetch(`${API}/agents/admin/cgv`, {
+      const r = await fetch(CGV_BASE, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: fd,
@@ -77,7 +80,7 @@ export default function AdminPdf() {
 
   function downloadActive() {
     const token = getAuthToken();
-    const url = `${API}/agents/admin/cgv/download?token=${encodeURIComponent(token)}`;
+    const url = `${CGV_BASE}/download?token=${encodeURIComponent(token)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
@@ -86,7 +89,7 @@ export default function AdminPdf() {
     setSaving(true);
     try {
       const token = getAuthToken();
-      const r = await fetch(`${API}/agents/admin/cgv/use-default`, {
+      const r = await fetch(`${CGV_BASE}/use-default`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -108,23 +111,53 @@ export default function AdminPdf() {
       </p>
 
       {!canAct && (
-        <div style={{ padding: 12, border: "1px solid #f2c2c2", borderRadius: 10, background: "#fff6f6" }}>
+        <div
+          style={{
+            padding: 12,
+            border: "1px solid #f2c2c2",
+            borderRadius: 10,
+            background: "#fff6f6",
+          }}
+        >
           Token introuvable. Connecte-toi en admin pour gérer le CGV.
         </div>
       )}
 
       {err && (
-        <div style={{ marginTop: 12, padding: 12, border: "1px solid #f2c2c2", borderRadius: 10, background: "#fff6f6" }}>
+        <div
+          style={{
+            marginTop: 12,
+            padding: 12,
+            border: "1px solid #f2c2c2",
+            borderRadius: 10,
+            background: "#fff6f6",
+          }}
+        >
           {err}
         </div>
       )}
 
-      <div style={{ marginTop: 14, padding: 14, border: "1px solid #e8e8e8", borderRadius: 12, background: "#fff" }}>
+      <div
+        style={{
+          marginTop: 14,
+          padding: 14,
+          border: "1px solid #e8e8e8",
+          borderRadius: 12,
+          background: "#fff",
+        }}
+      >
         {loading ? (
           <p style={{ margin: 0, opacity: 0.7 }}>Chargement…</p>
         ) : (
           <>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
               <div style={{ flex: 1, minWidth: 260 }}>
                 <div style={{ fontWeight: 700 }}>
                   CGV actif :{" "}
@@ -136,9 +169,17 @@ export default function AdminPdf() {
                   Fichier : <b>{info?.filename || "—"}</b>
                 </div>
                 <div style={{ marginTop: 6, opacity: 0.85 }}>
-                  Taille : <b>{info?.size ? `${Math.round(info.size / 1024)} KB` : "—"}</b>
+                  Taille :{" "}
+                  <b>
+                    {info?.size ? `${Math.round(info.size / 1024)} KB` : "—"}
+                  </b>
                   {" • "}
-                  Maj : <b>{info?.updatedAt ? new Date(info.updatedAt).toLocaleString("fr-FR") : "—"}</b>
+                  Maj :{" "}
+                  <b>
+                    {info?.updatedAt
+                      ? new Date(info.updatedAt).toLocaleString("fr-FR")
+                      : "—"}
+                  </b>
                 </div>
               </div>
 
@@ -177,8 +218,16 @@ export default function AdminPdf() {
               </div>
             </div>
 
-            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #eee" }}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>Importer un nouveau PDF (custom)</div>
+            <div
+              style={{
+                marginTop: 14,
+                paddingTop: 14,
+                borderTop: "1px solid #eee",
+              }}
+            >
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>
+                Importer un nouveau PDF (custom)
+              </div>
 
               <input
                 type="file"
@@ -188,10 +237,15 @@ export default function AdminPdf() {
               />
 
               <div style={{ marginTop: 8, opacity: 0.7, fontSize: 13 }}>
-                Le fichier uploadé sera enregistré côté serveur et utilisé automatiquement lors du merge du devis.
+                Le fichier uploadé sera enregistré côté serveur et utilisé
+                automatiquement lors du merge du devis.
               </div>
 
-              {saving && <div style={{ marginTop: 10, opacity: 0.7 }}>Enregistrement…</div>}
+              {saving && (
+                <div style={{ marginTop: 10, opacity: 0.7 }}>
+                  Enregistrement…
+                </div>
+              )}
             </div>
           </>
         )}
