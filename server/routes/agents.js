@@ -7,6 +7,9 @@ const Agent = require("../models/Agent");
 const PDFDocument = require("pdfkit");
 const AgentPdf = require("../models/AgentPdf");
 const OtherProductSize = require("../models/OtherProductSize");
+
+const multer = require("multer");
+
 const MemoryOption = require("../models/MemoryOption");
 const path = require("path");
 const fs = require("fs");
@@ -67,6 +70,21 @@ async function nextDevisNumberCounter4() {
   return `DE${n4}`;
 }
 
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+});
+
+const CGV_DEFAULT_PATH = path.join(__dirname, "..", "assets", "CGV-location-maintenance.pdf");
+const CGV_CUSTOM_PATH  = path.join(__dirname, "..", "assets", "CGV-location-maintenance.custom.pdf");
+
+function getActiveCgvPath() {
+  try {
+    if (fs.existsSync(CGV_CUSTOM_PATH)) return { path: CGV_CUSTOM_PATH, active: "custom" };
+  } catch {}
+  return { path: CGV_DEFAULT_PATH, active: "default" };
+}
 
 
 function fmt2(n) {
@@ -1500,12 +1518,11 @@ if (!isAdmin && String(docData.agentId) !== String(agent._id)) {
 
     const pdfBufferDevis = await generateColoredDevisPdfBuffer({ docData });
 
-// ✅ charge le CGV depuis le disque
-const cgvPath = path.join(__dirname, "..", "assets", "CGV-location-maintenance.pdf");
-const cgvBuffer = fs.readFileSync(cgvPath);
+const { path: activeCgvPath } = getActiveCgvPath();
+const cgvBuffer = fs.readFileSync(activeCgvPath);
 
-// ✅ merge => devis + 3 pages CGV
 const mergedBuffer = await mergePdfBuffers(pdfBufferDevis, cgvBuffer);
+
 
 docData.pdfBuffer = mergedBuffer;
 
@@ -1548,6 +1565,87 @@ docData.pdfBuffer = mergedBuffer;
 //     return res.status(500).send("Server error");
 //   }
 // });
+
+
+// ✅ GET état du CGV actif
+router.get("/admin/cgv", requireAgentAuth, requireAdmin, async (req, res) => {
+  try {
+    const { path: activePath, active } = getActiveCgvPath();
+
+    const stat = fs.existsSync(activePath) ? fs.statSync(activePath) : null;
+    const filename = path.basename(activePath);
+
+    return res.json({
+      ok: true,
+      active,                 // "custom" | "default"
+      filename,
+      size: stat?.size || 0,
+      updatedAt: stat?.mtime ? stat.mtime.toISOString() : null,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ ok: false, message: "Erreur lecture CGV." });
+  }
+});
+
+// ✅ Télécharger le CGV actif
+router.get("/admin/cgv/download", requireAgentAuth, requireAdmin, async (req, res) => {
+  try {
+    const { path: activePath, active } = getActiveCgvPath();
+    if (!fs.existsSync(activePath)) return res.status(404).send("Not found");
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="CGV-${active}.pdf"`);
+    return res.send(fs.readFileSync(activePath));
+  } catch (e) {
+    console.error(e);
+    return res.status(500).send("Server error");
+  }
+});
+
+// ✅ Upload d’un nouveau CGV custom (multipart form-data: field name = "file")
+router.post(
+  "/admin/cgv",
+  requireAgentAuth,
+  requireAdmin,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const f = req.file;
+      if (!f) return res.status(400).json({ ok: false, message: "Fichier manquant." });
+
+      const isPdf =
+        f.mimetype === "application/pdf" ||
+        String(f.originalname || "").toLowerCase().endsWith(".pdf");
+
+      if (!isPdf) {
+        return res.status(400).json({ ok: false, message: "Le fichier doit être un PDF." });
+      }
+
+      fs.writeFileSync(CGV_CUSTOM_PATH, f.buffer);
+
+      return res.json({
+        ok: true,
+        active: "custom",
+        filename: path.basename(CGV_CUSTOM_PATH),
+      });
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ ok: false, message: "Erreur upload CGV." });
+    }
+  }
+);
+
+// ✅ Revenir au PDF par défaut (supprime le custom)
+router.post("/admin/cgv/use-default", requireAgentAuth, requireAdmin, async (req, res) => {
+  try {
+    if (fs.existsSync(CGV_CUSTOM_PATH)) fs.unlinkSync(CGV_CUSTOM_PATH);
+    return res.json({ ok: true, active: "default" });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ ok: false, message: "Erreur reset CGV." });
+  }
+});
 
 
 
