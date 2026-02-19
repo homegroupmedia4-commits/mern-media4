@@ -344,7 +344,8 @@ if (password === ADMIN_PASSWORD) {
               className={`sidebar-group ${
                 isPathActive(`${ADMIN_BASE}/valeurs-statiques`) ||
                 isPathActive(`${ADMIN_BASE}/fixation`) ||
-                isPathActive(`${ADMIN_BASE}/finition`)
+              isPathActive(`${ADMIN_BASE}/finition`) ||
+                isPathActive(`${ADMIN_BASE}/pdf`)
                   ? "is-active"
                   : ""
               }`}
@@ -386,6 +387,16 @@ if (password === ADMIN_PASSWORD) {
     >
       Finition
     </NavLink>
+
+
+  <NavLink
+to={`${ADMIN_BASE}/pdf`}
+ className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+>
+PDF
+</NavLink>
+
+  
   </div>
 ) : null}
             <NavLink
