@@ -144,7 +144,7 @@ async function fetchCustomMeta() {
 
   return (
     <div style={{ padding: 16, maxWidth: 780 }}>
-      <h2 style={{ margin: 0 }}>PDF — CGV associé</h2>
+      <h2 style={{ margin: 0 }}>PDF associé</h2>
       <p style={{ marginTop: 8, opacity: 0.8 }}>
         Ici tu peux remplacer le PDF CGV fusionné à la fin du devis.
       </p>
@@ -203,7 +203,7 @@ async function fetchCustomMeta() {
   <div style={{ fontWeight: 700 }}>
     CGV actif :{" "}
     <span style={{ fontWeight: 800 }}>
-      {info?.active === "custom" ? "CUSTOM" : "DÉFAUT"}
+      {info?.active === "custom" ? "Pdf ajouté" : "CGV-location-maintenance.pdf"}
     </span>
   </div>
 
@@ -212,7 +212,7 @@ async function fetchCustomMeta() {
     <div style={{ fontWeight: 700, marginBottom: 6 }}>PDF par défaut</div>
 
     <div style={{ marginTop: 6, opacity: 0.85 }}>
-      Fichier :{" "}
+     Nom du Fichier :{" "}
       <b>
         {info?.active === "default" ? (info?.filename || "—") : "CGV-location-maintenance.pdf"}
       </b>
@@ -221,7 +221,7 @@ async function fetchCustomMeta() {
     <div style={{ marginTop: 6, opacity: 0.85 }}>
       Taille : <b>{info?.active === "default" ? fmtBytes(info?.size) : "—"}</b>
       {" • "}
-      Maj :{" "}
+     
       <b>
         {info?.active === "default" && info?.updatedAt
           ? new Date(info.updatedAt).toLocaleString("fr-FR")
@@ -235,14 +235,14 @@ async function fetchCustomMeta() {
     <div style={{ fontWeight: 700, marginBottom: 6 }}>PDF importé (custom)</div>
 
     <div style={{ marginTop: 6, opacity: 0.85 }}>
-      Fichier : <b>{info?.custom?.originalName || "—"}</b>
+      Nom du Fichier : <b>{info?.custom?.originalName || "—"}</b>
 
     </div>
 
     <div style={{ marginTop: 6, opacity: 0.85 }}>
       Taille : <b>{customInfo ? fmtBytes(customInfo.size) : "—"}</b>
       {" • "}
-      Maj :{" "}
+   
       <b>
         {customInfo?.updatedAt
           ? new Date(customInfo.updatedAt).toLocaleString("fr-FR")
@@ -304,7 +304,7 @@ async function fetchCustomMeta() {
               }}
             >
               <div style={{ fontWeight: 700, marginBottom: 8 }}>
-                Importer un nouveau PDF (custom)
+                Importer un nouveau PDF 
               </div>
 
               <input
