@@ -1570,7 +1570,6 @@ docData.pdfBuffer = mergedBuffer;
 // });
 
 
-// ✅ GET état du CGV actif
 router.get("/admin/cgv", requireAgentAuth, requireAdmin, async (req, res) => {
   try {
     const { path: activePath, active } = getActiveCgvPath();
@@ -1578,18 +1577,41 @@ router.get("/admin/cgv", requireAgentAuth, requireAdmin, async (req, res) => {
     const stat = fs.existsSync(activePath) ? fs.statSync(activePath) : null;
     const filename = path.basename(activePath);
 
+    // ✅ lire meta custom si présent
+    let custom = null;
+    if (fs.existsSync(CGV_CUSTOM_PATH)) {
+      try {
+        if (fs.existsSync(CGV_META_PATH)) {
+          const raw = fs.readFileSync(CGV_META_PATH, "utf-8");
+          custom = JSON.parse(raw);
+        } else {
+          // fallback si meta manquante
+          const st = fs.statSync(CGV_CUSTOM_PATH);
+          custom = {
+            originalName: path.basename(CGV_CUSTOM_PATH),
+            size: st.size,
+            uploadedAt: st.mtime.toISOString(),
+          };
+        }
+      } catch {
+        custom = null;
+      }
+    }
+
     return res.json({
       ok: true,
       active,                 // "custom" | "default"
       filename,
       size: stat?.size || 0,
       updatedAt: stat?.mtime ? stat.mtime.toISOString() : null,
+      custom,                 // ✅ AJOUTÉ
     });
   } catch (e) {
     console.error(e);
     return res.status(500).json({ ok: false, message: "Erreur lecture CGV." });
   }
 });
+
 
 // ✅ Télécharger le CGV actif
 router.get("/admin/cgv/download", requireAgentAuth, requireAdmin, async (req, res) => {
@@ -1658,6 +1680,7 @@ router.post(
 router.post("/admin/cgv/use-default", requireAgentAuth, requireAdmin, async (req, res) => {
   try {
     if (fs.existsSync(CGV_CUSTOM_PATH)) fs.unlinkSync(CGV_CUSTOM_PATH);
+    if (fs.existsSync(CGV_META_PATH)) fs.unlinkSync(CGV_META_PATH); // ✅
     return res.json({ ok: true, active: "default" });
   } catch (e) {
     console.error(e);
