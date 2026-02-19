@@ -235,7 +235,8 @@ async function fetchCustomMeta() {
     <div style={{ fontWeight: 700, marginBottom: 6 }}>PDF importé (custom)</div>
 
     <div style={{ marginTop: 6, opacity: 0.85 }}>
-      Fichier : <b>{customInfo?.filename || "—"}</b>
+      Fichier : <b>{info?.custom?.originalName || "—"}</b>
+
     </div>
 
     <div style={{ marginTop: 6, opacity: 0.85 }}>
