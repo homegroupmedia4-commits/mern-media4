@@ -913,7 +913,7 @@ const finPart =
 
         const basePrice = parseEuro(row.price);
         const memPrice = parseEuro(mem?.price);
-        const unit = basePrice + memPrice;
+        
 
        const monthly = basePrice + memPrice;
 const monthsInt = Math.max(1, parseInt(String(months || 1), 10) || 1);
