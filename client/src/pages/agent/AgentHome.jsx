@@ -834,10 +834,17 @@ const montantWithFin = Number(quote.montant || 0) + finUnit * qScreens;
         const mem = memId ? memById.get(String(memId)) : null;
 
         const basePrice = parseEuro(row.price);
-        const memPrice = parseEuro(mem?.price);
-        const unit = basePrice + memPrice;
-        const total = unit * qty;
+const memPrice = parseEuro(mem?.price);
 
+const monthly = basePrice + memPrice;
+const monthsInt = Math.max(1, parseInt(String(months || 1), 10) || 1);
+const typeFin = String(sel.typeFinancement || "location_maintenance");
+
+// ✅ Achat => (mensualité * mois) * 0.6
+const unit = typeFin === "achat" ? (monthly * monthsInt) * 0.6 : monthly;
+const total = unit * qty;
+
+        
         lines.push({
           kind: "other",
           key: `other_${pid}_${months}_${rowId}`,
@@ -908,8 +915,16 @@ const finPart =
         const memPrice = parseEuro(mem?.price);
         const unit = basePrice + memPrice;
 
-        const qty = Math.max(1, parseInt(String(checked?.[rowId]?.qty || 1), 10) || 1);
-        ht += unit * qty;
+       const monthly = basePrice + memPrice;
+const monthsInt = Math.max(1, parseInt(String(months || 1), 10) || 1);
+const typeFin = String(sel.typeFinancement || "location_maintenance");
+
+const unit = typeFin === "achat" ? (monthly * monthsInt) * 0.6 : monthly;
+
+const qty = Math.max(1, parseInt(String(checked?.[rowId]?.qty || 1), 10) || 1);
+ht += unit * qty;
+
+        
       }
     }
 
