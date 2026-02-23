@@ -1994,6 +1994,52 @@ router.post("/password/forgot", async (req, res) => {
 });
 
 
+
+// ✅ ADMIN: changer le mot de passe d’un agent (sans email)
+router.post(
+  "/admin/agents/:id/password/set",
+  requireAgentAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const agentId = req.params.id;
+
+      const newPassword = String(req.body?.newPassword || "");
+      const confirmPassword = String(req.body?.confirmPassword || "");
+
+      if (!newPassword || !confirmPassword) {
+        return res.status(400).json({ message: "Mot de passe manquant." });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: "Les mots de passe ne correspondent pas." });
+      }
+
+      if (!isStrongEnough(newPassword)) {
+        return res.status(400).json({ message: "Mot de passe trop court (8 caractères minimum)." });
+      }
+
+      const agent = await Agent.findById(agentId);
+      if (!agent) return res.status(404).json({ message: "Agent introuvable." });
+
+      agent.passwordHash = await bcrypt.hash(newPassword, 10);
+      await agent.save();
+
+      // ✅ invalider tokens reset existants (si tu gardes le système token pour plus tard)
+      await AgentPasswordReset.updateMany(
+        { agentId: agent._id, usedAt: null },
+        { $set: { usedAt: new Date() } }
+      );
+
+      return res.json({ ok: true, message: "Mot de passe modifié." });
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ message: "Erreur serveur." });
+    }
+  }
+);
+
+
 router.post("/password/reset", async (req, res) => {
   try {
     const token = String(req.body?.token || "").trim();
