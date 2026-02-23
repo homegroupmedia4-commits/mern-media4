@@ -10,6 +10,9 @@ const OtherProductSize = require("../models/OtherProductSize");
 
 const multer = require("multer");
 
+const crypto = require("crypto");
+const AgentPasswordReset = require("../models/AgentPasswordReset");
+
 const MemoryOption = require("../models/MemoryOption");
 const path = require("path");
 const fs = require("fs");
@@ -93,6 +96,21 @@ function getActiveCgvPath() {
 function fmt2(n) {
   const x = Number(n);
   return Number.isFinite(x) ? x.toFixed(2) : "0.00";
+}
+
+function sha256(input) {
+  return crypto.createHash("sha256").update(String(input)).digest("hex");
+}
+
+function makeResetToken() {
+  // token long + URL safe
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function isStrongEnough(pwd) {
+  const s = String(pwd || "");
+  // simple règle (tu peux durcir) : 8+ chars
+  return s.length >= 8;
 }
 
 function normalizeBool(v) {
@@ -1910,6 +1928,107 @@ router.post("/login", async (req, res) => {
 router.get("/me", requireAgentAuth, async (req, res) => {
   res.json(req.agent);
 });
+
+
+router.post("/password/forgot", async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").toLowerCase().trim();
+
+    // réponse neutre (anti enumeration)
+    const neutral = { ok: true, message: "Si un compte existe, un lien de réinitialisation a été envoyé." };
+
+    if (!email) return res.json(neutral);
+
+    const agent = await Agent.findOne({ email }).select("_id email prenom nom");
+    if (!agent) return res.json(neutral);
+
+    // invalide les tokens précédents non utilisés (optionnel mais propre)
+    await AgentPasswordReset.updateMany(
+      { agentId: agent._id, usedAt: null },
+      { $set: { usedAt: new Date() } }
+    );
+
+    const token = makeResetToken();
+    const tokenHash = sha256(token);
+
+    const ttlMinutes = Number(process.env.AGENT_RESET_TTL_MINUTES || 30);
+    const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
+
+    await AgentPasswordReset.create({
+      agentId: agent._id,
+      tokenHash,
+      expiresAt,
+      createdIp: String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || ""),
+    });
+
+    const appBase =
+      String(process.env.APP_BASE_URL || "").trim() ||
+      // fallback si tu es en dev
+      "http://localhost:5173";
+
+    const resetUrl = `${appBase}/agent/reset-password/${token}`;
+
+    /**
+     * ✅ Envoi email
+     * - En prod: branche ici ton provider (SES, SMTP, etc.)
+     * - Pour l’instant: on log pour tester rapidement
+     */
+    if (process.env.NODE_ENV === "production") {
+      // TODO: brancher un vrai envoi (SES / SMTP)
+      // console.log("[RESET URL]", resetUrl);
+    } else {
+      console.log("✅ RESET URL (DEV):", resetUrl);
+    }
+
+    // Option DEV : renvoyer le lien pour test rapide
+    if (process.env.NODE_ENV !== "production") {
+      return res.json({ ...neutral, devResetUrl: resetUrl });
+    }
+
+    return res.json(neutral);
+  } catch (e) {
+    console.error(e);
+    // réponse neutre toujours
+    return res.json({ ok: true, message: "Si un compte existe, un lien de réinitialisation a été envoyé." });
+  }
+});
+
+
+router.post("/password/reset", async (req, res) => {
+  try {
+    const token = String(req.body?.token || "").trim();
+    const newPassword = String(req.body?.newPassword || "");
+    const confirmPassword = String(req.body?.confirmPassword || "");
+
+    if (!token) return res.status(400).json({ message: "Token manquant." });
+    if (!newPassword || !confirmPassword) return res.status(400).json({ message: "Mot de passe manquant." });
+    if (newPassword !== confirmPassword) return res.status(400).json({ message: "Les mots de passe ne correspondent pas." });
+    if (!isStrongEnough(newPassword)) return res.status(400).json({ message: "Mot de passe trop court (8 caractères minimum)." });
+
+    const tokenHash = sha256(token);
+
+    const reset = await AgentPasswordReset.findOne({ tokenHash }).select("agentId expiresAt usedAt");
+    if (!reset) return res.status(400).json({ message: "Lien invalide ou expiré." });
+    if (reset.usedAt) return res.status(400).json({ message: "Lien déjà utilisé." });
+    if (reset.expiresAt.getTime() < Date.now()) return res.status(400).json({ message: "Lien expiré." });
+
+    const agent = await Agent.findById(reset.agentId);
+    if (!agent) return res.status(400).json({ message: "Compte introuvable." });
+
+    agent.passwordHash = await bcrypt.hash(newPassword, 10);
+    await agent.save();
+
+    reset.usedAt = new Date();
+    reset.usedIp = String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "");
+    await reset.save();
+
+    return res.json({ ok: true, message: "Mot de passe mis à jour. Vous pouvez vous connecter." });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur serveur reset password." });
+  }
+});
+
 
 // ✅ GET /api/agents/admin/list
 router.get("/admin/list", async (req, res) => {
