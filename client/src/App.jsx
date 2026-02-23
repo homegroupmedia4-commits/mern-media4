@@ -21,6 +21,9 @@ import AgentRegister from "./pages/agent/AgentRegister";
 import AgentMesDevis from "./pages/agent/AgentMesDevis";
 import AgentFaq from "./pages/agent/AgentFaq";
 
+import AgentForgotPassword from "./pages/agent/AgentForgotPassword";
+import AgentResetPassword from "./pages/agent/AgentResetPassword";
+
 
 
 
@@ -124,6 +127,9 @@ export default function App() {
           </RequireAgentAuth>
         }
       />
+
+      <Route path="/agent/forgot-password" element={<AgentForgotPassword />} />
+<Route path="/agent/reset-password/:token" element={<AgentResetPassword />} />
 
       <Route
         path="/agent/faq"
