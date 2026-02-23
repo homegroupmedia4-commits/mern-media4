@@ -49,7 +49,7 @@ export default function AgentLogin() {
     <div className="login-agent-page">
       <div className="login-agent-card">
         <form onSubmit={submit} className="login-agent-form">
-          <div className="login-agent-title">Connexion</div>
+          <div className="login-agent-title">Connexion (v2)</div>
 
           <div className="login-field">
             <label>Identifiant ou e-mail</label>
