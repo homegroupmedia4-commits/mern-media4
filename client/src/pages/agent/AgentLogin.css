@@ -85,7 +85,7 @@ background:#78b13a;
   color:#fff;
   text-decoration:none;
   font-weight:600;
-  display:none !important;
+  /* display:none !important; */
 }
 
 .login-agent-error{
