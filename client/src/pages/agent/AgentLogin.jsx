@@ -63,25 +63,19 @@ export default function AgentLogin() {
 
           {error ? <div className="login-agent-error">{error}</div> : null}
 
-          <div className="login-actions">
-            <button className="login-agent-btn" type="submit" disabled={loading}>
-              {loading ? "Connexion..." : "Connexion"}
-            </button>
+    <div className="login-actions">
+  <button className="login-agent-btn" type="submit" disabled={loading}>
+    {loading ? "Connexion..." : "Connexion"}
+  </button>
 
-                  <Link className="login-agent-register" to="/agent/forgot-password">
-  Mot de passe oublié ?
-</Link>
+  <Link className="login-agent-forgot" to="/agent/forgot-password">
+    Mot de passe oublié ?
+  </Link>
 
-            
-
-            <Link className="login-agent-register" to="/agent/register">
-              S’inscrire
-            </Link>
-
-      
-
-            
-          </div>
+  <Link className="login-agent-register" to="/agent/register">
+    S’inscrire
+  </Link>
+</div>
         </form>
       </div>
     </div>
