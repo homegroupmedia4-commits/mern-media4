@@ -1995,6 +1995,48 @@ router.post("/password/forgot", async (req, res) => {
 
 
 
+// ✅ Reset direct SANS email : email + newPassword + confirmPassword
+router.post("/password/reset-direct", async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").toLowerCase().trim();
+    const newPassword = String(req.body?.newPassword || "");
+    const confirmPassword = String(req.body?.confirmPassword || "");
+
+    if (!email) return res.status(400).json({ message: "Email manquant." });
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "Mot de passe manquant." });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "Les mots de passe ne correspondent pas." });
+    }
+    if (!isStrongEnough(newPassword)) {
+      return res.status(400).json({ message: "Mot de passe trop court (8 caractères minimum)." });
+    }
+
+    const agent = await Agent.findOne({ email });
+    if (!agent) {
+      // réponse neutre (évite l’énumération)
+      return res.json({ ok: true, message: "Si un compte existe, le mot de passe a été mis à jour." });
+    }
+
+    agent.passwordHash = await bcrypt.hash(newPassword, 10);
+    await agent.save();
+
+    // option : invalider tokens reset existants
+    await AgentPasswordReset.updateMany(
+      { agentId: agent._id, usedAt: null },
+      { $set: { usedAt: new Date() } }
+    );
+
+    return res.json({ ok: true, message: "Mot de passe mis à jour. Vous pouvez vous connecter." });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+
+
 // ✅ ADMIN: changer le mot de passe d’un agent (sans email)
 router.post(
   "/admin/agents/:id/password/set",
