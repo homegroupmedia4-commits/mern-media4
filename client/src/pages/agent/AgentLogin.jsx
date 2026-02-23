@@ -68,15 +68,17 @@ export default function AgentLogin() {
               {loading ? "Connexion..." : "Connexion"}
             </button>
 
+                  <Link className="login-agent-register" to="/agent/forgot-password">
+  Mot de passe oublié ?
+</Link>
+
             
 
             <Link className="login-agent-register" to="/agent/register">
               S’inscrire
             </Link>
 
-            <Link className="login-agent-register" to="/agent/forgot-password">
-  Mot de passe oublié ?
-</Link>
+      
 
             
           </div>
