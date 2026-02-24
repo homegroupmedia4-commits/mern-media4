@@ -69,33 +69,6 @@ export default function AdminNosDevis() {
   // -----------------------------
   // ✅ Helpers (autres produits)
   // -----------------------------
-  const getCheckedBucket = (sel, monthsHint = "") => {
-    if (!sel) return {};
-
-    // nouveau format: byMonths
-    if (sel.byMonths) {
-      const months = String(monthsHint || sel.leasingMonths || "").trim();
-
-      // 1) si on a un mois précis, on le prend
-      if (months && sel.byMonths?.[months]?.checked) {
-        return sel.byMonths[months].checked || {};
-      }
-
-      // 2) sinon on fusionne TOUS les mois (pour ne rien perdre)
-      const merged = {};
-      for (const k of Object.keys(sel.byMonths || {})) {
-        const chk = sel.byMonths?.[k]?.checked || {};
-        for (const rowId of Object.keys(chk)) {
-          merged[rowId] = chk[rowId];
-        }
-      }
-      return merged;
-    }
-
-    // ancien format
-    return sel.checked || {};
-  };
-
   const getOtherSelectionsObj = (d) => {
     // peut arriver en objet OU en string (json)
     if (d && typeof d.otherSelections === "object" && d.otherSelections)
@@ -108,6 +81,33 @@ export default function AdminNosDevis() {
       return safeJsonParse(d.otherSelectionsJson, {}) || {};
     }
     return {};
+  };
+
+  // ✅ IMPORTANT : pour l'admin, on sort les lignes avec le mois exact
+  // return [{ months, rowId, line }]
+  const explodeCheckedByMonths = (sel) => {
+    if (!sel) return [];
+
+    // nouveau format: byMonths
+    if (sel.byMonths && typeof sel.byMonths === "object") {
+      const out = [];
+      for (const monthsKey of Object.keys(sel.byMonths || {})) {
+        const checked = sel.byMonths?.[monthsKey]?.checked || {};
+        for (const rowId of Object.keys(checked || {})) {
+          out.push({ months: String(monthsKey || "").trim(), rowId, line: checked[rowId] });
+        }
+      }
+      return out;
+    }
+
+    // ancien format
+    const months = String(sel.leasingMonths || "").trim();
+    const checked = sel.checked || {};
+    return Object.keys(checked || {}).map((rowId) => ({
+      months,
+      rowId,
+      line: checked[rowId],
+    }));
   };
 
   // -----------------------------
@@ -301,22 +301,28 @@ export default function AdminNosDevis() {
       }
 
       // -----------------------------
-      // ✅ AUTRES PRODUITS
+      // ✅ AUTRES PRODUITS (ACHAT OK)
       // -----------------------------
       const otherSelections = getOtherSelectionsObj(d);
 
       for (const pid of Object.keys(otherSelections || {})) {
         const sel = otherSelections[pid];
 
-        const months = String(sel?.leasingMonths || "").trim();
-        const checked = getCheckedBucket(sel, months);
+        const typeFin = String(sel?.typeFinancement || "location_maintenance");
 
-        for (const rowId of Object.keys(checked || {})) {
-          const line = checked[rowId];
+        // ✅ on conserve le mois exact par ligne
+        const exploded = explodeCheckedByMonths(sel);
+
+        for (const item of exploded) {
+          const months = String(item.months || "").trim();
+          const rowId = item.rowId;
+          const line = item.line || {};
 
           const sizeRow =
             otherSizesCatalog.find((r) => String(r._id) === String(rowId)) ||
             null;
+
+          if (!sizeRow) continue;
 
           const sizeInches = sizeRow?.sizeInches ?? "";
           const basePrice = Number(sizeRow?.price || 0);
@@ -330,7 +336,18 @@ export default function AdminNosDevis() {
             : null;
 
           const memPrice = Number(mem?.price || 0);
-          const unit = basePrice + memPrice;
+
+          // mensualité de base (location)
+          const monthly = basePrice + memPrice;
+
+          const monthsInt = Math.max(
+            1,
+            parseInt(String(months || sizeRow?.leasingMonths || 1), 10) || 1
+          );
+
+          // ✅ ACHAT = (mensualité * mois) * 0.6
+          const unit =
+            typeFin === "achat" ? (monthly * monthsInt) * 0.6 : monthly;
 
           const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
           const total = unit * qty;
@@ -354,6 +371,7 @@ export default function AdminNosDevis() {
             client: c,
 
             produit: String(productLabel),
+            typeFinancement: typeFin, // ✅ NEW
             taillePouces: sizeInches,
             memoire: mem?.name || "—",
             prixUnitaire: unit,
@@ -470,7 +488,8 @@ export default function AdminNosDevis() {
                   ) : (
                     <>
                       <th>Produit</th>
-                      <th>Taille </th>
+                      <th>Type financement</th> {/* ✅ NEW */}
+                      <th>Taille</th>
                       <th>Mémoire</th>
                       <th>Prix unitaire</th>
                       <th>Quantité</th>
@@ -553,6 +572,7 @@ export default function AdminNosDevis() {
                       ) : (
                         <>
                           <td>{r.produit}</td>
+                          <td>{r.typeFinancement || ""}</td> {/* ✅ NEW */}
                           <td>
                             {r.taillePouces !== ""
                               ? `${r.taillePouces} pouces`
@@ -582,7 +602,7 @@ export default function AdminNosDevis() {
 
                 {!hasAny && !loading ? (
                   <tr>
-                    <td colSpan={tab === "walleds" ? 28 : 20} className="muted">
+                    <td colSpan={tab === "walleds" ? 28 : 21} className="muted">
                       Aucun devis.
                     </td>
                   </tr>
