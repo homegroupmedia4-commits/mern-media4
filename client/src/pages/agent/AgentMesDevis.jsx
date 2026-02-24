@@ -28,6 +28,12 @@ export default function AgentMesDevis() {
     return Number.isFinite(x) ? x.toFixed(2) : "";
   };
 
+  const labelTypeFin = (v) => {
+  if (v === "achat") return "Achat";
+  if (v === "location_evenementiel") return "Location événementiel";
+  return "Location maintenance";
+};
+
   const fmtDateFR = (iso) => {
     try {
       const d = iso ? new Date(iso) : null;
@@ -286,12 +292,25 @@ for (const pid of Object.keys(otherSelections)) {
       ? memOptionsCatalog.find((m) => String(m._id) === String(line.memId))
       : null;
 
-    const basePrice = Number(sizeRow.price || 0);
-    const memPrice = Number(mem?.price || 0);
-    const unit = basePrice + memPrice;
+ const basePrice = Number(sizeRow.price || 0);
+const memPrice = Number(mem?.price || 0);
 
-    const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
-    const total = unit * qty;
+// mensualité de base
+const monthly = basePrice + memPrice;
+
+// durée
+const monthsInt = Math.max(1, parseInt(String(months || 1), 10) || 1);
+
+// type financement (important)
+const typeFin = String(sel?.typeFinancement || "location_maintenance");
+
+// achat => (mensualité * mois) * 0.6
+const unit = typeFin === "achat" ? (monthly * monthsInt) * 0.6 : monthly;
+
+const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
+const total = unit * qty;
+
+    
 
     // ✅ FIX : const AVANT out.push
     const productLabel =
@@ -316,6 +335,7 @@ for (const pid of Object.keys(otherSelections)) {
       prixUnitaire: unit,
       quantite: qty,
       totalHt: total,
+       typeFinancement: typeFin, 
       dureeMois: months || String(sizeRow.leasingMonths || ""),
       prixAssocie: memPrice, // “prix associé” = surcoût mémoire
       codeProduit: sizeRow.productCode || sizeRow.codeProduit || "",
@@ -414,9 +434,11 @@ for (const pid of Object.keys(otherSelections)) {
                           <th>Produit</th>
                           <th>Taille sélectionnée</th>
                           <th>Mémoire</th>
+                          
                           <th>Prix unitaire</th>
                           <th>Quantité</th>
                           <th>Total (HT)</th>
+                          <th>Type financement</th>
                           <th>Durée leasing (mois)</th>
                           <th>Prix associé</th>
                           <th>Code devis</th>
@@ -499,6 +521,10 @@ for (const pid of Object.keys(otherSelections)) {
                               <td>{fmt2(r.prixUnitaire)}</td>
                               <td>{r.quantite}</td>
                               <td>{fmt2(r.totalHt)}</td>
+                              <td>{labelTypeFin(r.typeFinancement)}</td>
+                              
+                              {/* <td>{r.typeFinancement || ""}</td> */}
+                              
                               <td>{r.dureeMois}</td>
                               <td>{fmt2(r.prixAssocie)}</td>
                               <td>{r.devisNumber}</td>
