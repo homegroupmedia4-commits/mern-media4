@@ -1317,24 +1317,16 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
 
                       <div className="agenthome-field">
                         <label>Largeur (px) :</label>
-                        <input
-                          value={pi.largeurPx}
-                          onChange={(e) =>
-                            updatePitchInstance(pi.instanceId, { largeurPx: e.target.value })
-                          }
-                          className="agenthome-input"
-                        />
+                        
+                      <input value={pi.largeurPx} readOnly className="agenthome-input agenthome-input--readonly" />
+                        
                       </div>
 
                       <div className="agenthome-field">
                         <label>Hauteur (px) :</label>
-                        <input
-                          value={pi.hauteurPx}
-                          onChange={(e) =>
-                            updatePitchInstance(pi.instanceId, { hauteurPx: e.target.value })
-                          }
-                          className="agenthome-input"
-                        />
+                        
+                    <input value={pi.hauteurPx} readOnly className="agenthome-input agenthome-input--readonly" />
+                        
                       </div>
 
                       <div className="agenthome-field agenthome-field--full">
