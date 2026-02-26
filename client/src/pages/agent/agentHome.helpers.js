@@ -213,9 +213,19 @@ export function computePitchQuote({
   const diagonale = Math.sqrt(L * L + H * H) * 100; // cm
   const pouces = diagonale / 2.54;
 
-  const pitchMm = parsePitchMmFromLabel(pitchLabel);
-  const largeurPx = pitchMm > 0 && L > 0 ? Math.floor((L * 1000) / pitchMm) : "";
-  const hauteurPx = pitchMm > 0 && H > 0 ? Math.floor((H * 1000) / pitchMm) : "";
+const pitchMm = parsePitchMmFromLabel(pitchLabel);
+
+// ✅ on affiche les px seulement si Largeur(m) / Hauteur(m) sont saisies
+const hasDims = L > 0 && H > 0;
+
+// ✅ si dimensions OK mais pitch manquant -> on affiche "—" (info, pas un calcul)
+const largeurPx =
+  !hasDims ? "" : pitchMm > 0 ? Math.floor((L * 1000) / pitchMm) : "—";
+
+const hauteurPx =
+  !hasDims ? "" : pitchMm > 0 ? Math.floor((H * 1000) / pitchMm) : "—";
+
+  
 
   const minLineaire = categorieName === SPECIAL_GROUP ? 5 : 2.5;
   const lineaire = Math.max(minLineaire, toNum(lineaireRaw, 0));
