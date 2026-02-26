@@ -481,7 +481,19 @@ setSelectedCategoryId((prev) => {
 ]);
 
 
+useEffect(() => {
+  if (!showWalleds) return;
 
+  setPitchInstances((prev) => {
+    const list = Array.isArray(prev) ? prev : [];
+    if (!list.length) return list;
+    return list.map((pi) => ({ ...pi }));
+  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [pitches, showWalleds]);
+
+
+  
   // ---------------------------
   // LOAD: finishes + fixations + durations
   // ---------------------------
@@ -650,14 +662,7 @@ const categorieName =
   categories.find((c) => String(c._id) === String(categorieId))?.name ||
   "";
 
-useEffect(() => {
-  if (!showWalleds) return;
-  if (!pitchInstances.length) return;
 
-  // ✅ Recompute sans changer les valeurs (déclenche computePitchQuote via updatePitchInstance)
-  setPitchInstances((prev) => prev.map((pi) => ({ ...pi })));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [pitches]);
         
         
 
@@ -667,9 +672,13 @@ useEffect(() => {
   // "";
 
 
-        const pitchObj = pitches.find((x) => (x._id || x.id) === next.pitchId);
-        // const prixPitch = pitchObj?.price ?? 0;
-        const prixPitch = pitchObj?.price ?? next.prixPitch ?? 0;
+       const pitchObj = (Array.isArray(pitches) ? pitches : []).find(
+  (x) => String(x?._id || x?.id) === String(next.pitchId)
+);
+
+const prixPitch = Number(
+  (pitchObj?.price ?? next.prixPitch ?? 0)
+);
 
 
         const quote = computePitchQuote({
