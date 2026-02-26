@@ -590,16 +590,29 @@ setPitchInstances((prev) =>
   const cid = String(pitch.__categoryId || selectedCategoryId || "");
   const categorieName = categories.find((c) => String(c._id) === cid)?.name || "";
 
-  setPitchInstances((inst) => [
-    ...inst,
-    {
-      ...createDefaultPitchInstance({ pitch, durations, categorieId: cid, categorieName }),
-      categorieId: cid,
-      categorieName,
-    },
-  ]);
+        
+setPitchInstances((inst) => [
+  ...inst,
+  {
+    ...createDefaultPitchInstance({ pitch, durations, categorieId: cid, categorieName }),
+    categorieId: cid,
+    categorieName,
+
+    // ✅ IMPORTANT : on “fixe” le pitch dans l’instance
+    pitchLabel: pitch?.name || pitch?.label || "Pitch",
+    prixPitch: Number(pitch?.price || 0),
+
+    // (optionnel mais utile pour l’affichage + PDF)
+    dimensions: pitch?.dimensions || "",
+    luminosite: pitch?.luminosite || "",
+    codeProduit: pitch?.codeProduit || "",
+  },
+]);
+        
 }
 
+
+      
 
       
       return next;
@@ -637,7 +650,15 @@ const categorieName =
   categories.find((c) => String(c._id) === String(categorieId))?.name ||
   "";
 
+useEffect(() => {
+  if (!showWalleds) return;
+  if (!pitchInstances.length) return;
 
+  // ✅ Recompute sans changer les valeurs (déclenche computePitchQuote via updatePitchInstance)
+  setPitchInstances((prev) => prev.map((pi) => ({ ...pi })));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [pitches]);
+        
         
 
   //       const categorieName =
