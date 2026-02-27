@@ -14,6 +14,8 @@ import ValeursStatiques from "./pages/ValeursStatiques";
 import CategoriesPitch from "./pages/CategoriesPitch";
 import PitchManagerPage from "./pages/PitchManager";
 
+import AdminFormules from "./pages/AdminFormules";
+
 /* ================= AGENT ================= */
 import AgentHome from "./pages/agent/AgentHome";
 import AgentLogin from "./pages/agent/AgentLogin";
@@ -63,6 +65,7 @@ export default function App() {
         <Route path="fixation" element={<AdminFixation />} />
         <Route path="finition" element={<AdminFinition />} />
         <Route path="pdf" element={<AdminPdf />} />
+        <Route path="formules" element={<AdminFormules />} />
 
         <Route path="produits" element={<AdminProduits />} />
 
