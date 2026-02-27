@@ -515,10 +515,7 @@ export default function AdminFormules() {
 
   const headerSub = (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      <Badge>Client-side</Badge>
-      <Badge>AgentHome.jsx</Badge>
-      <Badge>AgentOtherProductsBlock.jsx</Badge>
-      <Badge>agentHome.helpers.js</Badge>
+   
     </div>
   );
 
@@ -536,13 +533,11 @@ export default function AdminFormules() {
       >
         <div>
           <h2 style={{ margin: 0, fontWeight: 900, color: "#111827" }}>
-            Formules (calculs côté client)
+            Formules 
           </h2>
           <div style={{ marginTop: 6 }}>{headerSub}</div>
           <div style={{ marginTop: 8 }}>
-            <Small>
-              Objectif : une page Admin “source de vérité” sur les calculs réellement appliqués.
-            </Small>
+            
           </div>
         </div>
 
@@ -559,7 +554,7 @@ export default function AdminFormules() {
         <div style={{ display: "grid", gap: 12 }}>
           <Card>
             <SectionTitle
-              title="1) Formules “Murs leds” (Pitch) — computePitchQuote()"
+              title="1) Formules “Murs leds” (Pitch)"
               right={<Badge>agentHome.helpers.js</Badge>}
             />
             <Small>
@@ -607,9 +602,7 @@ export default function AdminFormules() {
               ]}
             />
             <div style={{ marginTop: 10 }}>
-              <Small>
-                ⚠️ Dans ton code actuel, la finition est ajoutée même en “achat” (comme si c’était €/mois).
-              </Small>
+              
             </div>
           </Card>
         </div>
@@ -618,7 +611,7 @@ export default function AdminFormules() {
       {tab === "other" ? (
         <div style={{ display: "grid", gap: 12 }}>
           <Card>
-            <SectionTitle title="2) Formules “Autres produits” — computeOtherLine()" right={<Badge>AgentOtherProductsBlock.jsx</Badge>} />
+            <SectionTitle title="2) Formules “Autres produits”" right={<Badge>AgentOtherProductsBlock.jsx</Badge>} />
             <Small>
               Mensualité de base = (prix écran + prix mémoire). En achat : (mensualité * mois) * 0.6.
             </Small>
