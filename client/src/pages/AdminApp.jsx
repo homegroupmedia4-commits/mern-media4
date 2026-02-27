@@ -342,10 +342,14 @@ if (password === ADMIN_PASSWORD) {
             <button
               type="button"
               className={`sidebar-group ${
+
                 isPathActive(`${ADMIN_BASE}/valeurs-statiques`) ||
-                isPathActive(`${ADMIN_BASE}/fixation`) ||
-              isPathActive(`${ADMIN_BASE}/finition`) ||
-                isPathActive(`${ADMIN_BASE}/pdf`)
+isPathActive(`${ADMIN_BASE}/fixation`) ||
+isPathActive(`${ADMIN_BASE}/finition`) ||
+isPathActive(`${ADMIN_BASE}/pdf`) ||
+isPathActive(`${ADMIN_BASE}/formules`)
+
+                
                   ? "is-active"
                   : ""
               }`}
@@ -394,6 +398,13 @@ to={`${ADMIN_BASE}/pdf`}
  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
 >
 PDF
+</NavLink>
+
+    <NavLink
+  to={`${ADMIN_BASE}/formules`}
+  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+>
+  Formules
 </NavLink>
 
   
