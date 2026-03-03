@@ -1657,7 +1657,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
             </div>
 
            
-           <div className="agenthome-field">
+         <div className="agenthome-field">
   <label>Adresse 1 :</label>
   {googleLoaded ? (
     <AddressAutocomplete
@@ -1697,16 +1697,7 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
 </div>
             
 
-            <div className="agenthome-field">
-              <label>Code postal :</label>
-              <input
-                className="agenthome-input"
-                placeholder="Code postal du client"
-                value={client.codePostal}
-                required
-                onChange={(e) => setClient((p) => ({ ...p, codePostal: e.target.value }))}
-              />
-            </div>
+        
 
             <div className="agenthome-field">
               <label>Ville :</label>
