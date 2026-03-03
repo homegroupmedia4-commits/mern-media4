@@ -4,6 +4,8 @@ import { useNavigate, Link } from "react-router-dom";
 import "./AgentHome.css";
 import AgentOtherProductsBlock from "./AgentOtherProductsBlock";
 import AgentHeader from "./AgentHeader";
+import AddressAutocomplete from "./AddressAutocomplete";
+import { useGoogleMaps } from "../../hooks/useGoogleMaps";
 
 
 
@@ -127,6 +129,9 @@ const DEFAULT_CATEGORY_NAME = "Exterieur haute luminosité";
     fraisPortOfferts: false,
     commentaires: "",
   });
+
+
+  const googleLoaded = useGoogleMaps();
 
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
@@ -1651,16 +1656,35 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
               />
             </div>
 
+           
             <div className="agenthome-field">
-              <label>Adresse 1 :</label>
-              <input
-                className="agenthome-input"
-                placeholder="Adresse du client"
-                value={client.adresse1}
-                required
-                onChange={(e) => setClient((p) => ({ ...p, adresse1: e.target.value }))}
-              />
-            </div>
+  <label>Adresse 1 :</label>
+  {googleLoaded ? (
+    <AddressAutocomplete
+      value={client.adresse1}
+      onChange={(val) => setClient((p) => ({ ...p, adresse1: val }))}
+      onPlaceSelected={({ adresse1, codePostal, ville }) =>
+        setClient((p) => ({
+          ...p,
+          adresse1,
+          codePostal: codePostal || p.codePostal,
+          ville: ville || p.ville,
+        }))
+      }
+      placeholder="Adresse du client"
+      className="agenthome-input"
+    />
+  ) : (
+    <input
+      className="agenthome-input"
+      placeholder="Adresse du client"
+      value={client.adresse1}
+      onChange={(e) => setClient((p) => ({ ...p, adresse1: e.target.value }))}
+    />
+  )}
+</div>
+
+            
 
             <div className="agenthome-field">
               <label>Code postal :</label>
