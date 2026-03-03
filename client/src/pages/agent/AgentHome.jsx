@@ -1657,12 +1657,12 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
             </div>
 
            
-            <div className="agenthome-field">
+           <div className="agenthome-field">
   <label>Adresse 1 :</label>
   {googleLoaded ? (
     <AddressAutocomplete
       value={client.adresse1}
-      googleLoaded={googleLoaded}   // ✅ AJOUTE ICI
+      googleLoaded={googleLoaded}
       onChange={(val) => setClient((p) => ({ ...p, adresse1: val }))}
       onPlaceSelected={({ adresse1, codePostal, ville }) =>
         setClient((p) => ({
@@ -1675,6 +1675,26 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
       placeholder="Adresse du client"
       className="agenthome-input"
     />
+  ) : (
+    <input
+      className="agenthome-input"
+      placeholder="Adresse du client"
+      value={client.adresse1}
+      onChange={(e) => setClient((p) => ({ ...p, adresse1: e.target.value }))}
+    />
+  )}
+</div>
+
+<div className="agenthome-field">
+  <label>Code postal :</label>
+  <input
+    className="agenthome-input"
+    placeholder="Code postal du client"
+    value={client.codePostal}
+    required
+    onChange={(e) => setClient((p) => ({ ...p, codePostal: e.target.value }))}
+  />
+</div>
             
 
             <div className="agenthome-field">
