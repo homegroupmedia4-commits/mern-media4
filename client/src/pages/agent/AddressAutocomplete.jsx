@@ -1,3 +1,4 @@
+// client/src/pages/agent/AddressAutocomplete.jsx
 import { useEffect, useRef } from "react";
 
 export default function AddressAutocomplete({
@@ -6,50 +7,57 @@ export default function AddressAutocomplete({
   onPlaceSelected,
   placeholder,
   className,
-  googleLoaded, // ✅ reçoit googleLoaded en prop
+  googleLoaded,
 }) {
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
-  // ✅ Se relance quand googleLoaded devient true
+  // ✅ garde l'input synchro quand tu changes value via onPlaceSelected
+  useEffect(() => {
+    if (!inputRef.current) return;
+    if (typeof value === "string" && inputRef.current.value !== value) {
+      inputRef.current.value = value;
+    }
+  }, [value]);
+
   useEffect(() => {
     if (!googleLoaded || !inputRef.current) return;
-    if (autocompleteRef.current) return; // déjà initialisé
 
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(
-      inputRef.current,
-      {
-        componentRestrictions: { country: "fr" },
-        fields: ["address_components"],
-        types: ["address"],
-      }
-    );
+    // ✅ si déjà attaché à CE input, on ne refait pas
+    if (autocompleteRef.current?.__attachedTo === inputRef.current) return;
 
-    autocompleteRef.current.addListener("place_changed", () => {
-      const place = autocompleteRef.current.getPlace();
+    const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
+      componentRestrictions: { country: "FR" },
+      fields: ["address_components"],
+      types: ["address"],
+    });
+
+    ac.__attachedTo = inputRef.current;
+    autocompleteRef.current = ac;
+
+    ac.addListener("place_changed", () => {
+      const place = ac.getPlace();
       if (!place?.address_components) return;
 
       const get = (type) =>
-        place.address_components.find((c) => c.types.includes(type))
-          ?.long_name || "";
+        place.address_components.find((c) => c.types.includes(type))?.long_name || "";
 
-      const adresse1 = [get("street_number"), get("route")]
-        .filter(Boolean)
-        .join(" ");
+      const adresse1 = [get("street_number"), get("route")].filter(Boolean).join(" ");
       const codePostal = get("postal_code");
       const ville = get("locality") || get("postal_town");
 
       onPlaceSelected?.({ adresse1, codePostal, ville });
     });
-  }, [googleLoaded]); // ✅ dépend de googleLoaded
+  }, [googleLoaded, onPlaceSelected]);
 
   return (
     <input
       ref={inputRef}
-      defaultValue={value} // ✅ NON contrôlé (évite le conflit React/Google)
+      autoComplete="off"
       onChange={(e) => onChange?.(e.target.value)}
       placeholder={placeholder}
       className={className}
+      defaultValue={value}
     />
   );
 }
