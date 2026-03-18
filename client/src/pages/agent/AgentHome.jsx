@@ -707,14 +707,28 @@ next.categorieName = categorieName;
 
         const qScreens = Math.max(1, parseInt(String(next.quantite || "1"), 10) || 1);
 
-// ✅ prix finition mensuel (par écran) choisi
-const finUnit = Number(next.finitionPriceMonthlyHt || 0) || 0;
+// ✅ surface en m²
+const surface = Number(quote.surfaceM2 || 0);
 
-// ✅ total mensuel “unitaire” (comme ton champ Prix total HT /mois)
-const totalUnitWithFin = Number(quote.total || 0) + finUnit;
+// ✅ prix finition au m²
+const prixM2 = Number(next.finitionPriceMonthlyHt || 0);
 
-// ✅ montant mensuel HT (avec quantité)
-const montantWithFin = Number(quote.montant || 0) + finUnit * qScreens;
+// ✅ calcul progressif finition
+let finitionTotal = 0;
+
+if (surface > 0) {
+  finitionTotal =
+    prixM2 + Math.max(0, surface - 1) * (prixM2 * 0.5);
+}
+
+// ✅ prix unitaire (par écran)
+const totalUnitWithFin = Number(quote.total || 0) + finitionTotal;
+
+// ✅ montant total (avec quantité)
+const montantWithFin =
+  Number(quote.montant || 0) + finitionTotal * qScreens;
+
+        
 
 
 
