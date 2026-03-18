@@ -1,4 +1,3 @@
-```jsx
 // client/src/pages/agent/AgentFaq.jsx
 import { useMemo, useState } from "react";
 import AgentHeader from "./AgentHeader";
