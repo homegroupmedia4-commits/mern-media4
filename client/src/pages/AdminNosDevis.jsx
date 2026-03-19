@@ -47,13 +47,7 @@ const norm = (v) => String(v || "").trim();
 export default function AdminNosDevis() {
   const outlet = useOutletContext?.() || {};
 
-  const API = useMemo(() => {
-    return (
-      outlet.API ||
-      import.meta.env.VITE_API_URL ||
-      "https://mern-media4-server.onrender.com"
-    );
-  }, [outlet.API]);
+ const API = "";
 
   const [tab, setTab] = useState("walleds"); // "walleds" | "other"
   const [q, setQ] = useState("");
