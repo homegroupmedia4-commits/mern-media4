@@ -47,7 +47,7 @@ const norm = (v) => String(v || "").trim();
 export default function AdminNosDevis() {
   const outlet = useOutletContext?.() || {};
 
- const API = "";
+const { API } = useOutletContext();
 
   const [tab, setTab] = useState("walleds"); // "walleds" | "other"
   const [q, setQ] = useState("");
