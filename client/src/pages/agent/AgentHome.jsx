@@ -49,10 +49,7 @@ const DEFAULT_STATIC = normalizeStaticVals({
 export default function AgentHome() {
   const navigate = useNavigate();
 
-  const API = useMemo(
-    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
-    []
-  );
+const API = "";
 
 const DEFAULT_CATEGORY_NAME = "Exterieur haute luminosité";
 
