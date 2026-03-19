@@ -40,10 +40,7 @@ export default function AdminApp() {
     config: true,
   }));
 
-  const API = useMemo(
-    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
-    []
-  );
+const API = "";
 
   const isPathActive = (prefix) => location.pathname.startsWith(prefix);
 
