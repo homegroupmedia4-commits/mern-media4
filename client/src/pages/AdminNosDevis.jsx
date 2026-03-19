@@ -48,6 +48,7 @@ export default function AdminNosDevis() {
   const outlet = useOutletContext?.() || {};
 
 const { API } = useOutletContext();
+  console.log("API =", API);
 
   const [tab, setTab] = useState("walleds"); // "walleds" | "other"
   const [q, setQ] = useState("");
@@ -122,7 +123,7 @@ const { API } = useOutletContext();
       setLoading(true);
       setError("");
       try {
-        const url = new URL(`${API}/api/agents/devis`);
+        const url = new URL("undefined/api/agents/devis");
         url.searchParams.set("tab", "all");
 
         // recherche (backend supporte q)
