@@ -6,11 +6,8 @@ export default function AgentResetPassword() {
   const { token } = useParams();
   const navigate = useNavigate();
 
-  const API = useMemo(
-    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
-    []
-  );
-
+const API = "";
+  
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [err, setErr] = useState("");
