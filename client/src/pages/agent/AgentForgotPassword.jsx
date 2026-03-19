@@ -5,10 +5,7 @@ import "./AgentLogin.css";
 export default function AgentForgotPassword() {
   const navigate = useNavigate();
 
-  const API = useMemo(
-    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
-    []
-  );
+const API = "";
 
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
