@@ -4,11 +4,7 @@ import { TOKEN_KEY, USER_KEY, safeJsonParse } from "./agentHome.helpers";
 import "./AgentMesDevis.css";
 
 export default function AgentMesDevis() {
-  const API = useMemo(
-    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
-    []
-  );
-
+const API = "";
   const [agent, setAgent] = useState(() => {
     const cached = localStorage.getItem(USER_KEY);
     return cached ? safeJsonParse(cached) : null;
