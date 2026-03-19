@@ -13,10 +13,7 @@ const GATE_PASSWORD = "Medi@91?devis";
 export default function AgentRegister() {
   const navigate = useNavigate();
 
-  const API = useMemo(
-    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
-    []
-  );
+const API = "";
 
   // -----------------------------
   // 🔒 Gate state
