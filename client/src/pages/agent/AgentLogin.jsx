@@ -8,10 +8,7 @@ const USER_KEY = "agent_user_v1";
 export default function AgentLogin() {
   const navigate = useNavigate();
 
-  const API = useMemo(
-    () => import.meta.env.VITE_API_URL || "https://mern-media4-server.onrender.com",
-    []
-  );
+  const API = "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
