@@ -390,7 +390,7 @@ export default function AdminNosDevis() {
       <div className="page-header page-header--compact">
         <div className="page-header__left">
           <div>
-            <h2 className="page-title">Tous les devis</h2>
+            <h2 className="page-title">Tous les devis 2</h2>
             <div className="muted" style={{ padding: 0 }}>
               Admin : liste de tous les devis de tous les agents
             </div>
