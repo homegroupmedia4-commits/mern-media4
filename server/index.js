@@ -59,7 +59,9 @@ app.use("/api/fixations", fixationsRouter);
 
 
 
-
+app.get("/api", (req, res) => {
+  res.send("API MEDIA4 OK 🚀");
+});
 
 
 app.get("/", (req, res) => res.send("OK API is running ✅"));
