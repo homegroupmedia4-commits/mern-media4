@@ -404,7 +404,7 @@ console.log("OTHER SIZES =", data);
           <div>
             <h2 className="page-title">Tous les devis </h2>
             <div className="muted" style={{ padding: 0 }}>
-              Admin : liste de tous les devis 2 de tous les agents
+              Admin : liste de tous les devis de tous les agents
             </div>
           </div>
 
