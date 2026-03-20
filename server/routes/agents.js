@@ -19,6 +19,10 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 
+const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
+const TOKEN_TTL = "7d";
+
+
 const ADMIN_UI_PASSWORD = process.env.ADMIN_UI_PASSWORD || "Homegroup91?";
 
 const CGV_META_PATH = path.join(__dirname, "..", "assets", "CGV-location-maintenance.custom.meta.json");
@@ -48,8 +52,6 @@ router.post("/admin/login", async (req, res) => {
 
 
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
-const TOKEN_TTL = "7d";
 
 /**
  * ✅ Devis number: "DE01048"
