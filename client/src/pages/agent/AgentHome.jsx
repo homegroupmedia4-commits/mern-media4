@@ -49,7 +49,7 @@ const DEFAULT_STATIC = normalizeStaticVals({
 export default function AgentHome() {
   const navigate = useNavigate();
 
-const API = "";
+const API = window.location.origin;
 
 const DEFAULT_CATEGORY_NAME = "Exterieur haute luminosité";
 
