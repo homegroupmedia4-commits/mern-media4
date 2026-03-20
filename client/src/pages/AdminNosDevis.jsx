@@ -155,6 +155,11 @@ export default function AdminNosDevis() {
     (async () => {
       try {
         const res = await fetch(`${API}/api/other-product-sizes`);
+
+        const text = await res.text();
+console.log("RAW RESPONSE =", text);
+
+        
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
