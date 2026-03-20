@@ -315,8 +315,7 @@ async function fetchCustomMeta() {
               />
 
               <div style={{ marginTop: 8, opacity: 0.7, fontSize: 13 }}>
-                Le fichier uploadé sera enregistré côté serveur et utilisé
-                automatiquement lors du merge du devis.
+                
               </div>
 
               {saving && (
