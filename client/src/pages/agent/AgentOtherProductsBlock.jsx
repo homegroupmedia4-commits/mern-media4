@@ -38,9 +38,12 @@ export default function AgentOtherProductsBlock({
     (async () => {
       setLoadingOtherSizes(true);
       try {
-        const res = await fetch(`${API}/api/other-product-sizes`);
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
+    const res = await fetch(`${API}/api/other-product-sizes`);
+const text = await res.text(); // une seule lecture
+if (!res.ok) throw new Error(text);
+const data = text ? JSON.parse(text) : [];
+
+        
         const list = Array.isArray(data) ? data : [];
         setOtherSizes(list.filter((x) => x?.isActive !== false));
       } catch (e) {
@@ -55,9 +58,10 @@ export default function AgentOtherProductsBlock({
     (async () => {
       setLoadingMemOptions(true);
       try {
-        const res = await fetch(`${API}/api/memory-options`);
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
+    const res = await fetch(`${API}/api/memory-options`);
+const text = await res.text(); // une seule lecture
+if (!res.ok) throw new Error(text);
+const data = text ? JSON.parse(text) : [];
         const list = Array.isArray(data) ? data : [];
         setMemOptions(list.filter((x) => x?.isActive !== false));
       } catch (e) {
