@@ -979,22 +979,7 @@ ht += unit * qty;
       ht += parseEuro(pi.montantHt);
     }
 
-    // ✅ ht finitions (mensuel) : somme (prix finition * quantité d'écrans)
-for (const pi of pitchInstances || []) {
-  const q = Math.max(1, parseInt(String(pi.quantite || "1"), 10) || 1);
 
-  const surface = Number(pi.surfaceM2 || 0);
-  const prixM2 = parseEuro(pi.finitionPriceMonthlyHt);
-
-  let finitionTotal = 0;
-
-  if (surface > 0) {
-    finitionTotal =
-      prixM2 + Math.max(0, surface - 1) * (prixM2 * 0.5);
-  }
-
-  ht += finitionTotal * q;
-}
 
 
     // ✅ ABOBR (comme dans le PDF) : 19,95€ si on a au moins 1 ligne
