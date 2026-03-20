@@ -46,7 +46,7 @@ const norm = (v) => String(v || "").trim();
 
 export default function AdminNosDevis() {
   const outlet = useOutletContext?.() || {};
-  const API = outlet.API || window.location.origin;
+ const API = "https://www.media4-bo.eu";
 
 
 
