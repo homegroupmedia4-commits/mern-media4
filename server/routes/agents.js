@@ -867,7 +867,7 @@ const c = docData.client || {};
 const clientLines = [
   (c.societe || "").trim(),
   `${(c.adresse1 || "").trim()}` || "",
-  `${(c.adresse2 || "").trim()}` || "",
+
   `${(c.codePostal || "").trim()} ${(c.ville || "").trim()}`.trim(),
   (c.nom || c.contactNom || "").trim() || "",
   (c.email || "").trim(),
