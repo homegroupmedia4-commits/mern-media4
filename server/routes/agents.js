@@ -7,6 +7,7 @@ const Agent = require("../models/Agent");
 const PDFDocument = require("pdfkit");
 const AgentPdf = require("../models/AgentPdf");
 const OtherProductSize = require("../models/OtherProductSize");
+const { sendDevisEmail } = require("../utils/mailer");
 
 const multer = require("multer");
 
@@ -1555,6 +1556,41 @@ docData.pdfBuffer = mergedBuffer;
     docData.contentType = "application/pdf";
     docData.pages = 4;
     await docData.save();
+
+    // ✅ ENVOI EMAIL BREVO
+    try {
+      const c = docData.client || {};
+      const devisNum = docData.devisNumber || "????";
+      const societe = (c.societe || "CLIENT").trim();
+      const ville = [c.codePostal, c.ville].filter(Boolean).join(" ");
+      const agentName = `${agent.prenom || ""} ${agent.nom || ""}`.trim();
+      const pdfFilename = `Devis_MEDIA4_${devisNum}_${societe.replace(/\s+/g, "_")}.pdf`;
+
+      const subject = `Media4 Devis interne - ${societe} - ${devisNum}`;
+      const text = `Un nouveau devis pdf ${devisNum} a été demandé par ${agentName} pour ${societe}${ville ? ", " + ville : ""}.`;
+
+      // Destinataires : email interne + email de l'agent
+      const toList = [
+        process.env.MAIL_TO_INTERNAL,
+        c.votreEmail || agent.email,
+      ].filter(Boolean).join(", ");
+
+      await sendDevisEmail({
+        to: toList,
+        subject,
+        text,
+        pdfBuffer: mergedBuffer,
+        pdfFilename,
+      });
+
+      console.log(`✅ Email devis ${devisNum} envoyé à: ${toList}`);
+    } catch (mailErr) {
+      // On ne fait pas planter la génération si l'email échoue
+      console.error("⚠️ Erreur envoi email devis:", mailErr.message);
+    }
+    // FIN ENVOI EMAIL
+
+    
 
     return res.json({
       ok: true,
