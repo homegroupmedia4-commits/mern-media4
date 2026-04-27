@@ -152,7 +152,7 @@ const requiredFields = [
   ["telephone", "Téléphone"],
   ["email", "E-mail"],
   ["votreEmail", "Votre e-mail"],
-  ["commentaires", "Commentaires"],
+  // ["commentaires", "Commentaires"],
 ];
 
 const missing = requiredFields.filter(([k]) => !String(client?.[k] || "").trim());
