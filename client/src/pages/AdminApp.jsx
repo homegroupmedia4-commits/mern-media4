@@ -57,10 +57,19 @@ const API = "";
   // ✅ auto-login agent admin (si tu définis VITE_ADMIN_EMAIL + VITE_ADMIN_PASS)
 const ensureAdminApiToken = async (pwd = "") => {
   // Déjà OK ?
-  if (localStorage.getItem(ADMIN_TOKEN_KEY)) {
-    setTokenStatus({ loading: false, ok: true, msg: "" });
-    return;
-  }
+const existing = localStorage.getItem(ADMIN_TOKEN_KEY);
+if (existing) {
+  try {
+    const res = await fetch(`${API}/api/agents/me`, {
+      headers: { Authorization: `Bearer ${existing}` },
+    });
+    if (res.ok) {
+      setTokenStatus({ loading: false, ok: true, msg: "" });
+      return;
+    }
+  } catch {}
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
+}
 
   setTokenStatus({ loading: true, ok: false, msg: "" });
 
