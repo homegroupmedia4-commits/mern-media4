@@ -1410,28 +1410,41 @@ router.get("/devis", requireAgentAuth, async (req, res) => {
       : { agentId: req.agent._id };
 
     // filtre tab
-    if (tab === "murs_leds") query.pitchInstances = { $exists: true, $not: { $size: 0 } };
+  // filtre tab
+if (tab === "murs_leds") {
+  query.pitchInstances = { $exists: true, $not: { $size: 0 } };
+}
 
-    if (tab === "autres_produits") {
-      query.$or = [
-        { pitchInstances: { $exists: false } },
-        { pitchInstances: { $size: 0 } },
-      ];
-    }
+const filters = [];
 
-    // recherche
-    const s = String(q || "").trim();
-    if (s) {
-      query.$or = [
-        { devisNumber: { $regex: s, $options: "i" } },
-        { "client.nom": { $regex: s, $options: "i" } },
-        { "client.prenom": { $regex: s, $options: "i" } },
-        { "client.societe": { $regex: s, $options: "i" } },
-        { "client.email": { $regex: s, $options: "i" } },
-      ];
-    }
+if (tab === "autres_produits") {
+  filters.push({
+    $or: [
+      { pitchInstances: { $exists: false } },
+      { pitchInstances: { $size: 0 } },
+    ],
+  });
+}
 
-    const rows = await AgentPdf.find(query).sort({ createdAt: -1 }).lean();
+// recherche
+const s = String(q || "").trim();
+if (s) {
+  filters.push({
+    $or: [
+      { devisNumber: { $regex: s, $options: "i" } },
+      { "client.nom": { $regex: s, $options: "i" } },
+      { "client.prenom": { $regex: s, $options: "i" } },
+      { "client.societe": { $regex: s, $options: "i" } },
+      { "client.email": { $regex: s, $options: "i" } },
+    ],
+  });
+}
+
+if (filters.length) query.$and = filters;
+    const rows = await AgentPdf.find(query)
+  .select("-pdfBuffer -htmlTable -apLinesJson")
+  .sort({ createdAt: -1 })
+  .lean();
     res.json(rows);
   } catch (e) {
     console.error(e);
@@ -1501,9 +1514,13 @@ if (
 
     // ✅ numéro type "DE01048"
     const devisNumber = await nextDevisNumberCounter4();
-
-    const saved = await AgentPdf.create({
+const saved = await AgentPdf.create({
       agentId: agent._id,
+      agentSnapshot: {
+        nom: agent.nom || "",
+        prenom: agent.prenom || "",
+        email: agent.email || "",
+      },
       client,
       devisNumber,
       pitchInstances,
@@ -2157,7 +2174,7 @@ router.post("/password/reset", async (req, res) => {
 
 
 // ✅ GET /api/agents/admin/list
-router.get("/admin/list", async (req, res) => {
+router.get("/admin/list", requireAgentAuth, requireAdmin, async (req, res) => {
   try {
     const agents = await Agent.find()
   .sort({ createdAt: -1 })
@@ -2205,7 +2222,12 @@ router.put("/admin/agents/:id", requireAgentAuth, requireAdmin, async (req, res)
 
     // normalisations
     if (patch.email) patch.email = String(patch.email).toLowerCase().trim();
-    if (patch.parrainId === "" || patch.parrainId === null) patch.parrainId = null;
+  
+if (patch.parrainId === "" || patch.parrainId === null) {
+  patch.parrainId = null;
+} else if (patch.parrainId && !mongoose.Types.ObjectId.isValid(patch.parrainId)) {
+  return res.status(400).json({ message: "parrainId invalide (doit être un ObjectId)." });
+}
 
     const updated = await Agent.findByIdAndUpdate(id, patch, { new: true })
       .populate("parrainId", "_id nom prenom email")
