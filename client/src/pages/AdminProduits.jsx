@@ -279,7 +279,7 @@ export default function AdminProduits() {
         color: "#fff",
       }}
     >
-      Système
+      Murs leds
     </span>
   )}
 </div>
