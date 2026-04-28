@@ -120,21 +120,31 @@ function normalizeBool(v) {
   return v === true || v === "true" || v === 1 || v === "1";
 }
 
+
+
 function buildDevisMentions({ finalType }) {
   const base =
-    "Devis gratuit. Les prix TTC sont établis sur la base des taux de TVA en vigueur à la date de remise de l'offre. Toute variation de ces taux sera répercutée sur les prix.";
+    "Devis gratuit. Les prix TTC sont établis sur la base des taux de TVA en vigueur à la date de remise de l’offre. Toute variation de ces taux sera répercutée sur les prix.";
 
   let fin = "";
+
   if (finalType === "achat") {
-    fin = "L’acceptation du devis vaut commande ferme et acceptation des conditions générales de vente.";
+    fin =
+      "L’acceptation du devis vaut commande ferme et acceptation des conditions générales de vente.";
   } else if (finalType === "location_evenementiel") {
-    fin = "L’acceptation du devis vaut commande ferme et acceptation des conditions générales de location-évènementiel.";
+    fin =
+      "L’acceptation du devis vaut commande ferme et acceptation des conditions générales de location-événementiel.";
   } else {
-    fin = "L’acceptation du devis vaut commande ferme et acceptation des conditions générales de location-maintenance.";
+    // location_maintenance (default)
+    fin =
+      "L’acceptation du devis vaut commande ferme et acceptation des conditions générales de location-maintenance.";
   }
 
   return `${base} ${fin}`;
 }
+
+
+
 
 function guessFixationName(pi = {}) {
   if (pi.fixationName) return String(pi.fixationName);
