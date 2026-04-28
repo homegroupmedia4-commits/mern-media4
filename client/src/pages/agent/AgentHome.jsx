@@ -1548,26 +1548,32 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                     <div className="agenthome-subsectionTitle">Financement :</div>
 
                     <div className="agenthome-selectRow">
-                      <select
-                        className="agenthome-select"
-                        value={pi.financementMonths}
-                        onChange={(e) =>
 
-                          
-                          updatePitchInstance(pi.instanceId, {  financementMonths: value,
-    optionsFinancement: [value], // ✅ auto-coché })
+                      
+                   <select
+  className="agenthome-select"
+  value={pi.financementMonths}
+  onChange={(e) => {
+    const value = String(e.target.value);
 
-                          
-                        }
-                      >
-                        {(durations.length ? durations : [{ months: 63 }, { months: 48 }, { months: 36 }]).map(
-                          (d) => (
-                            <option key={d._id || d.months} value={String(d.months)}>
-                              {d.months} mois
-                            </option>
-                          )
-                        )}
-                      </select>
+    updatePitchInstance(pi.instanceId, {
+      financementMonths: value,
+      optionsFinancement: [value],
+    });
+  }}
+>
+  {(durations.length
+    ? durations
+    : [{ months: 63 }, { months: 48 }, { months: 36 }]
+  ).map((d) => (
+    <option key={d._id || d.months} value={String(d.months)}>
+      {d.months} mois
+    </option>
+  ))}
+</select>
+
+
+                                              
 
                                               {/* OPTIONS */}
 <div className="agenthome-subsection">
