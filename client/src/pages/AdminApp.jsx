@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import "../App.css";
 
-const ADMIN_PASSWORD = "Homegroup91?";
+
 const STORAGE_KEY = "m4_admin_authed_v1";
 
 // ✅ token admin pour appeler /api/agents/* (requireAgentAuth)
@@ -54,52 +54,35 @@ const API = "";
     return !!t;
   };
 
-  // ✅ auto-login agent admin (si tu définis VITE_ADMIN_EMAIL + VITE_ADMIN_PASS)
-const ensureAdminApiToken = async (pwd = "") => {
-  // Déjà OK ?
-const existing = localStorage.getItem(ADMIN_TOKEN_KEY);
-if (existing) {
-  try {
-    const res = await fetch(`${API}/api/agents/me`, {
-      headers: { Authorization: `Bearer ${existing}` },
-    });
-    if (res.ok) {
-      setTokenStatus({ loading: false, ok: true, msg: "" });
-      return;
+// ✅ Vérifie le token admin, si expiré → force reconnexion
+  const ensureAdminApiToken = async () => {
+    const existing = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (existing) {
+      try {
+        const res = await fetch(`${API}/api/agents/me`, {
+          headers: { Authorization: `Bearer ${existing}` },
+        });
+        if (res.ok) {
+          setTokenStatus({ loading: false, ok: true, msg: "" });
+          return;
+        }
+      } catch {}
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
     }
-  } catch {}
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-}
 
-  setTokenStatus({ loading: true, ok: false, msg: "" });
-
-  try {
-    const res = await fetch(`${API}/api/agents/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: pwd || ADMIN_PASSWORD }),
-    });
-
-    if (!res.ok) throw new Error(await res.text());
-
-    const data = await res.json();
-    if (!data?.token) throw new Error("No token");
-
-    localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
-    setTokenStatus({ loading: false, ok: true, msg: "" });
-  } catch (e) {
-    console.error(e);
     setTokenStatus({
       loading: false,
       ok: false,
-      msg: "Impossible d’obtenir le token admin API. Vérifie le mot de passe admin côté serveur.",
+      msg: "Token admin expiré. Reconnecte-toi.",
     });
-  }
-};
 
-useEffect(() => {
-  setSidebarOpen(false);
-}, [location.pathname]);
+    localStorage.removeItem(STORAGE_KEY);
+    setIsAuthed(false);
+  };
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
 
 useEffect(() => {
@@ -120,23 +103,42 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed]);
 
-  const handleLogin = async (e) => {
+
+  
+const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-if (password === ADMIN_PASSWORD) {
-  localStorage.setItem(STORAGE_KEY, "1");
-  setIsAuthed(true);
 
-  const pwd = password; // garde avant reset
-  setPassword("");
+    try {
+      const res = await fetch(`${API}/api/agents/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
-  await ensureAdminApiToken(pwd);
-  return;
-}
+      if (!res.ok) {
+        setError("Mot de passe incorrect.");
+        return;
+      }
 
+      const data = await res.json();
+      if (!data?.token) {
+        setError("Mot de passe incorrect.");
+        return;
+      }
 
-    setError("Mot de passe incorrect.");
+      localStorage.setItem(STORAGE_KEY, "1");
+      localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+      setIsAuthed(true);
+      setPassword("");
+      setTokenStatus({ loading: false, ok: true, msg: "" });
+    } catch {
+      setError("Erreur de connexion au serveur.");
+    }
   };
+
+
+  
 
   const handleLogout = () => {
     localStorage.removeItem(STORAGE_KEY);
@@ -230,7 +232,8 @@ if (password === ADMIN_PASSWORD) {
                 : tokenStatus.msg ||
                   "Token API manquant. Connecte-toi sur /agent/login, ou configure VITE_ADMIN_EMAIL/VITE_ADMIN_PASS."}
               <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button className="btn btn-dark" type="button" onClick={() => ensureAdminApiToken(ADMIN_PASSWORD)}>
+                
+         <button className="btn btn-dark" type="button" onClick={() => ensureAdminApiToken()}>
   Réessayer
 </button>
 
