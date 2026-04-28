@@ -59,7 +59,22 @@ export function safeJsonParse(str, fallback = null) {
 
 export function getWallLedsProductId(products) {
   const p = (products || []).find(
+    (x) => export function getWallLedsProductId(products) {
+  if (!Array.isArray(products)) return "";
+
+  // ✅ priorité au systemKey
+  const byKey = products.find(
+    (x) => String(x?.systemKey || "").toLowerCase() === "wall_leds"
+  );
+  if (byKey) return byKey._id || byKey.id || "";
+
+  // ⚠️ fallback legacy (au cas où)
+  const byName = products.find(
     (x) => (x?.name || "").toLowerCase().trim() === "murs leds"
+  );
+
+  return byName?._id || byName?.id || "";
+}
   );
   return p?._id || p?.id || "";
 }
