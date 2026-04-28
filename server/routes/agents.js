@@ -246,12 +246,26 @@ const cat = String(
       : "";
 
     const description = [
-      [part1, part2 ? `— ${part2} —` : null].filter(Boolean).join(" "),
-      part3 ? `${part3} — ${ecranTwoLines}` : ecranTwoLines || "",
-    ]
-      .filter(Boolean)
-      .join("\n")
-      .trim();
+  [part1, part2 ? `— ${part2} —` : null].filter(Boolean).join(" "),
+  part3 ? `${part3} — ${ecranTwoLines}` : ecranTwoLines || "",
+  optionsText // ✅ AJOUT ICI
+]
+  .filter(Boolean)
+  .join("\n")
+  .trim();
+
+    // ✅ OPTIONS FINANCEMENT
+let optionsText = "";
+
+if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
+  const formatted = pi.optionsFinancement.map((o) =>
+    o === "achat" ? "Achat" : `${o} mois`
+  );
+
+  optionsText = `Options (${formatted.join(", ")})`;
+}
+
+    
 
     const qty = parseInt(pi.quantite || "1", 10) || 1;
 
