@@ -58,11 +58,9 @@ export function safeJsonParse(str, fallback = null) {
 }
 
 export function getWallLedsProductId(products) {
-  const p = (products || []).find(
-    (x) => export function getWallLedsProductId(products) {
   if (!Array.isArray(products)) return "";
 
-  // ✅ priorité au systemKey
+  // ✅ priorité au systemKey (propre)
   const byKey = products.find(
     (x) => String(x?.systemKey || "").toLowerCase() === "wall_leds"
   );
@@ -70,14 +68,14 @@ export function getWallLedsProductId(products) {
 
   // ⚠️ fallback legacy (au cas où)
   const byName = products.find(
-    (x) => (x?.name || "").toLowerCase().trim() === "murs leds"
+    (x) => String(x?.name || "").toLowerCase().trim() === "murs leds"
   );
 
   return byName?._id || byName?.id || "";
 }
-  );
-  return p?._id || p?.id || "";
-}
+
+
+
 
 export function getMaxDurationMonths(durations, fallback = 63) {
   const max = Math.max(
