@@ -1552,7 +1552,12 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                         className="agenthome-select"
                         value={pi.financementMonths}
                         onChange={(e) =>
-                          updatePitchInstance(pi.instanceId, { financementMonths: e.target.value })
+
+                          
+                          updatePitchInstance(pi.instanceId, {  financementMonths: value,
+    optionsFinancement: [value], // ✅ auto-coché })
+
+                          
                         }
                       >
                         {(durations.length ? durations : [{ months: 63 }, { months: 48 }, { months: 36 }]).map(
@@ -1563,8 +1568,49 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                           )
                         )}
                       </select>
+
+                                              {/* OPTIONS */}
+<div className="agenthome-subsection">
+  <div className="agenthome-subsectionTitle">Options :</div>
+
+  <div className="agenthome-optionsRow">
+    {["24", "36", "48", "63", "achat"].map((opt) => {
+      const checked = (pi.optionsFinancement || []).includes(opt);
+
+      return (
+        <label key={opt} className="agenthome-optionItem">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => {
+              const current = pi.optionsFinancement || [];
+
+              let next;
+              if (e.target.checked) {
+                next = [...current, opt];
+              } else {
+                next = current.filter((o) => o !== opt);
+              }
+
+              updatePitchInstance(pi.instanceId, {
+                optionsFinancement: next,
+              });
+            }}
+          />
+
+          {opt === "achat" ? "Achat" : `${opt} mois`}
+        </label>
+      );
+    })}
+  </div>
+</div>
+
+                                              
                     </div>
                   </div>
+
+
+                                              
 
                   {/* Résultat */}
                   <div className="agenthome-subsection">
