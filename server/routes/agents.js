@@ -245,16 +245,10 @@ const cat = String(
         : ecranLabel
       : "";
 
-    const description = [
-  [part1, part2 ? `— ${part2} —` : null].filter(Boolean).join(" "),
-  part3 ? `${part3} — ${ecranTwoLines}` : ecranTwoLines || "",
-  optionsText // ✅ AJOUT ICI
-]
-  .filter(Boolean)
-  .join("\n")
-  .trim();
 
-    // ✅ OPTIONS FINANCEMENT
+    
+
+// ✅ OPTIONS FINANCEMENT (mettre AVANT)
 let optionsText = "";
 
 if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
@@ -265,8 +259,20 @@ if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
   optionsText = `Options (${formatted.join(", ")})`;
 }
 
-    
+// ✅ ENSUITE description
+const description = [
+  [part1, part2 ? `— ${part2} —` : null].filter(Boolean).join(" "),
+  part3 ? `${part3} — ${ecranTwoLines}` : ecranTwoLines || "",
+  optionsText
+]
+  .filter(Boolean)
+  .join("\n")
+  .trim();
 
+
+
+
+    
     const qty = parseInt(pi.quantite || "1", 10) || 1;
 
     // ✅ On garde TES MONTANTS calculés front
