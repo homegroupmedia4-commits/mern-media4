@@ -12,6 +12,8 @@ const ProductSchema = new mongoose.Schema(
   sparse: true,
 },
     isActive: { type: Boolean, default: true },
+
+    order: { type: Number, default: 0, index: true }, 
   },
   { timestamps: true }
 );
