@@ -114,6 +114,32 @@ export default function AdminProduits() {
     }
   };
 
+  const move = async (index, direction) => {
+  const newRows = [...rows];
+  const targetIndex = index + direction;
+
+  if (targetIndex < 0 || targetIndex >= newRows.length) return;
+
+  // swap
+  [newRows[index], newRows[targetIndex]] = [newRows[targetIndex], newRows[index]];
+
+  setRows(newRows);
+
+  try {
+    await fetch(`${API}/api/products/reorder`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify(newRows.map((r) => ({ _id: r._id }))),
+    });
+  } catch (e) {
+    console.error(e);
+    setError("Réorganisation impossible.");
+  }
+};
+
   const startEdit = (row) => {
     setEditingId(row._id);
     setEditingValue(row.name || "");
@@ -252,7 +278,7 @@ export default function AdminProduits() {
             </thead>
 
             <tbody>
-              {rows.map((row) => {
+          {rows.map((row, index) => {
                 const isEditing = editingId === row._id;
             const isWallLeds = row.systemKey === "wall_leds";
 
@@ -316,6 +342,25 @@ export default function AdminProduits() {
                             >
                               {row.isActive ? "Désactiver" : "Activer"}
                             </button>
+
+
+                            <button
+  className="btn btn-outline"
+  type="button"
+  onClick={() => move(index, -1)}
+>
+ En haut 
+</button>
+
+<button
+  className="btn btn-outline"
+  type="button"
+  onClick={() => move(index, +1)}
+>
+En bas 
+</button>
+
+                            
 
                            <button
   className="btn btn-outline"
