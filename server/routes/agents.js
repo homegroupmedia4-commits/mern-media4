@@ -319,8 +319,8 @@ for (const pi of pitchInstances || []) {
     code: "FIN", // ou "FINMDF" si tu veux
     description: devisLabel,
     qty,
-    puHt: finishPrice,
-    montantHt: fmt2(finishPrice * qty),
+    puHt: "INCLUS",
+    montantHt: "INCLUS",
     tva: tvaRate,
     scope: "mensualite",
     kind: "finish",
@@ -715,7 +715,7 @@ const finishSuffix = finishLabel ? ` - ${finishLabel}` : "";
   if (qtyPitchTotal > 0) {
     instLines.push({
       code: "INST",
-     description: `INSTALLATION (Murs leds) - ${fixationLabel}${fixationSuffix}${finishSuffix}`,
+     description: `INSTALLATION (Murs leds) - ${fixationLabel}${fixationSuffix}`,
 
       qty: qtyPitchTotal,
       puHt: 600,
