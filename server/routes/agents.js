@@ -1114,10 +1114,18 @@ const stopY = bottomY - 10; // ✅ garde une marge avant les blocs du bas
         cell(line.description || "", cols[1].w, "left", boldRow || isDetail, 8.7);
         cell(line.qty === null ? "" : String(line.qty || ""), cols[2].w, "center", boldRow, 8.7);
 
-        const pu = line.puHt === "-" ? "-" : line.puHt === "" ? "" : line.puHt === null ? "" : fmt2(line.puHt || 0);
+    const formatCell = (v) => {
+  if (v === "-" || v === "" || v === null || v === undefined) return v === "-" ? "-" : "";
+  if (typeof v === "string") return v; // ✅ garde "INCLUS", "OFFERT"
+  return fmt2(v);
+};
+
+const pu = formatCell(line.puHt);
+
+        
         cell(pu, cols[3].w, "right", boldRow, 8.7);
 
-        cell(String(line.montantHt || ""), cols[4].w, "right", boldRow, 8.7);
+        cell(formatCell(line.montantHt), cols[4].w, "right", boldRow, 8.7);
         const tvaTxt =
   line.tva === "-" || line.tva === "" || line.tva === null || line.tva === undefined
     ? (line.tva === "-" ? "-" : "")
