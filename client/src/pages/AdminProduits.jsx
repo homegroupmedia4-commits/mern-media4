@@ -186,6 +186,13 @@ export default function AdminProduits() {
   };
 
   const remove = async (row) => {
+
+    if (row.systemKey === "wall_leds") {
+  setError("Ce produit système ne peut pas être supprimé.");
+  return;
+}
+
+    
     const ok = confirm(`Supprimer le produit "${row.name}" ?`);
     if (!ok) return;
 
@@ -247,6 +254,7 @@ export default function AdminProduits() {
             <tbody>
               {rows.map((row) => {
                 const isEditing = editingId === row._id;
+            const isWallLeds = row.systemKey === "wall_leds";
 
                 return (
                   <tr key={row._id}>
@@ -258,7 +266,23 @@ export default function AdminProduits() {
                           onChange={(e) => setEditingValue(e.target.value)}
                         />
                       ) : (
-                        <div className="name-chip">{row.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+  <div className="name-chip">{row.name}</div>
+
+  {isWallLeds && (
+    <span
+      style={{
+        fontSize: 12,
+        padding: "2px 6px",
+        borderRadius: 6,
+        background: "#111",
+        color: "#fff",
+      }}
+    >
+      Système
+    </span>
+  )}
+</div>
                       )}
                     </td>
 
@@ -293,9 +317,16 @@ export default function AdminProduits() {
                               {row.isActive ? "Désactiver" : "Activer"}
                             </button>
 
-                            <button className="btn btn-outline" type="button" onClick={() => remove(row)}>
-                              Supprimer
-                            </button>
+                           <button
+  className="btn btn-outline"
+  type="button"
+  onClick={() => remove(row)}
+  disabled={isWallLeds}
+  style={isWallLeds ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+>
+  Supprimer
+</button>
+                            
                           </>
                         )}
                       </div>
