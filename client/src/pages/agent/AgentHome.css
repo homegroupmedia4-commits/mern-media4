@@ -11,6 +11,18 @@
 }
 
 
+.agenthome-optionsRow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.agenthome-optionItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .agenthome-card{
   width: 420px;
   background:#fff;
