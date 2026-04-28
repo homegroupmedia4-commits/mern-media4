@@ -325,6 +325,9 @@ if (missing.length) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
         const active = list.filter((p) => p?.isActive !== false);
+
+
+        
 const ORDER = ["wall_leds", "totems", "kiosques", "ecrans_muraux"];
 
 const sorted = active.slice().sort((a, b) => {
@@ -345,24 +348,7 @@ const sorted = active.slice().sort((a, b) => {
   return ai - bi;
 });
 
-const norm = (s) =>
-  String(s || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, ""); // enlève accents
 
-const sorted = active.slice().sort((a, b) => {
-  const an = norm(a?.name);
-  const bn = norm(b?.name);
-
-  const ai = ORDER.indexOf(an);
-  const bi = ORDER.indexOf(bn);
-
-  if (ai === -1 && bi === -1) return an.localeCompare(bn);
-  if (ai === -1) return 1;
-  if (bi === -1) return -1;
-  return ai - bi;
-});
 
 setProducts(sorted);
 
