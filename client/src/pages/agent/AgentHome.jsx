@@ -325,7 +325,25 @@ if (missing.length) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
         const active = list.filter((p) => p?.isActive !== false);
-const ORDER = ["murs leds", "totems", "kiosques", "ecrans muraux"];
+const ORDER = ["wall_leds", "totems", "kiosques", "ecrans_muraux"];
+
+const sorted = active.slice().sort((a, b) => {
+  const ak = String(a?.systemKey || "").toLowerCase();
+  const bk = String(b?.systemKey || "").toLowerCase();
+
+  const ai = ORDER.indexOf(ak);
+  const bi = ORDER.indexOf(bk);
+
+  if (ai === -1 && bi === -1) {
+    // fallback alphabétique sur le nom affiché
+    return String(a?.name || "").localeCompare(String(b?.name || ""));
+  }
+
+  if (ai === -1) return 1;
+  if (bi === -1) return -1;
+
+  return ai - bi;
+});
 
 const norm = (s) =>
   String(s || "")
