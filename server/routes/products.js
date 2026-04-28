@@ -3,7 +3,7 @@ const router = express.Router();
 const Product = require("../models/Product");
 
 router.get("/", async (req, res) => {
-  const list = await Product.find().sort({ createdAt: -1 });
+ const list = await Product.find().sort({ order: 1, createdAt: -1 });
   res.json(list);
 });
 
@@ -17,6 +17,26 @@ router.post("/", async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(400).json({ message: "Création impossible." });
+  }
+});
+
+router.patch("/reorder", async (req, res) => {
+  try {
+    const items = Array.isArray(req.body) ? req.body : [];
+
+    const bulk = items.map((item, index) => ({
+      updateOne: {
+        filter: { _id: item._id },
+        update: { order: index },
+      },
+    }));
+
+    await Product.bulkWrite(bulk);
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ message: "Reorder impossible." });
   }
 });
 
