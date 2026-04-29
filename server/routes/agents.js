@@ -1109,31 +1109,36 @@ const bottomY = Math.min(minBottomY, desiredBottomY);
       const taxX = left;
       const taxRowH = 18;
 
-      doc.save();
-      doc.rect(taxX, bottomY, taxW, taxRowH).stroke();
-      const taxColW = taxW / 3;
-      for (let i = 0; i < 3; i++) doc.rect(taxX + taxColW * i, bottomY, taxColW, taxRowH).fillAndStroke(GREEN);
-      doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
-      doc.text("Taux", taxX + 6, bottomY + 5);
-      doc.text("Base HT", taxX + taxColW + 6, bottomY + 5);
-      doc.text("Montant TVA", taxX + taxColW * 2 + 6, bottomY + 5);
-      doc.restore();
+      // doc.save();
+      // doc.rect(taxX, bottomY, taxW, taxRowH).stroke();
+      // const taxColW = taxW / 3;
+      // for (let i = 0; i < 3; i++) doc.rect(taxX + taxColW * i, bottomY, taxColW, taxRowH).fillAndStroke(GREEN);
+      // doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
+      // doc.text("Taux", taxX + 6, bottomY + 5);
+      // doc.text("Base HT", taxX + taxColW + 6, bottomY + 5);
+      // doc.text("Montant TVA", taxX + taxColW * 2 + 6, bottomY + 5);
+      // doc.restore();
 
-      doc.save();
-      doc.rect(taxX, bottomY + taxRowH, taxW, taxRowH).stroke();
-      doc.moveTo(taxX + taxColW, bottomY + taxRowH).lineTo(taxX + taxColW, bottomY + taxRowH * 2).stroke();
-      doc.moveTo(taxX + taxColW * 2, bottomY + taxRowH).lineTo(taxX + taxColW * 2, bottomY + taxRowH * 2).stroke();
-      doc.restore();
+      // doc.save();
+      // doc.rect(taxX, bottomY + taxRowH, taxW, taxRowH).stroke();
+      // doc.moveTo(taxX + taxColW, bottomY + taxRowH).lineTo(taxX + taxColW, bottomY + taxRowH * 2).stroke();
+      // doc.moveTo(taxX + taxColW * 2, bottomY + taxRowH).lineTo(taxX + taxColW * 2, bottomY + taxRowH * 2).stroke();
+      // doc.restore();
 
-      doc.font("Helvetica").fontSize(9).fillColor(DARK);
-      doc.text("20,00", taxX + 6, bottomY + taxRowH + 5);
-      doc.text(fmt2(t.mensualiteHt), taxX + taxColW + 6, bottomY + taxRowH + 5);
-      doc.text(fmt2(t.totalTva), taxX + taxColW * 2 + 6, bottomY + taxRowH + 5);
+      // doc.font("Helvetica").fontSize(9).fillColor(DARK);
+      // doc.text("20,00", taxX + 6, bottomY + taxRowH + 5);
+      // doc.text(fmt2(t.mensualiteHt), taxX + taxColW + 6, bottomY + taxRowH + 5);
+      // doc.text(fmt2(t.totalTva), taxX + taxColW * 2 + 6, bottomY + taxRowH + 5);
 
       // Signature (gauche sous TVA)
       doc.font("Helvetica").fontSize(9).fillColor(DARK);
-      doc.text("Pour le client (signature précédée de la", taxX, bottomY + 44);
-      doc.font("Helvetica-Bold").text("mention : Lu et approuvé, bon pour accord)", taxX, bottomY + 56);
+   doc.text("Pour le client...", left, bottomY + 10);
+doc.font("Helvetica-Bold").text(
+  "mention : Lu et approuvé, bon pour accord)",
+  left,
+  bottomY + 22
+);
+      // doc.font("Helvetica-Bold").text("mention : Lu et approuvé, bon pour accord)", taxX, bottomY + 56);
 
       // Totals box (droite)
       const boxW = contentW * 0.40;
