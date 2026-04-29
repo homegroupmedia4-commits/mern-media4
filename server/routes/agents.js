@@ -540,21 +540,27 @@ const abobrLine =
   // -----------------------------
   // 5) INFO + hors mensualité
   // -----------------------------
-  const infoLine =
-    qtyTotalProducts > 0
-      ? [
-          {
-            code: "INFO",
-            description: "Non inclus dans la mensualité, facturation\nen sus :",
-            qty: "/",
-            puHt: "-",
-            montantHt: "-",
-            tva: "-",
-            scope: "hors_mensualite",
-            isInfo: true,
-          },
-        ]
-      : [];
+  const isAchat = String(finalType) === "achat";
+
+const infoDescription = isAchat
+  ? "Non inclus : ABONNEMENT BRONZE LOGICIEL ET\nMAINTENANCE"
+  : "Frais annexes non inclus dans la mensualité :";
+
+const infoLine =
+  qtyTotalProducts > 0
+    ? [
+        {
+          code: "INFO",
+          description: infoDescription,
+          qty: "/",
+          puHt: "-",
+          montantHt: "-",
+          tva: "-",
+          scope: "hors_mensualite",
+          isInfo: true,
+        },
+      ]
+    : [];
 
   const portOffert = normalizeBool(client.fraisPortOfferts);
   const instOffert = normalizeBool(client.fraisInstallationOfferts);
