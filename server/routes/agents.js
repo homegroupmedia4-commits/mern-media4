@@ -673,7 +673,7 @@ if (clientComment) {
   // -----------------------------
 
 
-const abobrTotal = isAchat
+const abobrTotal = isAchatGlobal
   ? 0
   : abobrLine.reduce((s, l) => s + (Number(l.montantHt) || 0), 0);
 
