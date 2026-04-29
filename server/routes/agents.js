@@ -1291,14 +1291,14 @@ const bottomY = Math.min(minBottomY, desiredBottomY);
 const labels = isAchat
   ? [
       ["Total HT", fmt2(t.mensualiteHt)],       // ✅ renommé
-      ["Total TVA", fmt2(t.totalTva)],
+      ["Total TVA 20%", fmt2(t.totalTva)],
       ["Total TTC", fmt2(t.totalTtc)],
       ["Acomptes à régler", fmt2(0)],
       // ❌ PAS de "Mensualité TTC"
     ]
   : [
       ["Mensualité HT", fmt2(t.mensualiteHt)],
-      ["Total TVA", fmt2(t.totalTva)],
+      ["Total TVA 20%", fmt2(t.totalTva)],
       ["Total TTC", fmt2(t.totalTtc)],
       ["Acomptes à régler", fmt2(0)],
       ["Mensualité TTC", `${fmt2(t.totalTtc)} €`],
