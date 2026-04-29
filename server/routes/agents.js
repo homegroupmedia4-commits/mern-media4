@@ -1286,13 +1286,23 @@ const bottomY = Math.min(minBottomY, desiredBottomY);
       const boxX = left + contentW - boxW;
       const boxY = bottomY;
 
-      const labels = [
-        ["Mensualité HT", fmt2(t.mensualiteHt)],
-        ["Total TVA", fmt2(t.totalTva)],
-        ["Total TTC", fmt2(t.totalTtc)],
-        ["Acomptes à régler", fmt2(0)],
-        ["Mensualité TTC", `${fmt2(t.totalTtc)} €`],
-      ];
+  const isAchat = String(docData.finalType || "") === "achat";
+
+const labels = isAchat
+  ? [
+      ["Total HT", fmt2(t.mensualiteHt)],       // ✅ renommé
+      ["Total TVA", fmt2(t.totalTva)],
+      ["Total TTC", fmt2(t.totalTtc)],
+      ["Acomptes à régler", fmt2(0)],
+      // ❌ PAS de "Mensualité TTC"
+    ]
+  : [
+      ["Mensualité HT", fmt2(t.mensualiteHt)],
+      ["Total TVA", fmt2(t.totalTva)],
+      ["Total TTC", fmt2(t.totalTtc)],
+      ["Acomptes à régler", fmt2(0)],
+      ["Mensualité TTC", `${fmt2(t.totalTtc)} €`],
+    ];
 
       const lineH = 18;
       doc.rect(boxX, boxY, boxW, lineH * labels.length).stroke();
@@ -1592,6 +1602,7 @@ const saved = await AgentPdf.create({
       pitchInstances,
       otherSelections,
       validityDays,
+    finalType, 
       lines,
       totals,
       devisMentions,
