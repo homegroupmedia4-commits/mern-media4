@@ -546,7 +546,7 @@ const abobrLine =
   // -----------------------------
 
 
-const infoDescription = isAchat
+const infoDescription = isAchatGlobal
   ? "Non inclus : ABONNEMENT BRONZE LOGICIEL ET\nMAINTENANCE"
   : "Frais annexes non inclus dans la mensualité :";
 
