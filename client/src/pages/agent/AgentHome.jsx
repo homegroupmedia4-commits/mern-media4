@@ -532,14 +532,23 @@ const sorted = (Array.isArray(d) ? d : [])
 
 setDurations(sorted);
 
+        
+
 // ✅ appliquer la plus grande durée par défaut aux pitchInstances si vide
 const maxMonths = String(sorted[sorted.length - 1]?.months || 63);
 
 setPitchInstances((prev) =>
-  prev.map((pi) =>
-    pi.financementMonths ? pi : { ...pi, financementMonths: maxMonths }
-  )
+  prev.map((pi) => {
+    if (pi.financementMonths) return pi;
+
+    return {
+      ...pi,
+      financementMonths: maxMonths,
+      optionsFinancement: [maxMonths], // ✅ synchro automatique
+    };
+  })
 );
+        
 
 
       } catch (e) {
@@ -1589,7 +1598,9 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
 
       <div className="agenthome-optionsRow">
         {["24", "36", "48", "63", "achat"].map((opt) => {
-          const checked = (pi.optionsFinancement || []).includes(opt);
+    const checked =
+  (pi.optionsFinancement || []).includes(opt) ||
+  String(pi.financementMonths) === opt;
 
           return (
             <label key={opt} className="agenthome-optionItem">
