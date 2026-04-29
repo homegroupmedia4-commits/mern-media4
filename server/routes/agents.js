@@ -1138,7 +1138,7 @@ const bottomY = Math.min(minBottomY, desiredBottomY);
 
       // Signature (gauche sous TVA)
       doc.font("Helvetica").fontSize(9).fillColor(DARK);
-   doc.text("Pour le client...", left, bottomY + 10);
+   doc.text("Pour le client (signature précédée de la", left, bottomY + 10);
 doc.font("Helvetica-Bold").text(
   "mention : Lu et approuvé, bon pour accord)",
   left,
