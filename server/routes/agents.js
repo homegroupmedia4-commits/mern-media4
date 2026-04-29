@@ -255,25 +255,30 @@ const cat = String(
 if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
 
   const baseMensuel = Number(pi.prixTotalHtMois || 0);
+  const baseMonths = parseInt(pi.financementMonths || 63, 10) || 63;
+
+  // ✅ reconstitution du total réel
+  const totalBase = baseMensuel * baseMonths;
 
   const formatted = pi.optionsFinancement.map((opt) => {
 
-    // 👉 LOCATION (36 / 63 mois)
+    // 👉 LOCATION
     if (opt !== "achat") {
-      return `${opt} mois : ${fmt2(baseMensuel)} € HT`;
+      const months = parseInt(opt, 10) || 1;
+
+      const mensuel = totalBase / months;
+
+      return `${months} mois : ${fmt2(mensuel)} € HT`;
     }
 
     // 👉 ACHAT
-    const months = parseInt(pi.financementMonths || 63, 10) || 63;
-
-    const prixAchat = baseMensuel * months * 0.6;
+    const prixAchat = totalBase * 0.6;
 
     return `Achat : ${fmt2(prixAchat)} € HT`;
   });
 
   optionsText = `Options :\n${formatted.join("\n")}`;
 }
-
     
 
 // ✅ ENSUITE description
