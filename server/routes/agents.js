@@ -1422,15 +1422,28 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
   finalType = "location_maintenance",
 } = req.body || {};
 
-// ✅ fallback: si front n’envoie pas finalType, on prend celui du 1er pitch
-if (
-  (!finalType || finalType === "location_maintenance") &&
-  Array.isArray(pitchInstances) &&
-  pitchInstances[0]?.typeFinancement
-) {
-  finalType = String(pitchInstances[0].typeFinancement).trim() || finalType;
+let ft = String(finalType || "")
+  .toLowerCase()
+  .trim();
+
+if (!ft || ft === "location_maintenance") {
+  const fallback = pitchInstances?.[0]?.typeFinancement;
+
+  if (fallback) {
+    ft = String(fallback)
+      .toLowerCase()
+      .trim();
+  }
 }
 
+// ✅ sécurité finale
+if (!ft) ft = "location_maintenance";
+
+finalType = ft;
+
+console.log("FINAL TYPE NORMALIZED:", finalType);
+
+    
 
     const hasPitch = Array.isArray(pitchInstances) && pitchInstances.length > 0;
     const hasOther = otherSelections && Object.keys(otherSelections).length > 0;
@@ -1448,6 +1461,10 @@ if (
 
     // ✅ numéro type "DE01048"
     const devisNumber = await nextDevisNumberCounter4();
+
+    console.log("FINAL TYPE SAVE:", finalType);
+
+    
 const saved = await AgentPdf.create({
       agentId: agent._id,
       agentSnapshot: {
