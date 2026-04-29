@@ -62,6 +62,12 @@ const AgentPdfSchema = new mongoose.Schema(
     devisNumber: { type: String, default: "" },
     validityDays: { type: Number, default: 30 },
 
+    finalType: {
+  type: String,
+  enum: ["achat", "location_maintenance", "location_evenementiel"],
+  default: "location_maintenance",
+},
+
     // ✅ Lignes du tableau
     lines: { type: [LineSchema], default: [] },
 
