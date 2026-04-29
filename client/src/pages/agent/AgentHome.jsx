@@ -1524,98 +1524,102 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
   })()}
 </div>
 
+
                   {/* Type financement */}
-                  <div className="agenthome-subsection">
-                    <div className="agenthome-subsectionTitle">Type de financement :</div>
-
-                    <div className="agenthome-selectRow">
-                      <select
-                        className="agenthome-select"
-                        value={pi.typeFinancement}
-                        onChange={(e) =>
-                          updatePitchInstance(pi.instanceId, { typeFinancement: e.target.value })
-                        }
-                      >
-                        <option value="location_maintenance">Location maintenance</option>
-                        <option value="location_evenementiel">Location événementiel</option>
-                        <option value="achat">Achat</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Durée */}
-                  <div className="agenthome-subsection">
-                    <div className="agenthome-subsectionTitle">Financement :</div>
-
-                    <div className="agenthome-selectRow">
-
-                      
-                   <select
-  className="agenthome-select"
-  value={pi.financementMonths}
-  onChange={(e) => {
-    const value = String(e.target.value);
-
-    updatePitchInstance(pi.instanceId, {
-      financementMonths: value,
-      optionsFinancement: [value],
-    });
-  }}
->
-  {(durations.length
-    ? durations
-    : [{ months: 63 }, { months: 48 }, { months: 36 }]
-  ).map((d) => (
-    <option key={d._id || d.months} value={String(d.months)}>
-      {d.months} mois
-    </option>
-  ))}
-</select>
-
-
-                                              
-
-                                              {/* OPTIONS */}
 <div className="agenthome-subsection">
-  <div className="agenthome-subsectionTitle">Options :</div>
+  <div className="agenthome-subsectionTitle">Type de financement :</div>
 
-  <div className="agenthome-optionsRow">
-    {["24", "36", "48", "63", "achat"].map((opt) => {
-      const checked = (pi.optionsFinancement || []).includes(opt);
+  <div className="agenthome-selectRow">
+    <select
+      className="agenthome-select"
+      value={pi.typeFinancement}
+      onChange={(e) => {
+        const value = e.target.value;
 
-      return (
-        <label key={opt} className="agenthome-optionItem">
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={(e) => {
-              const current = pi.optionsFinancement || [];
+        updatePitchInstance(pi.instanceId, {
+          typeFinancement: value,
 
-              let next;
-              if (e.target.checked) {
-                next = [...current, opt];
-              } else {
-                next = current.filter((o) => o !== opt);
-              }
-
-              updatePitchInstance(pi.instanceId, {
-                optionsFinancement: next,
-              });
-            }}
-          />
-
-          {opt === "achat" ? "Achat" : `${opt} mois`}
-        </label>
-      );
-    })}
+          // ✅ reset des options si achat
+          optionsFinancement: value === "achat" ? [] : (pi.optionsFinancement || []),
+        });
+      }}
+    >
+      <option value="location_maintenance">Location maintenance</option>
+      <option value="location_evenementiel">Location événementiel</option>
+      <option value="achat">Achat</option>
+    </select>
   </div>
 </div>
 
-                                              
-                    </div>
-                  </div>
 
+                  
+{/* Durée */}
+<div className="agenthome-subsection">
+  <div className="agenthome-subsectionTitle">Financement :</div>
 
+  {/* SELECT SEUL (plus de flex avec options) */}
+  <div className="agenthome-selectRow">
+    <select
+      className="agenthome-select"
+      value={pi.financementMonths}
+      onChange={(e) => {
+        const value = String(e.target.value);
+
+        updatePitchInstance(pi.instanceId, {
+          financementMonths: value,
+          optionsFinancement: [value],
+        });
+      }}
+    >
+      {(durations.length
+        ? durations
+        : [{ months: 63 }, { months: 48 }, { months: 36 }]
+      ).map((d) => (
+        <option key={d._id || d.months} value={String(d.months)}>
+          {d.months} mois
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* ✅ OPTIONS EN DESSOUS + MASQUÉ SI ACHAT */}
+  {pi.typeFinancement !== "achat" && (
+    <div className="agenthome-subsection" style={{ marginTop: 10 }}>
+      <div className="agenthome-subsectionTitle">Options :</div>
+
+      <div className="agenthome-optionsRow">
+        {["24", "36", "48", "63", "achat"].map((opt) => {
+          const checked = (pi.optionsFinancement || []).includes(opt);
+
+          return (
+            <label key={opt} className="agenthome-optionItem">
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={(e) => {
+                  const current = pi.optionsFinancement || [];
+
+                  let next;
+                  if (e.target.checked) {
+                    next = [...current, opt];
+                  } else {
+                    next = current.filter((o) => o !== opt);
+                  }
+
+                  updatePitchInstance(pi.instanceId, {
+                    optionsFinancement: next,
+                  });
+                }}
+              />
+
+              {opt === "achat" ? "Achat" : `${opt} mois`}
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  )}
+</div>
                                               
 
                   {/* Résultat */}
