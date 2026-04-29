@@ -661,11 +661,17 @@ if (clientComment) {
   // -----------------------------
   // 6) TOTAUX (mensualité uniquement)
   // -----------------------------
+const isAchat = String(finalType) === "achat";
+
+const abobrTotal = isAchat
+  ? 0
+  : abobrLine.reduce((s, l) => s + (Number(l.montantHt) || 0), 0);
+
 const mensualiteBase =
   pitchLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
   otherMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
-   finishMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
-  (abobrLine.length ? 19.95 : 0);
+  finishMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
+  abobrTotal;
 
 
   const mensualiteHt = mensualiteBase;
