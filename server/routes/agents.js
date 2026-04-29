@@ -198,6 +198,10 @@ async function buildLinesAndTotals({
   client = {},
   finalType = "location_maintenance",
 }) {
+
+  const isAchatGlobal = String(finalType) === "achat";
+
+  
   const tvaRate = 20;
 
   // -----------------------------
@@ -452,10 +456,10 @@ const months = Math.max(
   parseInt(String(sel?.leasingMonths || 1), 10) || 1
 );
 
-const isAchat =
+const isAchatLine =
   String(sel?.typeFinancement || "location_maintenance") === "achat";
 
-const unit = isAchat
+const unit = isAchatLine
   ? (unitBase * months) * 0.6
   : unitBase;
 
@@ -540,7 +544,7 @@ const abobrLine =
   // -----------------------------
   // 5) INFO + hors mensualité
   // -----------------------------
-  const isAchat = String(finalType) === "achat";
+
 
 const infoDescription = isAchat
   ? "Non inclus : ABONNEMENT BRONZE LOGICIEL ET\nMAINTENANCE"
@@ -667,7 +671,7 @@ if (clientComment) {
   // -----------------------------
   // 6) TOTAUX (mensualité uniquement)
   // -----------------------------
-const isAchat = String(finalType) === "achat";
+
 
 const abobrTotal = isAchat
   ? 0
