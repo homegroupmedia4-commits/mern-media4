@@ -248,16 +248,33 @@ const cat = String(
 
     
 
-// ✅ OPTIONS FINANCEMENT (mettre AVANT)
-let optionsText = "";
+
+
+    let optionsText = "";
 
 if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
-  const formatted = pi.optionsFinancement.map((o) =>
-    o === "achat" ? "Achat" : `${o} mois`
-  );
 
-  optionsText = `Options (${formatted.join(", ")})`;
+  const baseMensuel = Number(pi.prixTotalHtMois || 0);
+
+  const formatted = pi.optionsFinancement.map((opt) => {
+
+    // 👉 LOCATION (36 / 63 mois)
+    if (opt !== "achat") {
+      return `${opt} mois : ${fmt2(baseMensuel)} € HT`;
+    }
+
+    // 👉 ACHAT
+    const months = parseInt(pi.financementMonths || 63, 10) || 63;
+
+    const prixAchat = baseMensuel * months * 0.6;
+
+    return `Achat : ${fmt2(prixAchat)} € HT`;
+  });
+
+  optionsText = `Options :\n${formatted.join("\n")}`;
 }
+
+    
 
 // ✅ ENSUITE description
 const description = [
