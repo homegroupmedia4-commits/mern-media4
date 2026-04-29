@@ -268,13 +268,19 @@ if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
 
       const mensuel = totalBase / months;
 
-      return `${months} mois : ${fmt2(mensuel)} € HT`;
+// 🔥 arrondi métier
+const mensuelRounded = Math.floor(mensuel);
+
+return `${months} mois : ${fmt2(mensuelRounded)} € HT`;
     }
 
     // 👉 ACHAT
-    const prixAchat = totalBase * 0.6;
+  const prixAchat = totalBase * 0.6;
 
-    return `Achat : ${fmt2(prixAchat)} € HT`;
+// 🔥 arrondi métier
+const prixAchatRounded = Math.floor(prixAchat);
+
+return `Achat : ${fmt2(prixAchatRounded)} € HT`;
   });
 
   optionsText = `Options :\n${formatted.join("\n")}`;
