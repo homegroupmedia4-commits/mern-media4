@@ -85,6 +85,10 @@ const AgentPdfSchema = new mongoose.Schema(
   fraisAnnexesTtc: { type: Number, default: 0 },
     },
 
+
+    acomptePercent: { type: Number, default: 50 },
+
+    
     // ✅ Mentions
     devisMentions: { type: String, default: "" },
 
