@@ -1321,9 +1321,19 @@ for (let i = range.start; i < range.start + range.count; i++) {
   doc.font("Helvetica").fontSize(8).fillColor(GREY);
 
   
-const footerY = Math.min(pageH2 - 40, bottomY + 110); 
-// -40 = garde une marge du bas
-// bottomY + 110 = le met "plus haut" sous les blocs (TVA/totaux)
+// const footerY = Math.min(pageH2 - 40, bottomY + 110); 
+
+  
+const totalsHeight = lineH * labels.length;
+
+// position réelle du bas des totaux
+const totalsBottomY = bottomY + totalsHeight;
+
+// footer = juste en dessous + marge
+const footerY = Math.min(
+  pageH2 - 30,          // sécurité bas de page
+  totalsBottomY + 12    // espace propre
+);
 
 doc.text(footerText, left2, footerY, {
   width: contentW2,
