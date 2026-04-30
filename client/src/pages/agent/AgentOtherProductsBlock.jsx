@@ -134,6 +134,7 @@ const data = text ? JSON.parse(text) : [];
   next[pid] = {
     leasingMonths: m,
     typeFinancement: "location_maintenance", // ✅ NEW
+      optionsFinancement: [m],
     byMonths: { [m]: { checked: {} } },
   };
 } else {
@@ -144,6 +145,12 @@ const data = text ? JSON.parse(text) : [];
 
   // ✅ NEW fallback
   if (!next[pid].typeFinancement) next[pid].typeFinancement = "location_maintenance";
+
+          if (!next[pid].optionsFinancement) {
+  next[pid].optionsFinancement = [current];
+}
+
+          
 }
 
 
@@ -202,6 +209,7 @@ const data = text ? JSON.parse(text) : [];
       [productId]: {
         ...curr,
         leasingMonths: m,
+            optionsFinancement: [m],
         byMonths,
       },
     };
@@ -216,13 +224,20 @@ const data = text ? JSON.parse(text) : [];
       byMonths: {},
     };
 
-    return {
-      ...prev,
-      [productId]: {
-        ...curr,
-        typeFinancement: String(typeFinancement || "location_maintenance"),
-      },
-    };
+    
+ const value = String(typeFinancement || "location_maintenance");
+
+return {
+  ...prev,
+  [productId]: {
+    ...curr,
+    typeFinancement: value,
+    optionsFinancement: value === "achat" ? [] : (curr.optionsFinancement || []),
+  },
+};
+
+
+    
   });
 };
 
@@ -467,6 +482,52 @@ const rowsForProduct = otherSizes.filter((r) => {
       </option>
     ))}
   </select>
+
+
+              {sel.typeFinancement !== "achat" && (
+  <div className="agenthome-subsection" style={{ marginTop: 10 }}>
+    <div className="agenthome-subsectionTitle">Options :</div>
+
+    <div className="agenthome-optionsRow">
+      {["24", "36", "48", "63", "achat"].map((opt) => {
+        const checked =
+          (sel.optionsFinancement || []).includes(opt) ||
+          String(sel.leasingMonths) === opt;
+
+        return (
+          <label key={opt} className="agenthome-optionItem">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(e) => {
+                const current = sel.optionsFinancement || [];
+
+                let next;
+                if (e.target.checked) {
+                  next = [...current, opt];
+                } else {
+                  next = current.filter((o) => o !== opt);
+                }
+
+                setOtherSelections((prev) => ({
+                  ...prev,
+                  [productId]: {
+                    ...prev[productId],
+                    optionsFinancement: next,
+                  },
+                }));
+              }}
+            />
+
+            {opt === "achat" ? "Achat" : `${opt} mois`}
+          </label>
+        );
+      })}
+    </div>
+  </div>
+)}
+
+              
 </div>
 
 
