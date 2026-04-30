@@ -495,47 +495,36 @@ if (Array.isArray(sel?.optionsFinancement) && sel.optionsFinancement.length > 0)
 
 const baseMonthly = unitBase;
 
-// ✅ récupère la durée sélectionnée
+// ✅ durée sélectionnée
 const selectedMonths = Math.max(
   1,
   parseInt(String(sel?.leasingMonths || 1), 10) || 1
 );
 
-// ✅ reconstitue le vrai total
+// ✅ total reconstitué UNE SEULE FOIS
 const totalBase = baseMonthly * selectedMonths;
 
 const formatted = sel.optionsFinancement.map((opt) => {
 
+  // 👉 LOCATION (mensualités)
   if (opt !== "achat") {
     const months = parseInt(opt, 10) || 1;
 
-    // ✅ recalcul correct
     const mensuel = totalBase / months;
-
     const mensuelRounded = Math.floor(mensuel);
 
     return `${months} mois : ${fmt2(mensuelRounded)} € HT`;
   }
 
-  
-    
+  // 👉 ACHAT
+  const prixAchat = totalBase * 0.6;
+  const prixAchatRounded = Math.floor(prixAchat);
 
-    // 👉 ACHAT
-    const months = Math.max(
-      1,
-      parseInt(String(sel?.leasingMonths || 1), 10) || 1
-    );
+  return `Achat : ${fmt2(prixAchatRounded)} € HT`;
+});
 
-    const totalBase = baseMonthly * months;
-    const prixAchat = totalBase * 0.6;
-    const prixAchatRounded = Math.floor(prixAchat);
-
-    return `Achat : ${fmt2(prixAchatRounded)} € HT`;
-  });
-
-  optionsText = `Options :\n${formatted.join("\n")}`;
-}
-
+// ✅ rendu final
+optionsText = `Options :\n${formatted.join("\n")}`;
     
     const description = [
   [productName, inches].filter(Boolean).join(" - "),
