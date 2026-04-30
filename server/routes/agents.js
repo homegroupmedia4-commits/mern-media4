@@ -737,12 +737,6 @@ const mensualiteBase =
   const totalTva = mensualiteHt * 0.2;
   const totalTtc = mensualiteHt + totalTva;
 
-  console.log("FRAIS ANNEXES DEBUG:", {
-  port: portLine,
-  inst: instLines,
-  para: paraLine,
-  total: fraisAnnexesHt
-});
 
   
 
@@ -767,6 +761,12 @@ const fraisAnnexesHt =
   instLines.reduce((s, l) => s + safeNumber(l.montantHt), 0) +
   paraLine.reduce((s, l) => s + safeNumber(l.montantHt), 0);
 
+  console.log("FRAIS ANNEXES DEBUG:", {
+  port: portLine,
+  inst: instLines,
+  para: paraLine,
+  total: fraisAnnexesHt
+});
 
   
 
