@@ -1256,7 +1256,9 @@ const isAchat = ft === "achat";
 
 const acompteRate = Number(docData.client?.acomptePercent ?? 50);
 
-const acompte = (t.fraisAnnexesTtc || 0) * acompteRate / 100;
+const acompte = isAchat
+  ? 0
+  : (t.fraisAnnexesTtc || 0) * acompteRate / 100;
 
 const labels = isAchat
   ? [
