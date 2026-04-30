@@ -80,6 +80,9 @@ const AgentPdfSchema = new mongoose.Schema(
       mensualiteHt: { type: Number, default: 0 },
       totalTva: { type: Number, default: 0 },
       totalTtc: { type: Number, default: 0 },
+
+        fraisAnnexesHt: { type: Number, default: 0 },
+  fraisAnnexesTtc: { type: Number, default: 0 },
     },
 
     // ✅ Mentions
