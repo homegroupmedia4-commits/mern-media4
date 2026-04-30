@@ -311,6 +311,9 @@ const description = [
     const puHt = Number(pi.prixTotalHtMois || 0) || 0;
     const montant = Number(pi.montantHt || 0) || 0;
 
+
+    
+
     return {
       code,
       description: description || "—",
@@ -688,6 +691,19 @@ const mensualiteBase =
   const totalTva = mensualiteHt * 0.2;
   const totalTtc = mensualiteHt + totalTva;
 
+  // -----------------------------
+// 6bis) FRAIS ANNEXES (hors mensualité)
+// -----------------------------
+const fraisAnnexesHt =
+  portLine.reduce((s, l) => s + (l.montantHt === "OFFERT" ? 0 : Number(l.montantHt) || 0), 0) +
+  instLines.reduce((s, l) => s + (l.montantHt === "OFFERT" ? 0 : Number(l.montantHt) || 0), 0) +
+  paraLine.reduce((s, l) => s + (l.montantHt === "OFFERT" ? 0 : Number(l.montantHt) || 0), 0);
+
+const fraisAnnexesTva = fraisAnnexesHt * 0.2;
+const fraisAnnexesTtc = fraisAnnexesHt + fraisAnnexesTva;
+
+  
+
   const lines = [
     ...pitchLines,
      ...finishMonthlyLines,
@@ -703,7 +719,7 @@ const mensualiteBase =
 
   return {
     lines,
-    totals: { mensualiteHt, totalTva, totalTtc },
+    totals: { mensualiteHt, totalTva, totalTtc ,   fraisAnnexesHt, fraisAnnexesTtc},
     devisMentions: buildDevisMentions({ finalType }),
   };
 }
@@ -1169,16 +1185,19 @@ const isAchat = ft === "achat";
 
 const labels = isAchat
   ? [
-      ["Total HT", fmt2(t.mensualiteHt)],       // ✅ renommé
+      ["Total HT", fmt2(t.mensualiteHt)],     
       ["Total TVA 20%", fmt2(t.totalTva)],
       ["Total TTC", fmt2(t.totalTtc)],
       ["Acomptes à régler", fmt2(0)],
-      // ❌ PAS de "Mensualité TTC"
+
     ]
   : [
       ["Mensualité HT", fmt2(t.mensualiteHt)],
       ["Total TVA 20%", fmt2(t.totalTva)],
       ["Total TTC", fmt2(t.totalTtc)],
+        ["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
+    ["TVA", "20%"], 
+      ["Frais annexes TTC", fmt2(t.fraisAnnexesTtc || 0)],
       ["Acomptes à régler", fmt2(0)],
       ["Mensualité TTC", `${fmt2(t.totalTtc)} €`],
     ];
