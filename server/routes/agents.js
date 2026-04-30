@@ -737,13 +737,38 @@ const mensualiteBase =
   const totalTva = mensualiteHt * 0.2;
   const totalTtc = mensualiteHt + totalTva;
 
+  console.log("FRAIS ANNEXES DEBUG:", {
+  port: portLine,
+  inst: instLines,
+  para: paraLine,
+  total: fraisAnnexesHt
+});
+
+  
+
   // -----------------------------
 // 6bis) FRAIS ANNEXES (hors mensualité)
 // -----------------------------
+function safeNumber(v) {
+  if (v === "OFFERT") return 0;
+
+  if (typeof v === "number") return v;
+
+  if (typeof v === "string") {
+    const cleaned = v.replace(/[^\d.-]/g, ""); // enlève € etc
+    return Number(cleaned) || 0;
+  }
+
+  return 0;
+}
+
 const fraisAnnexesHt =
-  portLine.reduce((s, l) => s + (l.montantHt === "OFFERT" ? 0 : Number(l.montantHt) || 0), 0) +
-  instLines.reduce((s, l) => s + (l.montantHt === "OFFERT" ? 0 : Number(l.montantHt) || 0), 0) +
-  paraLine.reduce((s, l) => s + (l.montantHt === "OFFERT" ? 0 : Number(l.montantHt) || 0), 0);
+  portLine.reduce((s, l) => s + safeNumber(l.montantHt), 0) +
+  instLines.reduce((s, l) => s + safeNumber(l.montantHt), 0) +
+  paraLine.reduce((s, l) => s + safeNumber(l.montantHt), 0);
+
+
+  
 
 const fraisAnnexesTva = fraisAnnexesHt * 0.2;
 const fraisAnnexesTtc = fraisAnnexesHt + fraisAnnexesTva;
