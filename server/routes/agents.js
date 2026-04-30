@@ -1254,22 +1254,25 @@ const ft = String(docData.finalType || "")
 
 const isAchat = ft === "achat";
 
+const acompteRate = Number(docData.client?.acomptePercent ?? 50);
+
+const acompte = (t.fraisAnnexesTtc || 0) * acompteRate / 100;
+
 const labels = isAchat
   ? [
-      ["Total HT", fmt2(t.mensualiteHt)],     
+      ["Total HT", fmt2(t.mensualiteHt)],
       ["Total TVA 20%", fmt2(t.totalTva)],
       ["Total TTC", fmt2(t.totalTtc)],
-      ["Acomptes à régler", fmt2(0)],
-
+      ["Acomptes à régler", fmt2(acompte)],
     ]
   : [
       ["Mensualité HT", fmt2(t.mensualiteHt)],
       ["Total TVA 20%", fmt2(t.totalTva)],
       ["Total TTC", fmt2(t.totalTtc)],
-        ["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
-    ["TVA", "20%"], 
+      ["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
+      ["TVA", "20%"],
       ["Frais annexes TTC", fmt2(t.fraisAnnexesTtc || 0)],
-      ["Acomptes à régler", fmt2(0)],
+      ["Acomptes à régler", fmt2(acompte)],
       ["Mensualité TTC", `${fmt2(t.totalTtc)} €`],
     ];
 
