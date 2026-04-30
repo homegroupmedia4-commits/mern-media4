@@ -491,20 +491,34 @@ const total = unit * qty;
     let optionsText = "";
 
 if (Array.isArray(sel?.optionsFinancement) && sel.optionsFinancement.length > 0) {
+  
 
-  const baseMonthly = unitBase; // price + mem
+const baseMonthly = unitBase;
 
-  const formatted = sel.optionsFinancement.map((opt) => {
+// ✅ récupère la durée sélectionnée
+const selectedMonths = Math.max(
+  1,
+  parseInt(String(sel?.leasingMonths || 1), 10) || 1
+);
 
-    // 👉 LOCATION
-    if (opt !== "achat") {
-      const months = parseInt(opt, 10) || 1;
+// ✅ reconstitue le vrai total
+const totalBase = baseMonthly * selectedMonths;
 
-      const mensuel = baseMonthly; // déjà mensuel
-      const mensuelRounded = Math.floor(mensuel);
+const formatted = sel.optionsFinancement.map((opt) => {
 
-      return `${months} mois : ${fmt2(mensuelRounded)} € HT`;
-    }
+  if (opt !== "achat") {
+    const months = parseInt(opt, 10) || 1;
+
+    // ✅ recalcul correct
+    const mensuel = totalBase / months;
+
+    const mensuelRounded = Math.floor(mensuel);
+
+    return `${months} mois : ${fmt2(mensuelRounded)} € HT`;
+  }
+
+  
+    
 
     // 👉 ACHAT
     const months = Math.max(
