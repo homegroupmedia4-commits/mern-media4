@@ -525,6 +525,7 @@ const formatted = sel.optionsFinancement.map((opt) => {
 
 // ✅ rendu final
 optionsText = `Options :\n${formatted.join("\n")}`;
+}
     
     const description = [
   [productName, inches].filter(Boolean).join(" - "),
