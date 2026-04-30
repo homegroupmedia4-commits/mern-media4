@@ -487,7 +487,49 @@ const total = unit * qty;
     );
 
     const inches = size.sizeInches ? `${size.sizeInches} pouces` : "";
-    const description = [productName, inches].filter(Boolean).join(" - ");
+
+    let optionsText = "";
+
+if (Array.isArray(sel?.optionsFinancement) && sel.optionsFinancement.length > 0) {
+
+  const baseMonthly = unitBase; // price + mem
+
+  const formatted = sel.optionsFinancement.map((opt) => {
+
+    // 👉 LOCATION
+    if (opt !== "achat") {
+      const months = parseInt(opt, 10) || 1;
+
+      const mensuel = baseMonthly; // déjà mensuel
+      const mensuelRounded = Math.floor(mensuel);
+
+      return `${months} mois : ${fmt2(mensuelRounded)} € HT`;
+    }
+
+    // 👉 ACHAT
+    const months = Math.max(
+      1,
+      parseInt(String(sel?.leasingMonths || 1), 10) || 1
+    );
+
+    const totalBase = baseMonthly * months;
+    const prixAchat = totalBase * 0.6;
+    const prixAchatRounded = Math.floor(prixAchat);
+
+    return `Achat : ${fmt2(prixAchatRounded)} € HT`;
+  });
+
+  optionsText = `Options :\n${formatted.join("\n")}`;
+}
+
+    
+    const description = [
+  [productName, inches].filter(Boolean).join(" - "),
+  optionsText
+]
+  .filter(Boolean)
+  .join("\n")
+  .trim();
 
     otherMonthlyLines.push({
       code: size.productCode || size.codeProduit || "—",
