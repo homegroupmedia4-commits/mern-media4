@@ -249,6 +249,70 @@ if (opt === "achat") {
   return { ...pi, optionsFinancementPrices };
 });
 
+
+      // ✅ Enrichir otherSelections avec les prix d'options pré-calculés
+const enrichedOtherSelections = {};
+
+for (const [pid, sel] of Object.entries(otherSelections || {})) {
+  const months = String(sel.leasingMonths || "");
+  const checked = sel.byMonths?.[months]?.checked || {};
+
+  const enrichedChecked = {};
+
+  for (const [rowId, line] of Object.entries(checked || {})) {
+    const row = otherSizeById.get(String(rowId));
+    if (!row) { enrichedChecked[rowId] = line; continue; }
+
+    const mem = line.memId ? memById.get(String(line.memId)) : null;
+    const memPrice = Number(mem?.price || 0);
+    const optionPrices = {};
+
+    for (const opt of (sel.optionsFinancement || [])) {
+      if (opt === "achat") {
+        // Achat = (mensualité * mois sélectionnés) * 0.6
+        const monthly = Number(row.price || 0) + memPrice;
+        const selectedMonths = Math.max(1, parseInt(months || 1));
+        optionPrices["achat"] = Math.floor((monthly * selectedMonths) * 0.6);
+      } else {
+        // ✅ Cherche le row exact pour cette durée (même produit, même taille)
+        const rowProductId = String(
+          row.productId?._id || row.productId || row.product || ""
+        );
+        const targetRow = otherSizesCatalog.find(r => {
+          const rPid = String(r.productId?._id || r.productId || r.product || "");
+          return (
+            rPid === rowProductId &&
+            r.sizeInches === row.sizeInches &&
+            String(r.leasingMonths) === String(opt)
+          );
+        });
+
+        if (targetRow) {
+          // ✅ Prix réel de la DB pour cette durée
+          optionPrices[opt] = Number(targetRow.price || 0) + memPrice;
+        } else {
+          // Fallback linéaire si pas de row trouvé
+          const monthly = Number(row.price || 0) + memPrice;
+          const selectedMonths = Math.max(1, parseInt(months || 1));
+          optionPrices[opt] = Math.floor((monthly * selectedMonths) / Math.max(1, parseInt(opt)));
+        }
+      }
+    }
+
+    enrichedChecked[rowId] = { ...line, optionsFinancementPrices: optionPrices };
+  }
+
+  enrichedOtherSelections[pid] = {
+    ...sel,
+    byMonths: {
+      ...sel.byMonths,
+      [months]: { ...(sel.byMonths?.[months] || {}), checked: enrichedChecked },
+    },
+  };
+}
+
+      
+
 // 1) Save devis in DB
 const saveRes = await fetch(`${API}/api/agents/devis`, {
         method: "POST",
@@ -260,7 +324,7 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
           client,
           pitchInstances: enrichedPitchInstances, 
           validityDays: 30,
-            otherSelections,
+            otherSelections: enrichedOtherSelections,
           finalType: pitchInstances?.[0]?.typeFinancement || "location_maintenance",
 
         }),
