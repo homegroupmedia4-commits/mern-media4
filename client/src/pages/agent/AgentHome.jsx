@@ -175,14 +175,56 @@ if (missing.length) {
     setSavingDevis(true);
     try {
 
-      console.log("=== FRONT TOTAUX ===");
+   console.log("=== FRONT TOTAUX ===");
 console.log("pitchInstances montantHt:", pitchInstances.map(pi => pi.montantHt));
 console.log("recap.totalHt:", recap.totalHt);
 console.log("recap.ttc:", recap.ttc);
 
-      
-      // 1) Save devis in DB
-      const saveRes = await fetch(`${API}/api/agents/devis`, {
+// ✅ Pre-compute option prices for each pitch instance
+const enrichedPitchInstances = pitchInstances.map(pi => {
+  if (!Array.isArray(pi.optionsFinancement) || pi.optionsFinancement.length === 0) {
+    return pi;
+  }
+
+  const pitchObj = (pitches || []).find(
+    x => String(x?._id || x?.id) === String(pi.pitchId)
+  );
+  const prixPitch = Number(pitchObj?.price ?? pi.prixPitch ?? 0);
+  const categorieId = pi.categorieId || "";
+  const categorieName =
+    pi.categorieName ||
+    categories.find(c => String(c._id) === String(categorieId))?.name || "";
+
+  const optionsFinancementPrices = {};
+
+  for (const opt of pi.optionsFinancement) {
+    if (opt === "achat") {
+      const totalHt =
+        Number(pi.prixTotalHtMois || 0) *
+        parseInt(String(pi.financementMonths || 63));
+      optionsFinancementPrices["achat"] = Math.floor(totalHt * 0.6);
+    } else {
+      const q = computePitchQuote({
+        largeurM: pi.largeurM,
+        hauteurM: pi.hauteurM,
+        lineaireRaw: pi.metreLineaire,
+        pitchLabel: pi.pitchLabel,
+        prixPitch,
+        dureeMonths: opt,
+        typeFinancement: "location_maintenance",
+        quantite: "1",
+        staticVals,
+        categorieName,
+      });
+      optionsFinancementPrices[opt] = Math.floor(Number(q.total || 0));
+    }
+  }
+
+  return { ...pi, optionsFinancementPrices };
+});
+
+// 1) Save devis in DB
+const saveRes = await fetch(`${API}/api/agents/devis`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -190,7 +232,7 @@ console.log("recap.ttc:", recap.ttc);
         },
         body: JSON.stringify({
           client,
-          pitchInstances,
+          pitchInstances: enrichedPitchInstances, 
           validityDays: 30,
             otherSelections,
           finalType: pitchInstances?.[0]?.typeFinancement || "location_maintenance",
