@@ -301,6 +301,9 @@ console.log("OTHER SIZES =", data);
             mensualiteTtc,
             montantHt: mensualiteHt,
             codeProduit: pi?.codeProduit || pi?.code || "",
+            optionsFinancement: Array.isArray(pi?.optionsFinancement)
+  ? pi.optionsFinancement.map(o => o === "achat" ? "Achat" : `${o} mois`).join(", ")
+  : "",
           });
         }
         continue;
@@ -386,6 +389,9 @@ console.log("OTHER SIZES =", data);
             dureeMois: months || String(sizeRow?.leasingMonths || ""),
             prixAssocie: memPrice,
             codeProduit: sizeRow?.productCode || sizeRow?.codeProduit || "",
+            optionsFinancement: Array.isArray(sel?.optionsFinancement)
+  ? sel.optionsFinancement.map(o => o === "achat" ? "Achat" : `${o} mois`).join(", ")
+  : "",
           });
         }
       }
@@ -483,6 +489,7 @@ console.log("OTHER SIZES =", data);
 
                       <th>Code devis</th>
                       <th>Code produit</th>
+                      <th>Options choisies</th>
 
                       <th>Adresse</th>
                       <th>Adresse 2</th>
@@ -505,6 +512,7 @@ console.log("OTHER SIZES =", data);
 
                       <th>Code devis</th>
                       <th>Code produit</th>
+                      <th>Options choisies</th>
 
                       <th>Adresse</th>
                       <th>Adresse 2</th>
@@ -567,6 +575,7 @@ console.log("OTHER SIZES =", data);
 
                           <td>{r.devisNumber}</td>
                           <td>{r.codeProduit}</td>
+                          <td>{r.optionsFinancement || "—"}</td>
 
                           <td>{c.adresse1 || ""}</td>
                           <td>{c.adresse2 || ""}</td>
@@ -593,6 +602,7 @@ console.log("OTHER SIZES =", data);
 
                           <td>{r.devisNumber}</td>
                           <td>{r.codeProduit}</td>
+                          <td>{r.optionsFinancement || "—"}</td>
 
                           <td>{c.adresse1 || ""}</td>
                           <td>{c.adresse2 || ""}</td>
