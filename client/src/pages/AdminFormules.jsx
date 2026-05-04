@@ -39,7 +39,7 @@ const Card = ({ children }) => (
   </div>
 );
 
-const Badge = ({ children }) => (
+const Badge = ({ children, color = "#f3f4f6" }) => (
   <span
     style={{
       display: "inline-flex",
@@ -47,7 +47,7 @@ const Badge = ({ children }) => (
       gap: 6,
       padding: "4px 10px",
       borderRadius: 999,
-      background: "#f3f4f6",
+      background: color,
       border: "1px solid #e5e7eb",
       fontSize: 12,
       fontWeight: 700,
@@ -74,6 +74,21 @@ const SectionTitle = ({ title, right }) => (
   >
     <div style={{ fontSize: 16, fontWeight: 900, color: "#111827" }}>{title}</div>
     {right ? <div>{right}</div> : null}
+  </div>
+);
+
+const AlertBox = ({ children, color = "#fffbe6", border = "#ffe58f" }) => (
+  <div
+    style={{
+      padding: "10px 14px",
+      borderRadius: 10,
+      background: color,
+      border: `1px solid ${border}`,
+      fontSize: 13,
+      marginTop: 10,
+    }}
+  >
+    {children}
   </div>
 );
 
@@ -123,21 +138,18 @@ const Table = ({ columns = [], rows = [] }) => {
                     fontSize: 13,
                     borderBottom: idx === rows.length - 1 ? "none" : "1px solid #f1f5f9",
                     verticalAlign: "top",
+                    whiteSpace: "pre-wrap",
+                    fontFamily: c.mono ? "monospace" : "inherit",
                   }}
                 >
-                  {typeof r?.[c.key] === "string" || typeof r?.[c.key] === "number"
-                    ? r[c.key]
-                    : r?.[c.key]}
+                  {r?.[c.key]}
                 </td>
               ))}
             </tr>
           ))}
           {!rows.length ? (
             <tr>
-              <td
-                colSpan={columns.length}
-                style={{ padding: 12, fontSize: 13, color: "#6b7280" }}
-              >
+              <td colSpan={columns.length} style={{ padding: 12, fontSize: 13, color: "#6b7280" }}>
                 Aucune donnée.
               </td>
             </tr>
@@ -149,245 +161,371 @@ const Table = ({ columns = [], rows = [] }) => {
 };
 
 export default function AdminFormules() {
-  const [tab, setTab] = useState("pitch"); // pitch | other | recap | defaults
+  const [tab, setTab] = useState("pitch");
 
   const tabs = useMemo(
     () => [
       { key: "pitch", label: "1) Murs leds (Pitch)" },
-      { key: "other", label: "2) Autres produits" },
-      { key: "recap", label: "3) Récap total" },
-      { key: "defaults", label: "4) Defaults & helpers" },
+      { key: "finition", label: "2) Finition pitch" },
+      { key: "options", label: "3) Options de financement" },
+      { key: "other", label: "4) Autres produits" },
+      { key: "recap", label: "5) Récap total" },
+      { key: "defaults", label: "6) Defaults & helpers" },
     ],
     []
   );
 
+  // ─── TAB 1 : Pitch ───────────────────────────────────────────────────────────
   const pitchTables = useMemo(() => {
-    const t1 = {
-      title: "A) Entrées + normalisation",
+    const tA = {
+      title: "A) Entrées + dimensions de base",
       columns: [
         { key: "input", label: "Entrée" },
-        { key: "formula", label: "Formule" },
+        { key: "formula", label: "Formule exacte" },
         { key: "output", label: "Sortie" },
-        { key: "where", label: "Où" },
       ],
       rows: [
         {
           input: "largeurM",
-          formula: "L = toNum(largeurM) = Number(String(v).replace(',', '.'))",
+          formula: "L = toNum(largeurM)\n→ Number(String(v).replace(',','.'))",
           output: "L (Number)",
-          where: "agentHome.helpers.js → computePitchQuote()",
         },
         {
           input: "hauteurM",
           formula: "H = toNum(hauteurM)",
           output: "H (Number)",
-          where: "agentHome.helpers.js → computePitchQuote()",
         },
         {
           input: "L, H",
           formula: "surface = L * H",
-          output: "surface (m²)",
-          where: "agentHome.helpers.js → computePitchQuote()",
+          output: "surfaceM2 (m²)",
         },
-      ],
-    };
-
-    const t2 = {
-      title: "B) Diagonale + pouces (arrondi CF7)",
-      columns: [
-        { key: "step", label: "Étape" },
-        { key: "formula", label: "Formule" },
-        { key: "output", label: "Champ UI" },
-      ],
-      rows: [
         {
-          step: "Diagonale brute",
+          input: "L, H",
           formula: "diagonaleCm_raw = sqrt(L² + H²) * 100",
           output: "—",
         },
         {
-          step: "Pouces bruts",
+          input: "diagonaleCm_raw",
           formula: "pouces_raw = diagonaleCm_raw / 2.54",
           output: "—",
         },
         {
-          step: "Arrondi CF7",
-          formula: "roundDimLikeCF7(n) = (frac(n) >= 0.51) ? ceil(n) : floor(n)",
-          output: "—",
-        },
-        {
-          step: "Diagonale affichée",
-          formula: "diagonaleCm = roundDimLikeCF7(diagonaleCm_raw)",
-          output: "pi.diagonaleCm",
-        },
-        {
-          step: "Pouces affichés",
-          formula: "pouces = roundDimLikeCF7(pouces_raw)",
-          output: "pi.pouces",
+          input: "diagonaleCm_raw / pouces_raw",
+          formula: "roundDimLikeCF7(n) :\n  frac = n - floor(n)\n  frac >= 0.51 ? ceil(n) : floor(n)",
+          output: "pi.diagonaleCm\npi.pouces",
         },
       ],
     };
 
-    const t3 = {
-      title: "C) Pitch mm + Pixels",
+    const tB = {
+      title: "B) Pitch mm → Pixels",
       columns: [
         { key: "step", label: "Étape" },
-        { key: "formula", label: "Formule" },
-        { key: "note", label: "Note / UI" },
-      ],
-      rows: [
-        {
-          step: "Extraction pitch",
-          formula: "pitchMm = parsePitchMmFromLabel(pitchLabel) avec /P\\s*([0-9]*\\.?[0-9]+)/i",
-          note: 'Ex: "P3.91" => 3.91',
-        },
-        {
-          step: "Condition dimensions",
-          formula: "hasDims = (L > 0 && H > 0)",
-          note: "Sans dimensions => px = ''",
-        },
-        {
-          step: "Largeur px",
-          formula: "largeurPx = !hasDims ? '' : (pitchMm > 0 ? floor((L*1000)/pitchMm) : '—')",
-          note: "UI: pi.largeurPx",
-        },
-        {
-          step: "Hauteur px",
-          formula: "hauteurPx = !hasDims ? '' : (pitchMm > 0 ? floor((H*1000)/pitchMm) : '—')",
-          note: "UI: pi.hauteurPx",
-        },
-      ],
-    };
-
-    const t4 = {
-      title: "D) Linéaire minimum + container",
-      columns: [
-        { key: "item", label: "Élément" },
-        { key: "formula", label: "Formule" },
-        { key: "default", label: "Par défaut" },
-      ],
-      rows: [
-        {
-          item: "SPECIAL_GROUP",
-          formula: `SPECIAL_GROUP = "Exterieur haute luminosité"`,
-          default: "—",
-        },
-        {
-          item: "minLineaire",
-          formula: "minLineaire = (categorieName === SPECIAL_GROUP) ? 5 : 2.5",
-          default: "5 ou 2.5",
-        },
-        {
-          item: "lineaireUsed",
-          formula: "lineaireUsed = max(minLineaire, toNum(lineaireRaw, 0))",
-          default: "minLineaire",
-        },
-        {
-          item: "container",
-          formula: "container = lineaireUsed * 2 * option_ecran",
-          default: "option_ecran=100 => lineaireUsed*200",
-        },
-      ],
-    };
-
-    const t5 = {
-      title: "E) Coûts + Leasing + Résultat",
-      columns: [
-        { key: "bloc", label: "Bloc" },
-        { key: "formula", label: "Formules" },
-        { key: "sortie", label: "Sortie" },
-      ],
-      rows: [
-        {
-          bloc: "Frais (min)",
-          formula:
-            "tirage = max(option_tirage*surface,250)\n" +
-            "livraison = max(option_livraison*surface,300)\n" +
-            "install = max(prix_instal*surface,750)",
-          sortie: "tirage/livraison/install",
-        },
-        {
-          bloc: "Brut",
-          formula:
-            "total_accessoires = accessoires_players + cout_locaux\n" +
-            "total_pieces = surface*0.1*prixPitch*droits_de_douanes\n" +
-            "total_ecran = (prixPitch + container)*surface\n" +
-            "total_brut = total_ecran + total_accessoires + total_pieces",
-          sortie: "total_brut",
-        },
-        {
-          bloc: "EUR",
-          formula:
-            "total_eur = (total_brut/euros_dollars) + install + (option_ecran*surface) + livraison + tirage",
-          sortie: "total_eur",
-        },
-        {
-          bloc: "Leasing + marge",
-          formula: "step1 = total_eur / cout_leasing\nstep2 = step1 / marge_catalogue",
-          sortie: "step2",
-        },
-        {
-          bloc: "Mensuel / Achat",
-          formula:
-            "duree = max(1,int(dureeMonths))\n" +
-            "prix_mensuel = step2 / duree\n" +
-            "prix_achat = step2 * 0.6\n" +
-            "prix_total_affiche = (typeFinancement==='achat') ? prix_achat : prix_mensuel\n" +
-            "totalArrondi = round(prix_total_affiche)\n" +
-            "q = max(1,int(quantite))\n" +
-            "montantHt = q * totalArrondi",
-          sortie: "quote.total / quote.montant",
-        },
-      ],
-    };
-
-    return [t1, t2, t3, t4, t5];
-  }, []);
-
-  const otherTables = useMemo(() => {
-    const t1 = {
-      title: "computeOtherLine() — prix unitaire + total",
-      columns: [
-        { key: "step", label: "Étape" },
-        { key: "formula", label: "Formule" },
+        { key: "formula", label: "Formule exacte" },
         { key: "note", label: "Note" },
       ],
       rows: [
         {
-          step: "Mémoire",
-          formula: "memPrice = memOptions.find(m => m._id === memId)?.price ?? 0",
+          step: "Extraction pitch mm",
+          formula: 'parsePitchMmFromLabel(pitchLabel)\n→ regex /P\\s*([0-9]*\\.?[0-9]+)/i\nEx: "P3.91" → 3.91',
+          note: "0 si absent",
+        },
+        {
+          step: "Condition",
+          formula: "hasDims = (L > 0 && H > 0)",
+          note: "px vides si pas de dims",
+        },
+        {
+          step: "largeurPx",
+          formula: "!hasDims → ''\npitchMm > 0 → floor((L*1000) / pitchMm)\nsinon → '—'",
+          output: "pi.largeurPx",
+        },
+        {
+          step: "hauteurPx",
+          formula: "!hasDims → ''\npitchMm > 0 → floor((H*1000) / pitchMm)\nsinon → '—'",
+          output: "pi.hauteurPx",
+        },
+      ],
+    };
+
+    const tC = {
+      title: "C) Linéaire minimum + container",
+      columns: [
+        { key: "item", label: "Élément" },
+        { key: "formula", label: "Formule exacte" },
+        { key: "default", label: "Valeur" },
+      ],
+      rows: [
+        {
+          item: "SPECIAL_GROUP",
+          formula: '"Exterieur haute luminosité"',
+          default: "constante",
+        },
+        {
+          item: "minLineaire",
+          formula: "(categorieName === SPECIAL_GROUP) ? 5 : 2.5",
+          default: "5 ou 2.5",
+        },
+        {
+          item: "lineaireUsed",
+          formula: "max(minLineaire, toNum(lineaireRaw, 0))",
+          default: "≥ minLineaire",
+        },
+        {
+          item: "container",
+          formula: "lineaireUsed * 2 * option_ecran",
+          default: "option_ecran=100\n→ lineaireUsed * 200",
+        },
+      ],
+    };
+
+    const tD = {
+      title: "D) Frais annexes (minimums garantis)",
+      columns: [
+        { key: "item", label: "Frais" },
+        { key: "formula", label: "Formule exacte" },
+      ],
+      rows: [
+        {
+          item: "tirage",
+          formula: "max(option_tirage * surface, 250)",
+        },
+        {
+          item: "livraison",
+          formula: "max(option_livraison * surface, 300)",
+        },
+        {
+          item: "install",
+          formula: "max(prix_instal * surface, 750)",
+        },
+      ],
+    };
+
+    const tE = {
+      title: "E) Coûts + Leasing + Résultat final",
+      columns: [
+        { key: "bloc", label: "Bloc" },
+        { key: "formula", label: "Formule exacte" },
+        { key: "sortie", label: "Sortie" },
+      ],
+      rows: [
+        {
+          bloc: "total_accessoires",
+          formula: "accessoires_players + cout_locaux_chine_france",
+          sortie: "total_accessoires",
+        },
+        {
+          bloc: "total_pieces",
+          formula: "surface * 0.1 * prixPitch * droits_de_douanes",
+          sortie: "total_pieces",
+        },
+        {
+          bloc: "total_ecran",
+          formula: "(prixPitch + container) * surface",
+          sortie: "total_ecran",
+        },
+        {
+          bloc: "total_brut",
+          formula: "total_ecran + total_accessoires + total_pieces",
+          sortie: "total_brut",
+        },
+        {
+          bloc: "total_eur",
+          formula: "(total_brut / euros_dollars)\n+ install\n+ (option_ecran * surface)\n+ livraison\n+ tirage",
+          sortie: "total_eur",
+        },
+        {
+          bloc: "step1",
+          formula: "total_eur / cout_leasing",
+          sortie: "step1",
+        },
+        {
+          bloc: "step2",
+          formula: "step1 / marge_catalogue",
+          sortie: "step2 (base de calcul)",
+        },
+        {
+          bloc: "prix_mensuel",
+          formula: "duree = max(1, int(dureeMonths))\nprix_mensuel = step2 / duree",
+          sortie: "quote.total (location)",
+        },
+        {
+          bloc: "prix_achat",
+          formula: "step2 * 0.6",
+          sortie: "quote.total (achat)",
+        },
+        {
+          bloc: "totalArrondi",
+          formula: "round(prix_mensuel ou prix_achat)",
+          sortie: "quote.total (String)",
+        },
+        {
+          bloc: "montantHt",
+          formula: "q = max(1, int(quantite))\nmontantHt = q * totalArrondi",
+          sortie: "quote.montant (String xx.xx)",
+        },
+      ],
+    };
+
+    return [tA, tB, tC, tD, tE];
+  }, []);
+
+  // ─── TAB 2 : Finition ────────────────────────────────────────────────────────
+  const finitionTable = useMemo(() => ({
+    title: "Calcul finition progressive (AgentHome.jsx → updatePitchInstance)",
+    columns: [
+      { key: "step", label: "Étape" },
+      { key: "formula", label: "Formule exacte" },
+      { key: "note", label: "Note" },
+    ],
+    rows: [
+      {
+        step: "surface",
+        formula: "surface = Number(quote.surfaceM2 || 0)",
+        note: "En m²",
+      },
+      {
+        step: "prixM2",
+        formula: "prixM2 = Number(next.finitionPriceMonthlyHt || 0)",
+        note: "Prix finition par m²/mois",
+      },
+      {
+        step: "finitionTotal",
+        formula: "si surface > 0 :\n  finitionTotal = prixM2\n    + max(0, surface - 1) * (prixM2 * 0.5)\nsinon :\n  finitionTotal = 0",
+        note: "Progressive : 1er m² plein prix,\nchaque m² suivant = +50% du prix/m²",
+      },
+      {
+        step: "prixTotalHtMois",
+        formula: "quote.total + finitionTotal",
+        note: "Prix unitaire affiché (par écran)",
+      },
+      {
+        step: "montantHt",
+        formula: "qScreens = max(1, int(next.quantite))\nmontantHt = quote.montant + (finitionTotal * qScreens)",
+        note: "Montant total HT (avec quantité)",
+      },
+    ],
+  }), []);
+
+  // ─── TAB 3 : Options de financement ─────────────────────────────────────────
+  const optionsTables = useMemo(() => {
+    const tPitch = {
+      title: "Options pitch — prix pré-calculés (AgentHome.jsx → handleValider)",
+      columns: [
+        { key: "opt", label: "Option" },
+        { key: "formula", label: "Formule exacte" },
+        { key: "note", label: "Note" },
+      ],
+      rows: [
+        {
+          opt: "Toute durée (ex: 36, 48…)",
+          formula: "q = computePitchQuote({\n  dureeMonths: opt,\n  typeFinancement: 'location_maintenance',\n  quantite: '1', ...autres champs identiques\n})\noptionsFinancementPrices[opt] = floor(q.total + finitionMonthly)",
+          note: "finitionMonthly = formule progressive (surface, prixM2Fin)\nfloor() = arrondi inférieur",
+        },
+        {
+          opt: "achat",
+          formula: "q = computePitchQuote({\n  typeFinancement: 'achat',\n  dureeMonths: pi.financementMonths, ...\n})\noptionsFinancementPrices['achat'] = floor(q.total + finitionMonthly)",
+          note: "Formule achat = step2 * 0.6\nfinitionMonthly incluse",
+        },
+      ],
+    };
+
+    const tOther = {
+      title: "Options autres produits — prix pré-calculés (AgentHome.jsx → handleValider)",
+      columns: [
+        { key: "opt", label: "Option" },
+        { key: "formula", label: "Formule exacte" },
+        { key: "note", label: "Note" },
+      ],
+      rows: [
+        {
+          opt: "Toute durée (ex: 36, 48…)",
+          formula: "targetRow = otherSizesCatalog.find(r =>\n  même productId + même sizeInches\n  + r.leasingMonths === opt\n)\nsi targetRow trouvé :\n  optionPrices[opt] = targetRow.price + memPrice\nsinon fallback :\n  monthly = row.price + memPrice\n  selectedMonths = int(months)\n  optionPrices[opt] = floor((monthly * selectedMonths) / int(opt))",
+          note: "Utilise le vrai prix DB si disponible\nFallback = linéaire",
+        },
+        {
+          opt: "achat",
+          formula: "monthly = row.price + memPrice\nselectedMonths = max(1, int(months))\noptionPrices['achat'] = floor((monthly * selectedMonths) * 0.6)",
+          note: "Achat = total durée sélectionnée * 0.6",
+        },
+      ],
+    };
+
+    const tPdf = {
+      title: "Affichage dans le PDF (agents.js → buildLinesAndTotals)",
+      columns: [
+        { key: "opt", label: "Option" },
+        { key: "formula", label: "Formule (fallback si precomputed absent)" },
+      ],
+      rows: [
+        {
+          opt: "Durée (pitch)",
+          formula: "precomputed[opt] présent → Number(precomputed[opt])\nsinon → floor(baseMensuel * baseMonths / months)",
+        },
+        {
+          opt: "Achat (pitch)",
+          formula: "precomputed['achat'] présent → Number(precomputed['achat'])\nsinon → floor(baseMensuel * baseMonths * 0.6)",
+        },
+        {
+          opt: "Durée (autres)",
+          formula: "line.optionsFinancementPrices[opt] présent → Number(precomputed[opt])\nsinon → floor(unitBase * selectedMonths / months)",
+        },
+        {
+          opt: "Achat (autres)",
+          formula: "line.optionsFinancementPrices['achat'] présent → Number(precomputed['achat'])\nsinon → floor(unitBase * selectedMonths * 0.6)",
+        },
+      ],
+    };
+
+    return [tPitch, tOther, tPdf];
+  }, []);
+
+  // ─── TAB 4 : Autres produits ─────────────────────────────────────────────────
+  const otherTables = useMemo(() => {
+    const t1 = {
+      title: "computeOtherLine() — prix unitaire + total (AgentOtherProductsBlock.jsx)",
+      columns: [
+        { key: "step", label: "Étape" },
+        { key: "formula", label: "Formule exacte" },
+        { key: "note", label: "Note" },
+      ],
+      rows: [
+        {
+          step: "memPrice",
+          formula: "memOptions.find(m => m._id === memId)?.price ?? 0",
           note: "0 si introuvable",
         },
         {
-          step: "Mensualité base",
-          formula: "monthly = Number(basePrice) + Number(memPrice)",
-          note: "Mensuel (location)",
+          step: "monthly",
+          formula: "Number(basePrice) + Number(memPrice)",
+          note: "Mensualité base (location)",
         },
         {
-          step: "Mois",
-          formula: "months = max(1, int(leasingMonths))",
-          note: "Sélecteur durée",
+          step: "months",
+          formula: "max(1, int(leasingMonths))",
+          note: "Durée sélectionnée",
         },
         {
-          step: "Prix unitaire",
-          formula: "unit = (typeFinancement==='achat') ? (monthly*months)*0.6 : monthly",
-          note: "Achat = total durée *0.6",
+          step: "unit",
+          formula: "typeFinancement === 'achat'\n  ? (monthly * months) * 0.6\n  : monthly",
+          note: "Achat = total durée * 0.6\nLocation = mensualité directe",
         },
         {
-          step: "Quantité",
-          formula: "q = max(1, int(qty))",
-          note: "Input qty",
+          step: "q",
+          formula: "max(1, int(qty))",
+          note: "Quantité",
         },
         {
-          step: "Total",
-          formula: "total = unit * q",
+          step: "total",
+          formula: "unit * q",
           note: "Montant HT ligne",
         },
       ],
     };
 
     const t2 = {
-      title: "Structure de sélection (par produit + par durée)",
+      title: "Structure de sélection par produit (byMonths)",
       columns: [
         { key: "key", label: "Clé" },
         { key: "shape", label: "Structure" },
@@ -396,13 +534,18 @@ export default function AdminFormules() {
       rows: [
         {
           key: "otherSelections[productId]",
-          shape: "{ leasingMonths, typeFinancement, byMonths }",
-          utilite: "Conserver les checkboxes par durée",
+          shape: "{\n  leasingMonths,\n  typeFinancement,\n  optionsFinancement[],\n  byMonths\n}",
+          utilite: "Config globale par produit",
         },
         {
-          key: "byMonths[months].checked[rowId]",
-          shape: "{ memId, qty }",
-          utilite: "Ligne choisie (taille écran + mémoire + qty)",
+          key: "byMonths[months]",
+          shape: "{ checked: { [rowId]: { memId, qty } } }",
+          utilite: "Checkboxes isolées par durée\n(changer la durée ne supprime pas les selections)",
+        },
+        {
+          key: "byMonths[months].checked[rowId].optionsFinancementPrices",
+          shape: "{ '36': 120, '48': 100, 'achat': 3500 }",
+          utilite: "Prix pré-calculés envoyés au backend\n(ajoutés dans handleValider)",
         },
       ],
     };
@@ -410,29 +553,30 @@ export default function AdminFormules() {
     return [t1, t2];
   }, []);
 
+  // ─── TAB 5 : Récap total ─────────────────────────────────────────────────────
   const recapTables = useMemo(() => {
     const t1 = {
-      title: "Addition des montants + TVA + TTC",
+      title: "Addition des montants (AgentHome.jsx → recap useMemo)",
       columns: [
         { key: "part", label: "Partie" },
-        { key: "formula", label: "Formule" },
+        { key: "formula", label: "Formule exacte" },
         { key: "note", label: "Note" },
       ],
       rows: [
         {
           part: "HT autres produits",
-          formula: "ht += unit * qty (recalcul brut depuis otherSelections)",
-          note: "Même logique computeOtherLine()",
+          formula: "Pour chaque rowId :\n  monthly = basePrice + memPrice\n  monthsInt = max(1, int(months))\n  typeFin = sel.typeFinancement\n  unit = (typeFin === 'achat') ? (monthly*monthsInt)*0.6 : monthly\n  qty = max(1, int(line.qty))\n  ht += unit * qty",
+          note: "Recalcul brut côté récap\n(même logique que computeOtherLine)",
         },
         {
           part: "HT murs leds",
           formula: "ht += parseEuro(pi.montantHt)",
-          note: "montantHt déjà calculé dans AgentHome",
+          note: "montantHt déjà calculé\n(inclut finition progressive)",
         },
         {
           part: "ABOBR",
-          formula: "si au moins 1 ligne => ht += 19.95",
-          note: "Charge fixe",
+          formula: "hasAnyLine = pitchInstances.some(pi => montantHt > 0)\n  OR Object.keys(otherSelections).length > 0\nsi hasAnyLine => ht += 19.95",
+          note: "Charge fixe mensuelle",
         },
         {
           part: "TVA",
@@ -448,23 +592,52 @@ export default function AdminFormules() {
     };
 
     const t2 = {
-      title: "Important (cohérence) — finition",
+      title: "Totaux PDF (agents.js → buildLinesAndTotals)",
       columns: [
-        { key: "topic", label: "Sujet" },
-        { key: "status", label: "Statut" },
-        { key: "detail", label: "Détail" },
+        { key: "item", label: "Élément" },
+        { key: "formula", label: "Formule exacte" },
+        { key: "note", label: "Note" },
       ],
       rows: [
         {
-          topic: "Finition dans montantHt",
-          status: "Incluse",
-          detail: "montantHt = quote.montant + finUnit*qScreens",
+          item: "mensualiteBase",
+          formula: "pitchLines.reduce(round2(montantHt))\n+ otherMonthlyLines.reduce(round2(montantHt))\n+ finishMonthlyLines.reduce(round2(montantHt))\n+ abobrTotal",
+          note: "round2 = round(n*100)/100",
         },
         {
-          topic: "Double comptage finition",
-          status: "À surveiller",
-          detail:
-            "Si tu ajoutes en plus ht += finPrice*q, tu comptes 2 fois (selon ton code actuel).",
+          item: "abobrTotal",
+          formula: "isAchatGlobal ? 0 : 19.95",
+          note: "Absent si type=achat global",
+        },
+        {
+          item: "totalTva",
+          formula: "mensualiteBase * 0.2",
+          note: "",
+        },
+        {
+          item: "totalTtc",
+          formula: "mensualiteBase + totalTva",
+          note: "",
+        },
+        {
+          item: "fraisAnnexesHt",
+          formula: "PORT + INSTALLATION(s) + PARAMÉTRAGE\n(OFFERT = 0)",
+          note: "Hors mensualité",
+        },
+        {
+          item: "fraisAnnexesTtc",
+          formula: "fraisAnnexesHt * 1.2",
+          note: "",
+        },
+        {
+          item: "acompte (location)",
+          formula: "(fraisAnnexesTtc * acomptePercent) / 100\nacomptePercent = client.acomptePercent ?? 50",
+          note: "50% par défaut",
+        },
+        {
+          item: "acompte (achat)",
+          formula: "0",
+          note: "Pas d'acompte en achat",
         },
       ],
     };
@@ -472,52 +645,92 @@ export default function AdminFormules() {
     return [t1, t2];
   }, []);
 
+  // ─── TAB 6 : Defaults ────────────────────────────────────────────────────────
   const defaultsTables = useMemo(() => {
     const t1 = {
-      title: "Default static values (DEFAULT_STATIC)",
+      title: "DEFAULT_STATIC — valeurs utilisées si /api/static-values échoue",
       columns: [
         { key: "k", label: "Clé" },
-        { key: "v", label: "Valeur" },
-        { key: "note", label: "Note" },
+        { key: "v", label: "Valeur défaut" },
+        { key: "role", label: "Rôle dans la formule" },
       ],
       rows: [
-        { k: "accessoires_players", v: "800", note: "Accessoires" },
-        { k: "cout_locaux_chine_france", v: "1000", note: "Coûts locaux" },
-        { k: "cout_leasing", v: "0.7", note: "Coefficient leasing" },
-        { k: "marge_catalogue", v: "0.7", note: "Marge" },
-        { k: "droits_de_douanes", v: "1.14", note: "Douanes" },
-        { k: "euros_dollars", v: "1.07", note: "Taux conversion" },
-        { k: "option_ecran", v: "100", note: "Option €/m² (sert aussi container)" },
-        { k: "option_tirage", v: "80", note: "€/m²" },
-        { k: "option_livraison", v: "150", note: "€/m²" },
-        { k: "prix_instal", v: "500", note: "€/m²" },
+        { k: "accessoires_players", v: "800", role: "Ajouté au total_accessoires" },
+        { k: "cout_locaux_chine_france", v: "1000", role: "Ajouté au total_accessoires" },
+        { k: "cout_leasing", v: "0.7", role: "total_eur / cout_leasing = step1" },
+        { k: "marge_catalogue", v: "0.7", role: "step1 / marge = step2" },
+        { k: "droits_de_douanes", v: "1.14", role: "total_pieces *= droits_de_douanes" },
+        { k: "euros_dollars", v: "1.07", role: "total_brut / euros_dollars" },
+        { k: "option_ecran", v: "100", role: "container = lineaireUsed*2*option_ecran\net +option_ecran*surface dans total_eur" },
+        { k: "option_tirage", v: "80", role: "tirage = max(option_tirage*surface, 250)" },
+        { k: "option_peinture", v: "100", role: "Non utilisé dans computePitchQuote actuel" },
+        { k: "option_coffrage", v: "75", role: "Non utilisé dans computePitchQuote actuel" },
+        { k: "option_raccordement", v: "75", role: "Non utilisé dans computePitchQuote actuel" },
+        { k: "option_livraison", v: "150", role: "livraison = max(option_livraison*surface, 300)" },
+        { k: "prix_container", v: "150", role: "Non utilisé directement (remplacé par option_ecran)" },
+        { k: "prix_instal", v: "500", role: "install = max(prix_instal*surface, 750)" },
       ],
     };
 
     const t2 = {
-      title: "Default mètre linéaire à la création d’une instance",
+      title: "Mètre linéaire par défaut selon catégorie",
       columns: [
         { key: "rule", label: "Règle" },
-        { key: "formula", label: "Formule" },
+        { key: "formula", label: "Formule exacte" },
         { key: "where", label: "Où" },
       ],
       rows: [
         {
-          rule: "Spécial",
-          formula: "metreLineaire = (categorieName === SPECIAL_GROUP) ? '5' : '2.5'",
-          where: "createDefaultPitchInstance() (agentHome.helpers.js)",
+          rule: "Catégorie spéciale",
+          formula: 'SPECIAL_GROUP = "Exterieur haute luminosité"\nmetreLineaire = (categorieName === SPECIAL_GROUP) ? "5" : "2.5"',
+          where: "createDefaultPitchInstance() → agentHome.helpers.js",
+        },
+        {
+          rule: "Lors du calcul",
+          formula: "lineaireUsed = max(minLineaire, toNum(lineaireRaw, 0))\navec minLineaire = SPECIAL_GROUP ? 5 : 2.5",
+          where: "computePitchQuote() → agentHome.helpers.js",
         },
       ],
     };
 
-    return [t1, t2];
-  }, []);
+    const t3 = {
+      title: "Lignes INST, PORT, PARA (agents.js → buildLinesAndTotals)",
+      columns: [
+        { key: "code", label: "Code" },
+        { key: "formula", label: "Montant HT" },
+        { key: "qty", label: "Quantité" },
+      ],
+      rows: [
+        {
+          code: "PORT",
+          formula: "portOffert → 'OFFERT'\nsinon → portQty * 300",
+          qty: "qtyTotalProducts (pitch + autres)",
+        },
+        {
+          code: "INST (Murs leds)",
+          formula: "instOffert → 'OFFERT'\nsinon → qtyPitchTotal * 600",
+          qty: "qtyPitchTotal",
+        },
+        {
+          code: "INST (Totems…)",
+          formula: "instOffert → 'OFFERT'\nsinon → qtyOtherTotal * 300",
+          qty: "qtyOtherTotal",
+        },
+        {
+          code: "PARA",
+          formula: "paraOffert → 'OFFERT'\nsinon → paraQty * 250",
+          qty: "qtyTotalProducts",
+        },
+        {
+          code: "ABOBR",
+          formula: "isAchatGlobal → non affiché\nsinon → 19.95 (qty=1)",
+          qty: "1",
+        },
+      ],
+    };
 
-  const headerSub = (
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-   
-    </div>
-  );
+    return [t1, t2, t3];
+  }, []);
 
   return (
     <div className="dash-page">
@@ -532,13 +745,10 @@ export default function AdminFormules() {
         }}
       >
         <div>
-          <h2 style={{ margin: 0, fontWeight: 900, color: "#111827" }}>
-            Formules 
-          </h2>
-          <div style={{ marginTop: 6 }}>{headerSub}</div>
-          <div style={{ marginTop: 8 }}>
-            
-          </div>
+          <h2 style={{ margin: 0, fontWeight: 900, color: "#111827" }}>Formules</h2>
+          <p style={{ marginTop: 6, fontSize: 13, color: "#6b7280" }}>
+            Documentation complète des calculs utilisés dans l'application.
+          </p>
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -550,16 +760,18 @@ export default function AdminFormules() {
         </div>
       </div>
 
-      {tab === "pitch" ? (
+      {/* ── TAB 1 : Pitch ── */}
+      {tab === "pitch" && (
         <div style={{ display: "grid", gap: 12 }}>
           <Card>
             <SectionTitle
-              title="1) Formules “Murs leds” (Pitch)"
-              right={<Badge>agentHome.helpers.js</Badge>}
+              title="1) Formules Murs leds (Pitch)"
+              right={<Badge>agentHome.helpers.js → computePitchQuote()</Badge>}
             />
             <Small>
-              Résultat : calcule surface, diagonale/pouces, pixels, container, coûts, leasing/marge,
-              puis renvoie total (arrondi) + montant (xx.xx).
+              Calcule surface, diagonale/pouces, pixels, container, coûts, leasing/marge.
+              Retourne <b>quote.total</b> (String arrondi) + <b>quote.montant</b> (String xx.xx avec quantité).
+              La finition est ajoutée APRÈS dans AgentHome.jsx (voir onglet 2).
             </Small>
           </Card>
 
@@ -569,51 +781,96 @@ export default function AdminFormules() {
               <Table columns={t.columns} rows={t.rows} />
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* ── TAB 2 : Finition ── */}
+      {tab === "finition" && (
+        <div style={{ display: "grid", gap: 12 }}>
+          <Card>
+            <SectionTitle
+              title="2) Calcul finition progressive"
+              right={<Badge>AgentHome.jsx → updatePitchInstance()</Badge>}
+            />
+            <Small>
+              La finition est calculée APRÈS computePitchQuote(), sur la base de la surface retournée.
+              Le prix est progressif : premier m² au plein prix, chaque m² supplémentaire à 50% du prix/m².
+            </Small>
+          </Card>
 
           <Card>
-            <SectionTitle title="Ajout finition (AgentHome.jsx → updatePitchInstance)" right={<Badge>AgentHome.jsx</Badge>} />
+            <SectionTitle title={finitionTable.title} />
+            <Table columns={finitionTable.columns} rows={finitionTable.rows} />
+            <AlertBox>
+              ⚠️ <b>Exemple :</b> surface = 2 m², prixM2 = 42 €/mois<br />
+              finitionTotal = 42 + max(0, 2-1) * (42 * 0.5) = 42 + 21 = <b>63 €/mois</b><br />
+              prixTotalHtMois = quote.total + 63<br />
+              montantHt (2 écrans) = quote.montant + 63 * 2
+            </AlertBox>
+          </Card>
+
+          <Card>
+            <SectionTitle title="Finition dans les options (handleValider)" right={<Badge>AgentHome.jsx</Badge>} />
             <Table
               columns={[
                 { key: "step", label: "Étape" },
-                { key: "formula", label: "Formule" },
-                { key: "note", label: "Note" },
+                { key: "formula", label: "Formule exacte" },
               ]}
               rows={[
                 {
-                  step: "Quantité écrans",
-                  formula: "qScreens = max(1, int(next.quantite))",
-                  note: "Quantité d’écrans",
+                  step: "finitionMonthly (pré-calcul options)",
+                  formula: "surface = Number(pi.surfaceM2 || 0)\nprixM2Fin = Number(pi.finitionPriceMonthlyHt || 0)\nsi surface > 0 && prixM2Fin > 0 :\n  finitionMonthly = prixM2Fin\n    + max(0, surface-1) * (prixM2Fin * 0.5)\nsinon : finitionMonthly = 0",
                 },
                 {
-                  step: "Prix finition",
-                  formula: "finUnit = Number(next.finitionPriceMonthlyHt || 0)",
-                  note: "Interprété comme €/mois",
+                  step: "Prix option durée",
+                  formula: "floor(computePitchQuote({dureeMonths: opt, ...}).total + finitionMonthly)",
                 },
                 {
-                  step: "Prix total affiché",
-                  formula: "prixTotalHtMois = Number(quote.total || 0) + finUnit",
-                  note: "Affiché dans UI",
-                },
-                {
-                  step: "Montant HT",
-                  formula: "montantHt = Number(quote.montant || 0) + finUnit*qScreens",
-                  note: "Total mensuel HT avec quantité",
+                  step: "Prix option achat",
+                  formula: "floor(computePitchQuote({typeFinancement: 'achat', ...}).total + finitionMonthly)",
                 },
               ]}
             />
-            <div style={{ marginTop: 10 }}>
-              
-            </div>
           </Card>
         </div>
-      ) : null}
+      )}
 
-      {tab === "other" ? (
+      {/* ── TAB 3 : Options ── */}
+      {tab === "options" && (
         <div style={{ display: "grid", gap: 12 }}>
           <Card>
-            <SectionTitle title="2) Formules “Autres produits”" right={<Badge>AgentOtherProductsBlock.jsx</Badge>} />
+            <SectionTitle
+              title="3) Options de financement"
+              right={<Badge>handleValider + agents.js</Badge>}
+            />
             <Small>
-              Mensualité de base = (prix écran + prix mémoire). En achat : (mensualité * mois) * 0.6.
+              Les prix des options sont pré-calculés côté front dans <b>handleValider()</b> et envoyés
+              au backend dans <b>optionsFinancementPrices</b>. Le backend les utilise directement pour
+              l'affichage PDF (avec fallback si absent).
+            </Small>
+          </Card>
+
+          {optionsTables.map((t) => (
+            <Card key={t.title}>
+              <SectionTitle title={t.title} />
+              <Table columns={t.columns} rows={t.rows} />
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* ── TAB 4 : Autres produits ── */}
+      {tab === "other" && (
+        <div style={{ display: "grid", gap: 12 }}>
+          <Card>
+            <SectionTitle
+              title="4) Formules Autres produits"
+              right={<Badge>AgentOtherProductsBlock.jsx</Badge>}
+            />
+            <Small>
+              Mensualité de base = prix écran + prix mémoire.
+              En achat : (mensualité × durée sélectionnée) × 0.6.
+              Pas de finition progressive pour les autres produits.
             </Small>
           </Card>
 
@@ -624,15 +881,20 @@ export default function AdminFormules() {
             </Card>
           ))}
         </div>
-      ) : null}
+      )}
 
-      {tab === "recap" ? (
+      {/* ── TAB 5 : Récap ── */}
+      {tab === "recap" && (
         <div style={{ display: "grid", gap: 12 }}>
           <Card>
-            <SectionTitle title="3) Récap total — addition + TVA + TTC" right={<Badge>AgentHome.jsx</Badge>} />
+            <SectionTitle
+              title="5) Récap total — front + PDF"
+              right={<Badge>AgentHome.jsx + agents.js</Badge>}
+            />
             <Small>
-              Le récap recalcule les autres produits, additionne les pitchs (montantHt), ajoute ABOBR,
-              puis TVA 20% et TTC.
+              Le récap front (affiché dans la page) et le PDF (généré côté backend)
+              utilisent la même logique, mais le front recalcule depuis les données brutes
+              tandis que le backend utilise les montants reçus du front (pitch) ou recalcule (autres).
             </Small>
           </Card>
 
@@ -643,14 +905,19 @@ export default function AdminFormules() {
             </Card>
           ))}
         </div>
-      ) : null}
+      )}
 
-      {tab === "defaults" ? (
+      {/* ── TAB 6 : Defaults ── */}
+      {tab === "defaults" && (
         <div style={{ display: "grid", gap: 12 }}>
           <Card>
-            <SectionTitle title="4) Defaults & helpers" right={<Badge>DEFAULT_STATIC / helpers</Badge>} />
+            <SectionTitle
+              title="6) Defaults & helpers"
+              right={<Badge>DEFAULT_STATIC / agentHome.helpers.js</Badge>}
+            />
             <Small>
-              Ces valeurs sont utilisées si /api/static-values ne charge pas (ou avant chargement).
+              Ces valeurs sont utilisées si <b>/api/static-values</b> ne charge pas (erreur réseau ou avant chargement).
+              Elles sont aussi les valeurs initiales avant que le serveur réponde.
             </Small>
           </Card>
 
@@ -661,7 +928,7 @@ export default function AdminFormules() {
             </Card>
           ))}
         </div>
-      ) : null}
+      )}
 
       <div style={{ height: 12 }} />
     </div>
