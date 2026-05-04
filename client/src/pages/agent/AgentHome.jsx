@@ -174,6 +174,13 @@ if (missing.length) {
 
     setSavingDevis(true);
     try {
+
+      console.log("=== FRONT TOTAUX ===");
+console.log("pitchInstances montantHt:", pitchInstances.map(pi => pi.montantHt));
+console.log("recap.totalHt:", recap.totalHt);
+console.log("recap.ttc:", recap.ttc);
+
+      
       // 1) Save devis in DB
       const saveRes = await fetch(`${API}/api/agents/devis`, {
         method: "POST",
