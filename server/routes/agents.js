@@ -255,42 +255,45 @@ const cat = String(
     
 
 
+    
 
-    let optionsText = "";
+
+let optionsText = "";
 
 if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
 
+  // ✅ Prix pré-calculés depuis le front (formule exacte)
+  const precomputed = pi.optionsFinancementPrices || {};
+
   const baseMensuel = Number(pi.prixTotalHtMois || 0);
   const baseMonths = parseInt(pi.financementMonths || 63, 10) || 63;
-
-  // ✅ reconstitution du total réel
   const totalBase = baseMensuel * baseMonths;
 
   const formatted = pi.optionsFinancement.map((opt) => {
 
-    // 👉 LOCATION
     if (opt !== "achat") {
       const months = parseInt(opt, 10) || 1;
 
-      const mensuel = totalBase / months;
+      // ✅ Utilise le prix front si dispo, sinon fallback
+      const price = precomputed[opt] != null
+        ? Number(precomputed[opt])
+        : Math.floor(totalBase / months);
 
-// 🔥 arrondi métier
-const mensuelRounded = Math.floor(mensuel);
-
-return `${months} mois : ${fmt2(mensuelRounded)} € HT`;
+      return `${months} mois : ${fmt2(price)} € HT`;
     }
 
-    // 👉 ACHAT
-  const prixAchat = totalBase * 0.6;
+    // Achat
+    const price = precomputed["achat"] != null
+      ? Number(precomputed["achat"])
+      : Math.floor(totalBase * 0.6);
 
-// 🔥 arrondi métier
-const prixAchatRounded = Math.floor(prixAchat);
-
-return `Achat : ${fmt2(prixAchatRounded)} € HT`;
+    return `Achat : ${fmt2(price)} € HT`;
   });
 
   optionsText = `Options :\n${formatted.join("\n")}`;
 }
+
+
     
 
 // ✅ ENSUITE description
