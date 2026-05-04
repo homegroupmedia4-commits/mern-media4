@@ -197,28 +197,38 @@ const enrichedPitchInstances = pitchInstances.map(pi => {
 
   const optionsFinancementPrices = {};
 
-  for (const opt of pi.optionsFinancement) {
-    if (opt === "achat") {
-      const totalHt =
-        Number(pi.prixTotalHtMois || 0) *
-        parseInt(String(pi.financementMonths || 63));
-      optionsFinancementPrices["achat"] = Math.floor(totalHt * 0.6);
-    } else {
-      const q = computePitchQuote({
-        largeurM: pi.largeurM,
-        hauteurM: pi.hauteurM,
-        lineaireRaw: pi.metreLineaire,
-        pitchLabel: pi.pitchLabel,
-        prixPitch,
-        dureeMonths: opt,
-        typeFinancement: "location_maintenance",
-        quantite: "1",
-        staticVals,
-        categorieName,
-      });
-      optionsFinancementPrices[opt] = Math.floor(Number(q.total || 0));
-    }
+ // ✅ Calcul finition mensuelle (identique à updatePitchInstance)
+const surface = Number(pi.surfaceM2 || 0);
+const prixM2Fin = Number(pi.finitionPriceMonthlyHt || 0);
+let finitionMonthly = 0;
+if (surface > 0 && prixM2Fin > 0) {
+  finitionMonthly = prixM2Fin + Math.max(0, surface - 1) * (prixM2Fin * 0.5);
+}
+
+for (const opt of pi.optionsFinancement) {
+  if (opt === "achat") {
+    // ✅ prixTotalHtMois inclut déjà la finition → correct tel quel
+    const totalHt =
+      Number(pi.prixTotalHtMois || 0) *
+      parseInt(String(pi.financementMonths || 63));
+    optionsFinancementPrices["achat"] = Math.floor(totalHt * 0.6);
+  } else {
+    const q = computePitchQuote({
+      largeurM: pi.largeurM,
+      hauteurM: pi.hauteurM,
+      lineaireRaw: pi.metreLineaire,
+      pitchLabel: pi.pitchLabel,
+      prixPitch,
+      dureeMonths: opt,
+      typeFinancement: "location_maintenance",
+      quantite: "1",
+      staticVals,
+      categorieName,
+    });
+    // ✅ Ajoute la finition mensuelle au prix de l'option
+    optionsFinancementPrices[opt] = Math.floor(Number(q.total || 0) + finitionMonthly);
   }
+}
 
   return { ...pi, optionsFinancementPrices };
 });
