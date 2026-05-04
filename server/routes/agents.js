@@ -493,44 +493,44 @@ const total = unit * qty;
 
     const inches = size.sizeInches ? `${size.sizeInches} pouces` : "";
 
-    let optionsText = "";
+
+    
+
+let optionsText = "";
 
 if (Array.isArray(sel?.optionsFinancement) && sel.optionsFinancement.length > 0) {
-  
 
-const baseMonthly = unitBase;
+  // ✅ Prix pré-calculés front (vrais prix DB par durée)
+  const precomputed = line?.optionsFinancementPrices || {};
 
-// ✅ durée sélectionnée
-const selectedMonths = Math.max(
-  1,
-  parseInt(String(sel?.leasingMonths || 1), 10) || 1
-);
+  const selectedMonths = Math.max(1, parseInt(String(sel?.leasingMonths || 1), 10) || 1);
+  const totalBase = unitBase * selectedMonths;
 
-// ✅ total reconstitué UNE SEULE FOIS
-const totalBase = baseMonthly * selectedMonths;
+  const formatted = sel.optionsFinancement.map((opt) => {
 
-const formatted = sel.optionsFinancement.map((opt) => {
+    if (opt !== "achat") {
+      const months = parseInt(opt, 10) || 1;
+      // ✅ Utilise le prix réel de la DB si dispo, sinon fallback linéaire
+      const price = precomputed[opt] != null
+        ? Number(precomputed[opt])
+        : Math.floor(totalBase / months);
+      return `${months} mois : ${fmt2(price)} € HT`;
+    }
 
-  // 👉 LOCATION (mensualités)
-  if (opt !== "achat") {
-    const months = parseInt(opt, 10) || 1;
+    // Achat
+    const price = precomputed["achat"] != null
+      ? Number(precomputed["achat"])
+      : Math.floor(totalBase * 0.6);
+    return `Achat : ${fmt2(price)} € HT`;
+  });
 
-    const mensuel = totalBase / months;
-    const mensuelRounded = Math.floor(mensuel);
-
-    return `${months} mois : ${fmt2(mensuelRounded)} € HT`;
-  }
-
-  // 👉 ACHAT
-  const prixAchat = totalBase * 0.6;
-  const prixAchatRounded = Math.floor(prixAchat);
-
-  return `Achat : ${fmt2(prixAchatRounded)} € HT`;
-});
-
-// ✅ rendu final
-optionsText = `Options :\n${formatted.join("\n")}`;
+  optionsText = `Options :\n${formatted.join("\n")}`;
 }
+
+
+
+
+    
     
     const description = [
   [productName, inches].filter(Boolean).join(" - "),
