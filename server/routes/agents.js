@@ -23,6 +23,8 @@ const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret_change_me";
 const TOKEN_TTL = "7d";
 
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
 
 const ADMIN_UI_PASSWORD = process.env.ADMIN_UI_PASSWORD || "Homegroup91?";
 
@@ -574,8 +576,12 @@ optionsText = `Options :\n${formatted.join("\n")}`;
 // -----------------------------
 // 4) ABOBR (1 fois par devis)
 // -----------------------------
+const hasAnyLine =
+  pitchLines.some(l => Number(l.montantHt) > 0) ||
+  otherMonthlyLines.length > 0;
+
 const abobrLine =
-  qtyTotalProducts > 0
+  hasAnyLine
     ? [
         {
           code: "ABOBR",
@@ -727,9 +733,9 @@ const abobrTotal = isAchatGlobal
   : abobrLine.reduce((s, l) => s + (Number(l.montantHt) || 0), 0);
 
 const mensualiteBase =
-  pitchLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
-  otherMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
-  finishMonthlyLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0) +
+  pitchLines.reduce((s, l) => s + round2(l.montantHt), 0) +
+  otherMonthlyLines.reduce((s, l) => s + round2(l.montantHt), 0) +
+  finishMonthlyLines.reduce((s, l) => s + round2(l.montantHt), 0) +
   abobrTotal;
 
 
@@ -788,11 +794,19 @@ const fraisAnnexesTtc = fraisAnnexesHt + fraisAnnexesTva;
     ...paraDetail,
   ];
 
+  console.log("=== BACKEND TOTAUX ===");
+console.log("pitchLines:", pitchLines.map(l => l.montantHt));
+console.log("otherLines:", otherMonthlyLines.map(l => l.montantHt));
+console.log("abobrTotal:", abobrTotal);
+console.log("mensualiteBase:", mensualiteBase);
+
   return {
     lines,
     totals: { mensualiteHt, totalTva, totalTtc ,   fraisAnnexesHt, fraisAnnexesTtc},
     devisMentions: buildDevisMentions({ finalType }),
   };
+
+  
 }
 
 /**
