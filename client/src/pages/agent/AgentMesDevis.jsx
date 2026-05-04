@@ -209,6 +209,9 @@ frais: fraisLabel,
             largeurPx: pi?.largeurPx ?? "",
             hauteurPx: pi?.hauteurPx ?? "",
             dureeMois: pi?.financementMonths ?? "",
+            optionsFinancement: Array.isArray(pi?.optionsFinancement)
+  ? pi.optionsFinancement.map(o => o === "achat" ? "Achat" : `${o} mois`).join(", ")
+  : "",
             qty,
             mensualiteHt,
             mensualiteTtc,
@@ -333,6 +336,9 @@ const total = unit * qty;
       totalHt: total,
        typeFinancement: typeFin, 
       dureeMois: months || String(sizeRow.leasingMonths || ""),
+      optionsFinancement: Array.isArray(sel?.optionsFinancement)
+  ? sel.optionsFinancement.map(o => o === "achat" ? "Achat" : `${o} mois`).join(", ")
+  : "",
       prixAssocie: memPrice, // “prix associé” = surcoût mémoire
       codeProduit: sizeRow.productCode || sizeRow.codeProduit || "",
     });
@@ -409,6 +415,7 @@ const total = unit * qty;
                           <th>Hauteur (px)</th>
 
                           <th>Durée (mois)</th>
+                          <th>Options choisies</th>
                           <th>Quantité</th>
 
                           <th>Mensualité HT</th>
@@ -436,6 +443,7 @@ const total = unit * qty;
                           <th>Total (HT)</th>
                           <th>Type financement</th>
                           <th>Durée leasing (mois)</th>
+                          <th>Options choisies</th>
                           <th>Prix associé</th>
                           <th>Code devis</th>
                           <th>Code produit</th>
@@ -493,6 +501,8 @@ const total = unit * qty;
                               <td>{r.hauteurPx}</td>
 
                               <td>{r.dureeMois}</td>
+                              <td>{r.optionsFinancement || "—"}</td>
+                              
                               <td>{r.qty}</td>
 
                               <td>{fmt2(r.mensualiteHt)}</td>
@@ -522,6 +532,7 @@ const total = unit * qty;
                               {/* <td>{r.typeFinancement || ""}</td> */}
                               
                               <td>{r.dureeMois}</td>
+                              <td>{r.optionsFinancement || "—"}</td>
                               <td>{fmt2(r.prixAssocie)}</td>
                               <td>{r.devisNumber}</td>
                               <td>{r.codeProduit}</td>
@@ -540,7 +551,7 @@ const total = unit * qty;
 
                     {!hasAny && !loading ? (
                       <tr>
-                        <td colSpan={tab === "walleds" ? 28 : 22} className="agentdevis-empty">
+                        <td colSpan={tab === "walleds" ? 29 : 23} className="agentdevis-empty">
                           Aucun devis.
                         </td>
                       </tr>
