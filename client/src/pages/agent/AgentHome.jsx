@@ -206,13 +206,29 @@ if (surface > 0 && prixM2Fin > 0) {
 }
 
 for (const opt of pi.optionsFinancement) {
-  if (opt === "achat") {
-    // ✅ prixTotalHtMois inclut déjà la finition → correct tel quel
-    const totalHt =
-      Number(pi.prixTotalHtMois || 0) *
-      parseInt(String(pi.financementMonths || 63));
-    optionsFinancementPrices["achat"] = Math.floor(totalHt * 0.6);
-  } else {
+
+  
+if (opt === "achat") {
+  // ✅ computePitchQuote avec typeFinancement="achat" = formule exacte du front
+  const qAchat = computePitchQuote({
+    largeurM: pi.largeurM,
+    hauteurM: pi.hauteurM,
+    lineaireRaw: pi.metreLineaire,
+    pitchLabel: pi.pitchLabel,
+    prixPitch,
+    dureeMonths: pi.financementMonths,
+    typeFinancement: "achat",
+    quantite: "1",
+    staticVals,
+    categorieName,
+  });
+  optionsFinancementPrices["achat"] = Math.floor(
+    Number(qAchat.total || 0) + finitionMonthly
+  );
+}
+  
+  
+  else {
     const q = computePitchQuote({
       largeurM: pi.largeurM,
       hauteurM: pi.hauteurM,
