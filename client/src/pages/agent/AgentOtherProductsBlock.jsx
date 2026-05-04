@@ -489,40 +489,45 @@ const rowsForProduct = otherSizes.filter((r) => {
     <div className="agenthome-subsectionTitle">Options :</div>
 
     <div className="agenthome-optionsRow">
-      {["24", "36", "48", "63", "achat"].map((opt) => {
-        const checked =
-          (sel.optionsFinancement || []).includes(opt) ||
-          String(sel.leasingMonths) === opt;
 
-        return (
-          <label key={opt} className="agenthome-optionItem">
-            <input
-              type="checkbox"
-              checked={checked}
-              onChange={(e) => {
-                const current = sel.optionsFinancement || [];
+      
+{[...durationOptions.map(d => String(d.months)), "achat"].map((opt) => {
+  const checked =
+    (sel.optionsFinancement || []).includes(opt) ||
+    String(sel.leasingMonths) === opt;
 
-                let next;
-                if (e.target.checked) {
-                  next = [...current, opt];
-                } else {
-                  next = current.filter((o) => o !== opt);
-                }
+  return (
+    <label key={opt} className="agenthome-optionItem">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => {
+          const current = sel.optionsFinancement || [];
 
-                setOtherSelections((prev) => ({
-                  ...prev,
-                  [productId]: {
-                    ...prev[productId],
-                    optionsFinancement: next,
-                  },
-                }));
-              }}
-            />
+          let next;
+          if (e.target.checked) {
+            next = [...current, opt];
+          } else {
+            next = current.filter((o) => o !== opt);
+          }
 
-            {opt === "achat" ? "Achat" : `${opt} mois`}
-          </label>
-        );
-      })}
+          setOtherSelections((prev) => ({
+            ...prev,
+            [productId]: {
+              ...prev[productId],
+              optionsFinancement: next,
+            },
+          }));
+        }}
+      />
+
+      {opt === "achat" ? "Achat" : `${opt} mois`}
+    </label>
+  );
+})}
+
+
+      
     </div>
   </div>
 )}
