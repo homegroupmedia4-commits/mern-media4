@@ -23,6 +23,7 @@ export default function AdminAgents() {
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [parrains, setParrains] = useState([]);
 
   const formatDate = (iso) => {
     if (!iso) return "—";
@@ -117,6 +118,19 @@ export default function AdminAgents() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API]);
+
+  useEffect(() => {
+  (async () => {
+    try {
+      const res = await fetch(`${API}/api/agents/parrains`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setParrains(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("parrains load error", e);
+    }
+  })();
+}, [API]);
 
   return (
     <div className="card">
@@ -285,18 +299,24 @@ export default function AdminAgents() {
                       <option value="responsable">responsable</option>
                     </select>
                   </div>
+                  
+<div>
+  <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Parrain</label>
+  <select
+    value={editForm.parrainId ?? ""}
+    onChange={(e) => setEditForm((p) => ({ ...p, parrainId: e.target.value }))}
+    style={{ width: "100%", padding: 10, border: "1px solid #e6e8ef", borderRadius: 10 }}
+  >
+    <option value="">— Aucun parrain —</option>
+    {parrains.map((p) => (
+      <option key={p._id} value={p._id}>
+        {p.prenom} {p.nom} ({p.email})
+      </option>
+    ))}
+  </select>
+</div>
 
-                  <div>
-                    <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>
-                      Parrain (ObjectId ou vide)
-                    </label>
-                    <input
-                      value={editForm.parrainId ?? ""}
-                      onChange={(e) => setEditForm((p) => ({ ...p, parrainId: e.target.value }))}
-                      style={{ width: "100%", padding: 10, border: "1px solid #e6e8ef", borderRadius: 10 }}
-                      placeholder="ex: 65f.... (vide = aucun)"
-                    />
-                  </div>
+                  
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
