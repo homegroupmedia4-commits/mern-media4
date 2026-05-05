@@ -805,7 +805,7 @@ console.log("mensualiteBase:", mensualiteBase);
 
   return {
     lines,
-    totals: { mensualiteHt, totalTva, totalTtc ,   fraisAnnexesHt, fraisAnnexesTtc},
+    totals: { mensualiteHt, totalTva, totalTtc ,   fraisAnnexesHt,fraisAnnexesTva, fraisAnnexesTtc},
     devisMentions: buildDevisMentions({ finalType }),
   };
 
@@ -1260,61 +1260,93 @@ doc.font("Helvetica-Bold").text(
 );
       // doc.font("Helvetica-Bold").text("mention : Lu et approuvé, bon pour accord)", taxX, bottomY + 56);
 
-      // Totals box (droite)
-      const boxW = contentW * 0.40;
-      const boxX = left + contentW - boxW;
-      const boxY = bottomY;
+const boxW = contentW * 0.40;
+const boxX = left + contentW - boxW;
+let boxYCursor = bottomY;
 
-const ft = String(docData.finalType || "")
-  .toLowerCase()
-  .trim();
+const lineH = 18;
 
+// ✅ fonction générique
+const drawBox = (labels, startY) => {
+const h = lineH * labels.length;
+
+doc.rect(boxX, startY, boxW, h).stroke();
+
+let ly = startY;
+
+labels.forEach(([lab, val], idx) => {
+doc.rect(boxX, ly, boxW * 0.60, lineH).fillAndStroke(GREEN);
+doc.rect(boxX + boxW * 0.60, ly, boxW * 0.40, lineH).stroke();
+
+```
+doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
+doc.text(lab, boxX + 6, ly + 5, { width: boxW * 0.60 - 12 });
+
+doc
+  .fillColor(DARK)
+  .font("Helvetica-Bold")
+  .fontSize(idx === labels.length - 1 ? 10 : 9);
+
+doc.text(val, boxX + boxW * 0.60 + 6, ly + 5, {
+  width: boxW * 0.40 - 12,
+  align: "right",
+});
+
+ly += lineH;
+```
+
+});
+
+return startY + h + 10;
+};
+
+// -----------------------------
+// LOGIQUE
+// -----------------------------
+const ft = String(docData.finalType || "").toLowerCase().trim();
 const isAchat = ft === "achat";
 
 const acompteRate = Number(docData.client?.acomptePercent ?? 50);
 
 const acompte = isAchat
-  ? 0
-  : (t.fraisAnnexesTtc || 0) * acompteRate / 100;
+? 0
+: (t.fraisAnnexesTtc || 0) * acompteRate / 100;
 
-const labels = isAchat
-  ? [
-      ["Total HT", fmt2(t.mensualiteHt)],
-      ["Total TVA 20%", fmt2(t.totalTva)],
-      ["Total TTC", fmt2(t.totalTtc)],
-      ["Acomptes à régler", fmt2(acompte)],
-    ]
-  : [
-      ["Mensualité HT", fmt2(t.mensualiteHt)],
-      ["TVA 20%", fmt2(t.totalTva)],
-      ["Total Mensualité TTC", fmt2(t.totalTtc)],
-    
-      ["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
-      ["TVA 20%", "20%"],
-      ["Frais annexes TTC", fmt2(t.fraisAnnexesTtc || 0)],
-      ["Acomptes à régler", fmt2(acompte)],
+// -----------------------------
+// LABELS
+// -----------------------------
+const labelsMensualite = [
+["Mensualité HT", fmt2(t.mensualiteHt)],
+["TVA 20%", fmt2(t.totalTva)],
+["Total Mensualité TTC", fmt2(t.totalTtc)],
+];
 
-    ];
+const labelsFrais = [
+["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
+["TVA 20%", fmt2(t.fraisAnnexesTva || 0)],
+["Frais annexes TTC", fmt2(t.fraisAnnexesTtc || 0)],
+["Acomptes à régler", fmt2(acompte)],
+];
 
-      const lineH = 18;
-      doc.rect(boxX, boxY, boxW, lineH * labels.length).stroke();
+// -----------------------------
+// RENDER
+// -----------------------------
+if (isAchat) {
+boxYCursor = drawBox(
+[
+["Total HT", fmt2(t.mensualiteHt)],
+["Total TVA 20%", fmt2(t.totalTva)],
+["Total TTC", fmt2(t.totalTtc)],
+["Acomptes à régler", fmt2(acompte)],
+],
+boxYCursor
+);
+} else {
+boxYCursor = drawBox(labelsMensualite, boxYCursor);
+boxYCursor = drawBox(labelsFrais, boxYCursor);
+}
 
-      let ly = boxY;
-      labels.forEach(([lab, val], idx) => {
-        doc.rect(boxX, ly, boxW * 0.60, lineH).fillAndStroke(GREEN);
-        doc.rect(boxX + boxW * 0.60, ly, boxW * 0.40, lineH).stroke();
-
-        doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
-        doc.text(lab, boxX + 6, ly + 5, { width: boxW * 0.60 - 12 });
-
-        doc.fillColor(DARK).font("Helvetica-Bold").fontSize(idx === labels.length - 1 ? 10 : 9);
-        doc.text(val, boxX + boxW * 0.60 + 6, ly + 5, {
-          width: boxW * 0.40 - 12,
-          align: "right",
-        });
-
-        ly += lineH;
-      });
+      
 
       // footer
       // doc.font("Helvetica").fontSize(8).fillColor(GREY);
