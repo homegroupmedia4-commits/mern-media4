@@ -1286,13 +1286,14 @@ const labels = isAchat
     ]
   : [
       ["Mensualité HT", fmt2(t.mensualiteHt)],
-      ["Total TVA 20%", fmt2(t.totalTva)],
-      ["Total TTC", fmt2(t.totalTtc)],
+      ["TVA 20%", fmt2(t.totalTva)],
+      ["Total Mensualité TTC", fmt2(t.totalTtc)],
+    
       ["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
-      ["TVA", "20%"],
+      ["TVA 20%", "20%"],
       ["Frais annexes TTC", fmt2(t.fraisAnnexesTtc || 0)],
       ["Acomptes à régler", fmt2(acompte)],
-      ["Mensualité TTC", `${fmt2(t.totalTtc)} €`],
+
     ];
 
       const lineH = 18;
