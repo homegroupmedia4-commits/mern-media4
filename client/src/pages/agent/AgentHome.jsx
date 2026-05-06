@@ -18,6 +18,8 @@ import {
   normalizeStaticVals,
   safeJsonParse,
   computePitchQuote,
+    ABONNEMENT_OPTIONS,
+  DEFAULT_ABONNEMENT,
   getWallLedsProductId,
   createDefaultPitchInstance,
   loadPitchesByCategory,
@@ -73,6 +75,11 @@ const DEFAULT_CATEGORY_NAME = "Exterieur haute luminosité";
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
+
+
+  const [wallLedsAbonnement, setWallLedsAbonnement] = useState(DEFAULT_ABONNEMENT);
+const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
+  
 
   const wallLedsProductId = useMemo(
     () => getWallLedsProductId(products),
@@ -326,6 +333,8 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
           validityDays: 30,
             otherSelections: enrichedOtherSelections,
           finalType: pitchInstances?.[0]?.typeFinancement || "location_maintenance",
+            wallLedsAbonnement,
+  otherAbonnement,
 
         }),
       });
@@ -1137,11 +1146,11 @@ ht += unit * qty;
 
 
     // ✅ ABOBR (comme dans le PDF) : 19,95€ si on a au moins 1 ligne
-const hasAnyLine =
-  (pitchInstances || []).some((pi) => parseEuro(pi.montantHt) > 0) ||
-  Object.keys(otherSelections || {}).length > 0;
+const hasPitch = (pitchInstances || []).some((pi) => parseEuro(pi.montantHt) > 0);
+const hasOther = Object.keys(otherSelections || {}).length > 0;
 
-if (hasAnyLine) ht += 19.95;
+if (hasPitch) ht += wallLedsAbonnement.price;
+if (hasOther) ht += otherAbonnement.price;
 
 
 
@@ -1154,7 +1163,7 @@ if (hasAnyLine) ht += 19.95;
       tva,
       ttc,
     };
-  }, [otherSelections, pitchInstances, productById, otherSizeById, memById]);
+}, [otherSelections, pitchInstances, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement]);
 
 
   // --- helpers label PDF ---
@@ -1672,6 +1681,31 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
   })()}
 </div>
 
+
+                  {/* Abonnement Murs LED — affiché 1 seule fois */}
+{pitchInstances.indexOf(pi) === 0 && (
+  <div className="agenthome-subsection">
+    <div className="agenthome-subsectionTitle">Abonnement (Écrans LED) :</div>
+    <div className="agenthome-selectRow">
+      <select
+        className="agenthome-select"
+        value={wallLedsAbonnement.key}
+        onChange={(e) => {
+          const found = ABONNEMENT_OPTIONS.find((a) => a.key === e.target.value);
+          if (found) setWallLedsAbonnement(found);
+        }}
+      >
+        {ABONNEMENT_OPTIONS.map((a) => (
+          <option key={a.key} value={a.key}>
+            {a.label} — {a.price.toFixed(2)} € HT/mois
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+)}
+
+                  
 
                   {/* Type financement */}
 <div className="agenthome-subsection">
