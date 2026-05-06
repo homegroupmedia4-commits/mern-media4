@@ -805,7 +805,7 @@ console.log("mensualiteBase:", mensualiteBase);
 
   return {
     lines,
-    totals: { mensualiteHt, totalTva, totalTtc ,   fraisAnnexesHt,fraisAnnexesTva, fraisAnnexesTtc},
+    totals: { mensualiteHt, totalTva, totalTtc, fraisAnnexesHt, fraisAnnexesTva, fraisAnnexesTtc },
     devisMentions: buildDevisMentions({ finalType }),
   };
 
@@ -1260,93 +1260,84 @@ doc.font("Helvetica-Bold").text(
 );
       // doc.font("Helvetica-Bold").text("mention : Lu et approuvé, bon pour accord)", taxX, bottomY + 56);
 
-const boxW = contentW * 0.40;
-const boxX = left + contentW - boxW;
-let boxYCursor = bottomY;
+      // Totals box (droite)
+      const boxW = contentW * 0.40;
+      const boxX = left + contentW - boxW;
+      const boxY = bottomY;
 
-const lineH = 18;
+const ft = String(docData.finalType || "")
+  .toLowerCase()
+  .trim();
 
-// ✅ fonction générique
-const drawBox = (labels, startY) => {
-const h = lineH * labels.length;
-
-doc.rect(boxX, startY, boxW, h).stroke();
-
-let ly = startY;
-
-labels.forEach(([lab, val], idx) => {
-doc.rect(boxX, ly, boxW * 0.60, lineH).fillAndStroke(GREEN);
-doc.rect(boxX + boxW * 0.60, ly, boxW * 0.40, lineH).stroke();
-
-```
-doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
-doc.text(lab, boxX + 6, ly + 5, { width: boxW * 0.60 - 12 });
-
-doc
-  .fillColor(DARK)
-  .font("Helvetica-Bold")
-  .fontSize(idx === labels.length - 1 ? 10 : 9);
-
-doc.text(val, boxX + boxW * 0.60 + 6, ly + 5, {
-  width: boxW * 0.40 - 12,
-  align: "right",
-});
-
-ly += lineH;
-```
-
-});
-
-return startY + h + 10;
-};
-
-// -----------------------------
-// LOGIQUE
-// -----------------------------
-const ft = String(docData.finalType || "").toLowerCase().trim();
 const isAchat = ft === "achat";
 
 const acompteRate = Number(docData.client?.acomptePercent ?? 50);
 
 const acompte = isAchat
-? 0
-: (t.fraisAnnexesTtc || 0) * acompteRate / 100;
-
-// -----------------------------
-// LABELS
-// -----------------------------
-const labelsMensualite = [
-["Mensualité HT", fmt2(t.mensualiteHt)],
-["TVA 20%", fmt2(t.totalTva)],
-["Total Mensualité TTC", fmt2(t.totalTtc)],
-];
-
-const labelsFrais = [
-["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
-["TVA 20%", fmt2(t.fraisAnnexesTva || 0)],
-["Frais annexes TTC", fmt2(t.fraisAnnexesTtc || 0)],
-["Acomptes à régler", fmt2(acompte)],
-];
-
-// -----------------------------
-// RENDER
-// -----------------------------
-if (isAchat) {
-boxYCursor = drawBox(
-[
-["Total HT", fmt2(t.mensualiteHt)],
-["Total TVA 20%", fmt2(t.totalTva)],
-["Total TTC", fmt2(t.totalTtc)],
-["Acomptes à régler", fmt2(acompte)],
-],
-boxYCursor
-);
-} else {
-boxYCursor = drawBox(labelsMensualite, boxYCursor);
-boxYCursor = drawBox(labelsFrais, boxYCursor);
-}
+  ? 0
+  : (t.fraisAnnexesTtc || 0) * acompteRate / 100;
 
       
+// ====== BLOC 1 : Mensualité ======
+const labelsBlock1 = isAchat
+  ? [
+      ["Total HT", fmt2(t.mensualiteHt)],
+      ["Total TVA 20%", fmt2(t.totalTva)],
+      ["Total TTC", fmt2(t.totalTtc)],
+      ["Acomptes à régler", fmt2(acompte)],
+    ]
+  : [
+      ["Mensualité HT", fmt2(t.mensualiteHt)],
+      ["TVA 20%", fmt2(t.totalTva)],
+      ["Total Mensualité TTC", fmt2(t.totalTtc)],
+    ];
+
+// ====== BLOC 2 : Frais annexes (seulement si pas achat) ======
+const labelsBlock2 = isAchat
+  ? []
+  : [
+      ["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
+      ["TVA 20%", fmt2(t.fraisAnnexesTva || 0)],   // ✅ VRAIE VALEUR
+      ["Frais annexes TTC", fmt2(t.fraisAnnexesTtc || 0)],
+      ["Acomptes à régler", fmt2(acompte)],
+    ];
+
+
+
+  return ly; // retourne le Y de fin
+}
+
+// --- Dessiner BLOC 1 ---
+let ly = drawTotalsBlock(doc, labelsBlock1, boxX, boxY, boxW, lineH);
+
+// --- Dessiner BLOC 2 (avec un espace de séparation) ---
+if (labelsBlock2.length > 0) {
+  const gapBetweenBlocks = 8; // ✅ espace visuel entre les 2 blocs
+  ly = drawTotalsBlock(doc, labelsBlock2, boxX, ly + gapBetweenBlocks, boxW, lineH);
+}
+
+
+      
+
+      const lineH = 18;
+      doc.rect(boxX, boxY, boxW, lineH * labels.length).stroke();
+
+      let ly = boxY;
+      labels.forEach(([lab, val], idx) => {
+        doc.rect(boxX, ly, boxW * 0.60, lineH).fillAndStroke(GREEN);
+        doc.rect(boxX + boxW * 0.60, ly, boxW * 0.40, lineH).stroke();
+
+        doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
+        doc.text(lab, boxX + 6, ly + 5, { width: boxW * 0.60 - 12 });
+
+        doc.fillColor(DARK).font("Helvetica-Bold").fontSize(idx === labels.length - 1 ? 10 : 9);
+        doc.text(val, boxX + boxW * 0.60 + 6, ly + 5, {
+          width: boxW * 0.40 - 12,
+          align: "right",
+        });
+
+        ly += lineH;
+      });
 
       // footer
       // doc.font("Helvetica").fontSize(8).fillColor(GREY);
@@ -1379,7 +1370,8 @@ for (let i = range.start; i < range.start + range.count; i++) {
 // const footerY = Math.min(pageH2 - 40, bottomY + 110); 
 
   
-const totalsHeight = lineH * labels.length;
+const block2Extra = labelsBlock2.length > 0 ? (labelsBlock2.length * lineH + 8) : 0;
+const totalsHeight = (labelsBlock1.length * lineH) + block2Extra;
 
 // position réelle du bas des totaux
 const totalsBottomY = bottomY + totalsHeight;
