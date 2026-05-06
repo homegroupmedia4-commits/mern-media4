@@ -199,6 +199,8 @@ async function buildLinesAndTotals({
   otherSelections = {},
   client = {},
   finalType = "location_maintenance",
+  wallLedsAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },  // ✅
+  otherAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },     // ✅
 }) {
 
   const isAchatGlobal = String(finalType) === "achat";
@@ -577,27 +579,40 @@ if (Array.isArray(sel?.optionsFinancement) && sel.optionsFinancement.length > 0)
       : [];
 
 // -----------------------------
-// 4) ABOBR (1 fois par devis)
+// 4) ABONNEMENTS DYNAMIQUES (1 par famille ayant des produits)
 // -----------------------------
-const hasAnyLine =
-  pitchLines.some(l => Number(l.montantHt) > 0) ||
-  otherMonthlyLines.length > 0;
+const hasPitchLines = pitchLines.some(l => Number(l.montantHt) > 0);
+const hasOtherLines = otherMonthlyLines.length > 0;
 
-const abobrLine =
-  hasAnyLine
-    ? [
-        {
-          code: "ABOBR",
-          description: "ABONNEMENT BRONZE LOGICIEL ET\nMAINTENANCE",
-          qty: 1,
-          puHt: 19.95,
-          montantHt: fmt2(19.95),
-          tva: tvaRate,
-          scope: "mensualite",
-        },
-      ]
-    : [];
+const abobrLines = [];
 
+if (hasPitchLines) {
+  const a = wallLedsAbonnement;
+  abobrLines.push({
+    code: `ABO${(a.key || "BRONZE").toUpperCase().slice(0, 4)}`,
+    description: `ABONNEMENT ${(a.label || "Bronze").toUpperCase()} LOGICIEL ET\nMAINTENANCE (Écrans LED)`,
+    qty: 1,
+    puHt: Number(a.price || 19.95),
+    montantHt: fmt2(Number(a.price || 19.95)),
+    tva: tvaRate,
+    scope: "mensualite",
+    kind: "abonnement",
+  });
+}
+
+if (hasOtherLines) {
+  const a = otherAbonnement;
+  abobrLines.push({
+    code: `ABO${(a.key || "BRONZE").toUpperCase().slice(0, 4)}`,
+    description: `ABONNEMENT ${(a.label || "Bronze").toUpperCase()} LOGICIEL ET\nMAINTENANCE (Autres produits)`,
+    qty: 1,
+    puHt: Number(a.price || 19.95),
+    montantHt: fmt2(Number(a.price || 19.95)),
+    tva: tvaRate,
+    scope: "mensualite",
+    kind: "abonnement",
+  });
+}
 
   // -----------------------------
   // 5) INFO + hors mensualité
@@ -733,7 +748,7 @@ if (clientComment) {
 
 const abobrTotal = isAchatGlobal
   ? 0
-  : abobrLine.reduce((s, l) => s + (Number(l.montantHt) || 0), 0);
+  : abobrLines.reduce((s, l) => s + (Number(l.montantHt) || 0), 0);
 
 const mensualiteBase =
   pitchLines.reduce((s, l) => s + round2(l.montantHt), 0) +
@@ -789,7 +804,7 @@ const fraisAnnexesTtc = fraisAnnexesHt + fraisAnnexesTva;
      ...finishMonthlyLines,
     ...otherMonthlyLines,
     ...playerLine,
-    ...abobrLine,
+ ...abobrLines,   
     ...infoLine,
     ...portLine,
     ...instLines,
@@ -1588,6 +1603,11 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
   otherSelections = {},
   validityDays = 30,
   finalType = "location_maintenance",
+
+       wallLedsAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },
+  otherAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },
+
+      
 } = req.body || {};
 
 let ft = String(finalType || "")
@@ -1646,6 +1666,8 @@ const saved = await AgentPdf.create({
       otherSelections,
       validityDays,
     finalType, 
+    wallLedsAbonnement,   // ✅
+  otherAbonnement,      // ✅
       lines,
       totals,
       devisMentions,
