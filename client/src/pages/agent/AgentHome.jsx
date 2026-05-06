@@ -1866,6 +1866,8 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
   durations={durations}
   loadingDur={loadingRefs}
   onSelectionsChange={setOtherSelections}
+    abonnement={otherAbonnement}
+  onAbonnementChange={setOtherAbonnement}
 />
 
 
