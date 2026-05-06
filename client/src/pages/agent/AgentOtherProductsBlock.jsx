@@ -1,5 +1,6 @@
 // client/src/pages/agent/AgentOtherProductsBlock.jsx
 import { useEffect, useMemo, useState } from "react";
+import { ABONNEMENT_OPTIONS } from "./agentHome.helpers";
 
 /**
  * Affiche les blocs "Choisissez la taille" + "Tailles sélectionnées"
