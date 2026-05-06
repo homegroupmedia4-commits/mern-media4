@@ -1647,6 +1647,8 @@ console.log("FINAL TYPE NORMALIZED:", finalType);
       otherSelections,
       client,
       finalType,
+      wallLedsAbonnement,   // ✅ AJOUTÉ
+  otherAbonnement,      // ✅ AJOUTÉ
     });
 
     // ✅ numéro type "DE01048"
