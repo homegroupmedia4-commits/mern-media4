@@ -298,3 +298,14 @@ const hauteurPx =
     montant: Number.isFinite(montant) ? montant.toFixed(2) : "0.00",
   };
 }
+
+
+export const ABONNEMENT_OPTIONS = [
+  { key: "bronze",  label: "Bronze",  price: 19.95 },
+  { key: "argent",  label: "Argent",  price: 39.95 },
+  { key: "gold",    label: "Gold",    price: 59.95 },
+  { key: "supreme", label: "Suprême", price: 199.00 },
+];
+
+export const DEFAULT_ABONNEMENT = ABONNEMENT_OPTIONS[0]; // Bronze
+
