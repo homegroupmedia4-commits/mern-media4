@@ -75,6 +75,20 @@ const AgentPdfSchema = new mongoose.Schema(
     pitchInstances: { type: Array, default: [] },
     otherSelections: { type: Object, default: {} },
 
+
+    wallLedsAbonnement: {
+  key: { type: String, default: "bronze" },
+  label: { type: String, default: "Bronze" },
+  price: { type: Number, default: 19.95 },
+},
+otherAbonnement: {
+  key: { type: String, default: "bronze" },
+  label: { type: String, default: "Bronze" },
+  price: { type: Number, default: 19.95 },
+},
+
+    
+
     // ✅ Totaux (comme ton PDF: Mensualité HT / TVA / TTC)
     totals: {
       mensualiteHt: { type: Number, default: 0 },
