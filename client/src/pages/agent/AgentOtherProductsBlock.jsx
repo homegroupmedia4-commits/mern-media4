@@ -20,6 +20,9 @@ export default function AgentOtherProductsBlock({
 
   // remonte au parent pour le "Valider" (devis)
   onSelectionsChange,
+
+  abonnement,
+  onAbonnementChange,
 }) {
   const [otherSizes, setOtherSizes] = useState([]);
   const [loadingOtherSizes, setLoadingOtherSizes] = useState(false);
@@ -446,6 +449,29 @@ const rowsForProduct = otherSizes.filter((r) => {
 
               
             </div>
+
+            {/* Abonnement Autres produits — affiché 1 seule fois */}
+{otherSelectedProducts.indexOf(p) === 0 && (
+  <div className="agenthome-selectCol" style={{ marginTop: 6 }}>
+    <label className="agenthome-label">Abonnement (Autres produits) :</label>
+    <select
+      className="agenthome-select"
+      value={abonnement?.key || "bronze"}
+      onChange={(e) => {
+        const found = ABONNEMENT_OPTIONS.find((a) => a.key === e.target.value);
+        if (found) onAbonnementChange?.(found);
+      }}
+    >
+      {ABONNEMENT_OPTIONS.map((a) => (
+        <option key={a.key} value={a.key}>
+          {a.label} — {a.price.toFixed(2)} € HT/mois
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
+            
 
             {/* Type financement (Autres produits) */}
 <div className="agenthome-selectCol" style={{ marginTop: 6 }}>
