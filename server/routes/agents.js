@@ -1319,40 +1319,42 @@ const labelsBlock2 = isAchat
 
 
 
-  return ly; // retourne le Y de fin
+// --- Fonction pour dessiner un bloc de totaux ---
+function drawTotalsBlock(pdfDoc, labels, bx, by, bw, lh) {
+  if (!labels.length) return by;
+
+  pdfDoc.rect(bx, by, bw, lh * labels.length).stroke();
+
+  let ly2 = by;
+  labels.forEach(([lab, val], idx) => {
+    pdfDoc.rect(bx, ly2, bw * 0.60, lh).fillAndStroke(GREEN);
+    pdfDoc.rect(bx + bw * 0.60, ly2, bw * 0.40, lh).stroke();
+
+    pdfDoc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
+    pdfDoc.text(lab, bx + 6, ly2 + 5, { width: bw * 0.60 - 12 });
+
+    pdfDoc.fillColor(DARK).font("Helvetica-Bold").fontSize(idx === labels.length - 1 ? 10 : 9);
+    pdfDoc.text(val, bx + bw * 0.60 + 6, ly2 + 5, {
+      width: bw * 0.40 - 12,
+      align: "right",
+    });
+
+    ly2 += lh;
+  });
+
+  return ly2;
 }
+
+const lineH = 18;
 
 // --- Dessiner BLOC 1 ---
 let ly = drawTotalsBlock(doc, labelsBlock1, boxX, boxY, boxW, lineH);
 
 // --- Dessiner BLOC 2 (avec un espace de séparation) ---
 if (labelsBlock2.length > 0) {
-  const gapBetweenBlocks = 8; // ✅ espace visuel entre les 2 blocs
+  const gapBetweenBlocks = 8;
   ly = drawTotalsBlock(doc, labelsBlock2, boxX, ly + gapBetweenBlocks, boxW, lineH);
 }
-
-
-      
-
-      const lineH = 18;
-      doc.rect(boxX, boxY, boxW, lineH * labels.length).stroke();
-
-      let ly = boxY;
-      labels.forEach(([lab, val], idx) => {
-        doc.rect(boxX, ly, boxW * 0.60, lineH).fillAndStroke(GREEN);
-        doc.rect(boxX + boxW * 0.60, ly, boxW * 0.40, lineH).stroke();
-
-        doc.fillColor(DARK).font("Helvetica-Bold").fontSize(9);
-        doc.text(lab, boxX + 6, ly + 5, { width: boxW * 0.60 - 12 });
-
-        doc.fillColor(DARK).font("Helvetica-Bold").fontSize(idx === labels.length - 1 ? 10 : 9);
-        doc.text(val, boxX + boxW * 0.60 + 6, ly + 5, {
-          width: boxW * 0.40 - 12,
-          align: "right",
-        });
-
-        ly += lineH;
-      });
 
       // footer
       // doc.font("Helvetica").fontSize(8).fillColor(GREY);
