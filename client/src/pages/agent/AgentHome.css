@@ -11,6 +11,33 @@
 }
 
 
+.agenthome-autocomplete {
+  position: absolute;
+  z-index: 50;
+  left: 0;
+  right: 0;
+  top: 100%;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  margin-top: 4px;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(0,0,0,.08);
+}
+
+.agenthome-autocompleteItem {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 0;
+  background: #fff;
+  cursor: pointer;
+}
+
+.agenthome-autocompleteItem:hover {
+  background: #f3f4f6;
+}
+
 .agenthome-optionsRow {
   display: flex;
   gap: 20px;
