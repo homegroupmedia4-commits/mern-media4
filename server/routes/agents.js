@@ -2393,4 +2393,46 @@ if (patch.parrainId === "" || patch.parrainId === null) {
 });
 
 
+// GET /api/agents/client-societes?q=entr
+router.get("/client-societes", requireAgentAuth, async (req, res) => {
+  try {
+    const agentId = req.agent._id;
+    const q = String(req.query.q || "").trim().toLowerCase();
+
+    const rows = await AgentPdf.find({
+      agentId,
+      "client.societe": { $exists: true, $ne: "" },
+    })
+      .select("client.societe client.adresse1 client.codePostal client.ville createdAt")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const map = new Map();
+
+    for (const d of rows) {
+      const c = d.client || {};
+      const societe = String(c.societe || "").trim();
+      if (!societe) continue;
+
+      if (q && !societe.toLowerCase().includes(q)) continue;
+
+      const key = societe.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          societe,
+          adresse1: String(c.adresse1 || "").trim(),
+          codePostal: String(c.codePostal || "").trim(),
+          ville: String(c.ville || "").trim(),
+        });
+      }
+    }
+
+    res.json(Array.from(map.values()).slice(0, 10));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+
 module.exports = router;
