@@ -134,6 +134,10 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
     commentaires: "",
   });
 
+  const [societeSuggestions, setSocieteSuggestions] = useState([]);
+const [showSocieteSuggestions, setShowSocieteSuggestions] = useState(false);
+const [societeLoading, setSocieteLoading] = useState(false);
+
 
   const googleLoaded = useGoogleMaps();
 
@@ -1898,16 +1902,88 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
               />
             </div>
 
-            <div className="agenthome-field">
-              <label>Société :</label>
-              <input
-                className="agenthome-input"
-                placeholder="Société du client"
-                value={client.societe}
-                required
-                onChange={(e) => setClient((p) => ({ ...p, societe: e.target.value }))}
-              />
+
+
+
+            <div className="agenthome-field" style={{ position: "relative" }}>
+  <label>Société :</label>
+  <input
+    className="agenthome-input"
+    placeholder="Société du client"
+    value={client.societe}
+    required
+    onChange={async (e) => {
+      const value = e.target.value;
+      setClient((p) => ({ ...p, societe: value }));
+      setShowSocieteSuggestions(true);
+
+      if (value.trim().length < 3) {
+        setSocieteSuggestions([]);
+        return;
+      }
+
+      try {
+        setSocieteLoading(true);
+        const token = localStorage.getItem(TOKEN_KEY);
+        const res = await fetch(
+          `${API}/api/agents/client-societes?q=${encodeURIComponent(value)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        setSocieteSuggestions(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(err);
+        setSocieteSuggestions([]);
+      } finally {
+        setSocieteLoading(false);
+      }
+    }}
+    onFocus={() => {
+      if (client.societe.trim().length >= 3) setShowSocieteSuggestions(true);
+    }}
+    onBlur={() => {
+      setTimeout(() => setShowSocieteSuggestions(false), 150);
+    }}
+  />
+
+  {showSocieteSuggestions && client.societe.trim().length >= 3 && (
+    <div className="agenthome-autocomplete">
+      {societeLoading ? (
+        <div className="agenthome-autocompleteItem">Chargement...</div>
+      ) : societeSuggestions.length ? (
+        societeSuggestions.map((s) => (
+          <button
+            key={`${s.societe}-${s.codePostal}-${s.ville}`}
+            type="button"
+            className="agenthome-autocompleteItem"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setClient((p) => ({
+                ...p,
+                societe: s.societe || p.societe,
+                adresse1: s.adresse1 || p.adresse1,
+                codePostal: s.codePostal || p.codePostal,
+                ville: s.ville || p.ville,
+              }));
+              setSocieteSuggestions([]);
+              setShowSocieteSuggestions(false);
+            }}
+          >
+            <strong>{s.societe}</strong>
+            <div>
+              {[s.adresse1, s.codePostal, s.ville].filter(Boolean).join(" — ")}
             </div>
+          </button>
+        ))
+      ) : (
+        <div className="agenthome-autocompleteItem">Aucun ancien client trouvé</div>
+      )}
+    </div>
+  )}
+</div>
 
            
          <div className="agenthome-field">
