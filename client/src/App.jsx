@@ -15,6 +15,7 @@ import CategoriesPitch from "./pages/CategoriesPitch";
 import PitchManagerPage from "./pages/PitchManager";
 
 import AdminFormules from "./pages/AdminFormules";
+import AdminTaegLeaseur from "./pages/AdminTaegLeaseur";
 
 /* ================= AGENT ================= */
 import AgentHome from "./pages/agent/AgentHome";
@@ -66,6 +67,8 @@ export default function App() {
         <Route path="finition" element={<AdminFinition />} />
         <Route path="pdf" element={<AdminPdf />} />
         <Route path="formules" element={<AdminFormules />} />
+
+        <Route path="taeg-leaseur" element={<AdminTaegLeaseur />} />
 
         <Route path="produits" element={<AdminProduits />} />
 
