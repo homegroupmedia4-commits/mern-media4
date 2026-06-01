@@ -15,6 +15,7 @@ const agentsRouter = require("./routes/agents");
 const productsRouter = require("./routes/products");
 const finishesRouter = require("./routes/finishes");
 const fixationsRouter = require("./routes/fixations");
+const leaseurRatesRouter = require("./routes/leaseurRates");
 
 
 
@@ -51,7 +52,7 @@ app.use((req, res, next) => {
 
 
 
-
+app.use("/api/leaseur-rates", leaseurRatesRouter);
 app.use("/api/pitch-categories", pitchCategoriesRouter);
 app.use("/api/pitches", pitchesRouter);
 app.use("/api/leasing-durations", leasingDurationsRouter);
