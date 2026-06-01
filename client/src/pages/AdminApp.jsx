@@ -356,7 +356,8 @@ const handleLogin = async (e) => {
 isPathActive(`${ADMIN_BASE}/fixation`) ||
 isPathActive(`${ADMIN_BASE}/finition`) ||
 isPathActive(`${ADMIN_BASE}/pdf`) ||
-isPathActive(`${ADMIN_BASE}/formules`)
+isPathActive(`${ADMIN_BASE}/formules`) ||
+isPathActive(`${ADMIN_BASE}/taeg-leaseur`) 
 
                 
                   ? "is-active"
@@ -414,6 +415,14 @@ PDF
   className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
 >
   Formules
+</NavLink>
+
+
+    <NavLink
+  to={`${ADMIN_BASE}/taeg-leaseur`}
+  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+>
+  TAEG leaseur
 </NavLink>
 
   
