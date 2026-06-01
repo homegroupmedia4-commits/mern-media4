@@ -113,7 +113,7 @@ export default function AdminTaegLeaseur() {
 
   return (
     <div style={{ maxWidth: 980 }}>
-      <h2 style={{ marginBottom: 4 }}>Tableau TAEG — Taux leaseur</h2>
+      <h2 style={{ marginBottom: 4 }}>Tableau TAEG</h2>
       <p style={{ color: "#666", marginTop: 0 }}>
         Saisis uniquement le <b>TAEG annuel (%)</b>. Les deux dernières colonnes
         sont calculées automatiquement et stockées en base.
