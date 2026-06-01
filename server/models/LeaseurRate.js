@@ -27,11 +27,10 @@ const LeaseurRateSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-LeaseurRateSchema.pre("save", function (next) {
+LeaseurRateSchema.pre("save", function () {
   const r = computeTaeg(this.taegAnnual, this.months);
   this.coutCreditSurMontantFinance = r.coutCreditSurMontantFinance;
   this.coutLeaseurSurCoutTotal = r.coutLeaseurSurCoutTotal;
-  next();
 });
 
 const LeaseurRate = mongoose.model("LeaseurRate", LeaseurRateSchema);
