@@ -96,6 +96,7 @@ otherAbonnement: {
       totalTtc: { type: Number, default: 0 },
 
         fraisAnnexesHt: { type: Number, default: 0 },
+      fraisAnnexesTva: { type: Number, default: 0 },
   fraisAnnexesTtc: { type: Number, default: 0 },
     },
 
