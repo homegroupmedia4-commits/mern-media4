@@ -1286,11 +1286,13 @@ const ft = String(docData.finalType || "")
 
 const isAchat = ft === "achat";
 
-const acompteRate = Number(docData.client?.acomptePercent ?? 50);
+const acompteRate = isAchat ? 30 : 50;
 
 const acompte = isAchat
-  ? 0
+  ? (t.totalTtc || 0) * acompteRate / 100
   : (t.fraisAnnexesTtc || 0) * acompteRate / 100;
+
+      
 
       
 // ====== BLOC 1 : Mensualité ======
@@ -1299,7 +1301,7 @@ const labelsBlock1 = isAchat
       ["Total HT", fmt2(t.mensualiteHt)],
       ["Total TVA 20%", fmt2(t.totalTva)],
       ["Total TTC", fmt2(t.totalTtc)],
-      ["Acomptes à régler", fmt2(acompte)],
+      ["Acomptes à régler TTC", fmt2(acompte)],
     ]
   : [
       ["Mensualité HT", fmt2(t.mensualiteHt)],
@@ -1314,7 +1316,7 @@ const labelsBlock2 = isAchat
       ["Frais annexes HT", fmt2(t.fraisAnnexesHt || 0)],
       ["TVA 20%", fmt2(t.fraisAnnexesTva || 0)],   // ✅ VRAIE VALEUR
       ["Frais annexes TTC", fmt2(t.fraisAnnexesTtc || 0)],
-      ["Acomptes à régler", fmt2(acompte)],
+      ["Acomptes à régler TTC", fmt2(acompte)],
     ];
 
 
