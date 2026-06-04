@@ -1186,6 +1186,55 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
   return `Pdf MEDIA4_${num}-1_${soc}`;
 };
 
+  
+
+  // ✅ Prix mensuel (ou achat) d'une option de durée pour un pitch donné
+const getOptionPrice = (pi, opt) => {
+  const pitchObj = (pitches || []).find(
+    (x) => String(x?._id || x?.id) === String(pi.pitchId)
+  );
+  const prixPitch = Number(pitchObj?.price ?? pi.prixPitch ?? 0);
+
+  const surface = Number(pi.surfaceM2 || 0);
+  const prixM2Fin = Number(pi.finitionPriceMonthlyHt || 0);
+  let finitionMonthly = 0;
+  if (surface > 0 && prixM2Fin > 0) {
+    finitionMonthly = prixM2Fin + Math.max(0, surface - 1) * (prixM2Fin * 0.5);
+  }
+
+  if (opt === "achat") {
+    const qAchat = computePitchQuote({
+      largeurM: pi.largeurM,
+      hauteurM: pi.hauteurM,
+      lineaireRaw: pi.metreLineaire,
+      pitchLabel: pi.pitchLabel,
+      prixPitch,
+      dureeMonths: pi.financementMonths,
+      typeFinancement: "achat",
+      quantite: "1",
+      staticVals,
+      categorieName: pi.categorieName,
+    });
+    return Math.floor(Number(qAchat.total || 0) + finitionMonthly);
+  }
+
+  const q = computePitchQuote({
+    largeurM: pi.largeurM,
+    hauteurM: pi.hauteurM,
+    lineaireRaw: pi.metreLineaire,
+    pitchLabel: pi.pitchLabel,
+    prixPitch,
+    dureeMonths: opt,
+    typeFinancement: "location_maintenance",
+    quantite: "1",
+    staticVals,
+    categorieName: pi.categorieName,
+  });
+  return Math.floor(Number(q.total || 0) + finitionMonthly);
+};
+
+  
+
 
   return (
 
@@ -1800,7 +1849,19 @@ const buildPdfLinkLabel = ({ devisNumber, societe }) => {
                 }}
               />
 
-              {opt === "achat" ? "Achat" : `${opt} mois`}
+             {opt === "achat" ? (
+                (() => {
+                  const prix = getOptionPrice(pi, "achat");
+                  return prix > 0 ? `Achat : ${prix.toFixed(2)} € HT` : "Achat";
+                })()
+              ) : (
+                (() => {
+                  const prix = getOptionPrice(pi, opt);
+                  return prix > 0
+                    ? `${opt} mois : ${prix.toFixed(2)} € HT`
+                    : `${opt} mois`;
+                })()
+              )}
             </label>
           );
         })}
