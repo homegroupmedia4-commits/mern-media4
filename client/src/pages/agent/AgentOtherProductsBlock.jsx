@@ -380,6 +380,7 @@ return {
 };
 
 
+  
 
 
   // const computeOtherLine = ({ basePrice, memId, qty }) => {
@@ -411,6 +412,47 @@ return {
   byMonths: {},
 };
 
+      // ✅ Prix d'une option de durée pour ce produit (basé sur les tailles cochées)
+const getOtherOptionPrice = (productId, sel, opt) => {
+  const months = String(sel.leasingMonths || getDefaultLeasingMonths());
+  const checked = sel.byMonths?.[months]?.checked || {};
+  const rowIds = Object.keys(checked);
+  if (!rowIds.length) return 0;
+
+  // on prend la 1ère taille cochée comme référence d'affichage
+  const rowId = rowIds[0];
+  const line = checked[rowId];
+  const row = otherSizes.find((r) => r._id === rowId);
+  if (!row) return 0;
+
+  const memPrice = memOptions.find((m) => m._id === line?.memId)?.price ?? 0;
+
+  if (opt === "achat") {
+    const monthly = Number(row.price || 0) + Number(memPrice || 0);
+    const selectedMonths = Math.max(1, parseInt(months || 1, 10));
+    return Math.floor(monthly * selectedMonths * 0.6);
+  }
+
+  // cherche la row exacte pour CETTE durée (même produit, même taille)
+  const rowProductId = String(row.productId?._id || row.productId || row.product || "");
+  const targetRow = otherSizes.find((r) => {
+    const rPid = String(r.productId?._id || r.productId || r.product || "");
+    return (
+      rPid === rowProductId &&
+      r.sizeInches === row.sizeInches &&
+      String(r.leasingMonths) === String(opt)
+    );
+  });
+
+  if (targetRow) {
+    return Math.floor(Number(targetRow.price || 0) + Number(memPrice || 0));
+  }
+  // fallback : prix de la durée courante
+  return Math.floor(Number(row.price || 0) + Number(memPrice || 0));
+};
+
+
+      
 const activeMonths = String(sel.leasingMonths || getDefaultLeasingMonths());
 const checkedActive = sel.byMonths?.[activeMonths]?.checked || {};
 
@@ -548,7 +590,19 @@ const rowsForProduct = otherSizes.filter((r) => {
         }}
       />
 
-      {opt === "achat" ? "Achat" : `${opt} mois`}
+     {opt === "achat" ? (
+        (() => {
+          const prix = getOtherOptionPrice(productId, sel, "achat");
+          return prix > 0 ? `Achat : ${prix.toFixed(2)} € HT` : "Achat";
+        })()
+      ) : (
+        (() => {
+          const prix = getOtherOptionPrice(productId, sel, opt);
+          return prix > 0
+            ? `${opt} mois : ${prix.toFixed(2)} € HT`
+            : `${opt} mois`;
+        })()
+      )}
     </label>
   );
 })}
