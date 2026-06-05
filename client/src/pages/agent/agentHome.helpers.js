@@ -46,6 +46,7 @@ export function normalizeStaticVals(db = {}) {
     option_livraison: toNum(get("option_livraison", "livraison_eur_m2"), 150),
     prix_container: toNum(get("prix_container", "prix_container_eur_m2"), 150),
     prix_instal: toNum(get("prix_instal", "installation_eur_m2"), 500),
+     abattement_comptant: toNum(get("abattement_comptant"), 0.7),
   };
 }
 
@@ -309,3 +310,15 @@ export const ABONNEMENT_OPTIONS = [
 
 export const DEFAULT_ABONNEMENT = ABONNEMENT_OPTIONS[0]; // Bronze
 
+// NouvelleMensualité = M - [A × (1 + AB × CL)] / N
+export function applyApport({ mensualiteInitiale, apport, abattement, coutLeaseur, dureeMonths }) {
+  const M = Number(mensualiteInitiale) || 0;
+  const A = Number(apport) || 0;
+  const AB = Number(abattement) || 0;
+  const CL = Number(coutLeaseur) || 0;
+  const N = Math.max(1, Number(dureeMonths) || 1);
+  if (A <= 0) return M;
+  const reduction = A * (1 + AB * CL);
+  const nouvelle = M - reduction / N;
+  return Math.round(nouvelle * 100) / 100;
+}
