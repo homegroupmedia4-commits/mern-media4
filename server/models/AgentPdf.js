@@ -102,6 +102,7 @@ otherAbonnement: {
 
 
     acomptePercent: { type: Number, default: 50 },
+    apport: { type: Number, default: 0 },
 
     
     // ✅ Mentions
