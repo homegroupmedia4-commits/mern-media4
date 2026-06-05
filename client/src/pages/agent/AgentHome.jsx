@@ -1174,15 +1174,32 @@ if (hasOther) ht += otherAbonnement.price;
 
 
 
-    const tva = ht * 0.2;
-    const ttc = ht + tva;
+// --- Application de l'apport ---
+    const dureeSel = String(pitchInstances?.[0]?.financementMonths || "63");
+    const rate = (leaseurRates || []).find((r) => String(r.months) === dureeSel);
+    const CL = Number(rate?.coutLeaseurSurCoutTotal || 0);
+    const AB = Number(staticVals?.abattement_comptant ?? 0.7);
+
+    const htApresApport = Number(apport) > 0
+      ? applyApport({
+          mensualiteInitiale: ht,
+          apport,
+          abattement: AB,
+          coutLeaseur: CL,
+          dureeMonths: dureeSel,
+        })
+      : ht;
+
+    const tva = htApresApport * 0.2;
+    const ttc = htApresApport + tva;
 
     return {
       lines,
-      totalHt: ht,
+      totalHt: htApresApport,
       tva,
       ttc,
     };
+    
 }, [otherSelections, pitchInstances, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, leaseurRates, staticVals]);
 
 
