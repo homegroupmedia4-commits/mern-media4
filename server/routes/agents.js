@@ -9,6 +9,9 @@ const AgentPdf = require("../models/AgentPdf");
 const OtherProductSize = require("../models/OtherProductSize");
 const { sendDevisEmail } = require("../utils/mailer");
 
+const LeaseurRate = require("../models/LeaseurRate");
+const StaticValues = require("../models/StaticValues");
+
 const multer = require("multer");
 
 const crypto = require("crypto");
@@ -201,6 +204,7 @@ async function buildLinesAndTotals({
   finalType = "location_maintenance",
   wallLedsAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },  // ✅
   otherAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },     // ✅
+  apport = 0,
 }) {
 
   const isAchatGlobal = String(finalType) === "achat";
@@ -757,7 +761,29 @@ const mensualiteBase =
   abobrTotal;
 
 
-  const mensualiteHt = mensualiteBase;
+let mensualiteHt = mensualiteBase;
+
+  // ✅ Application de l'apport (sauf achat)
+  if (!isAchatGlobal && Number(apport) > 0) {
+    const dureeSel = String(pitchInstances?.[0]?.financementMonths || "63");
+    const rateDoc = await LeaseurRate.findOne({ months: Number(dureeSel) }).lean();
+    const CL = Number(rateDoc?.coutLeaseurSurCoutTotal || 0);
+
+    let AB = 0.7;
+    try {
+      const sv = await StaticValues.findOne().lean();
+      if (sv && Number.isFinite(Number(sv.abattement_comptant))) {
+        AB = Number(sv.abattement_comptant);
+      }
+    } catch (e) {
+      console.warn("abattement fallback 0.7", e);
+    }
+
+    const N = Math.max(1, Number(dureeSel) || 1);
+    const reduction = Number(apport) * (1 + AB * CL);
+    mensualiteHt = Math.round((mensualiteHt - reduction / N) * 100) / 100;
+  }
+
   const totalTva = mensualiteHt * 0.2;
   const totalTtc = mensualiteHt + totalTva;
 
@@ -1610,6 +1636,7 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
 
        wallLedsAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },
   otherAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },
+      apport = 0,
 
       
 } = req.body || {};
@@ -1651,6 +1678,7 @@ console.log("FINAL TYPE NORMALIZED:", finalType);
       finalType,
       wallLedsAbonnement,   // ✅ AJOUTÉ
   otherAbonnement,      // ✅ AJOUTÉ
+      apport,
     });
 
     // ✅ numéro type "DE01048"
@@ -1677,6 +1705,7 @@ const saved = await AgentPdf.create({
       lines,
       totals,
       devisMentions,
+  apport,
       pages: 1,
     });
 
