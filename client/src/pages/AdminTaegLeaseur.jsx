@@ -15,6 +15,9 @@ export default function AdminTaegLeaseur() {
   const [newMonths, setNewMonths] = useState("");
   const [draftTaeg, setDraftTaeg] = useState({});
 
+  const [abattement, setAbattement] = useState("");
+  const [savingAb, setSavingAb] = useState(false);
+
   const token = () => localStorage.getItem(ADMIN_TOKEN_KEY) || "";
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -49,6 +52,23 @@ export default function AdminTaegLeaseur() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/static-values`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const dec = Number(data?.abattement_comptant);
+        const val = Number.isFinite(dec) ? dec : 0.7;
+        setAbattement((val * 100).toFixed(2).replace(".", ","));
+      } catch (e) {
+        console.warn(e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
 
   const saveTaeg = async (row) => {
     const raw = String(draftTaeg[row._id] ?? "").replace(",", ".");
@@ -106,6 +126,25 @@ export default function AdminTaegLeaseur() {
   const seedDefaults = async () => {
     const existing = new Set(rows.map((r) => Number(r.months)));
     for (const m of DEFAULT_DURATIONS) if (!existing.has(m)) await addDuration(m);
+  };
+
+  const saveAbattement = async () => {
+    const pct = Number(String(abattement).replace(",", "."));
+    if (!Number.isFinite(pct)) return setError("Abattement invalide.");
+    setSavingAb(true);
+    try {
+      const res = await fetch(`${API}/api/static-values`, {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: JSON.stringify({ abattement_comptant: pct / 100 }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } catch (e) {
+      console.error(e);
+      setError("Erreur enregistrement abattement.");
+    } finally {
+      setSavingAb(false);
+    }
   };
 
   const cell = { border: "1px solid #e5e7eb", padding: "8px 10px", textAlign: "left" };
@@ -188,6 +227,28 @@ export default function AdminTaegLeaseur() {
           </div>
         </>
       )}
+
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #e5e7eb" }}>
+        <h3 style={{ marginBottom: 8 }}>Paiement comptant</h3>
+        <label style={{ display: "block", marginBottom: 6 }}>
+          % abattement coût leasing pour paiement comptant :
+        </label>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            style={{ width: 110, padding: 6 }}
+            value={abattement}
+            onChange={(e) => setAbattement(e.target.value)}
+            onBlur={saveAbattement}
+            placeholder="ex: 70"
+          />
+          <span style={{ color: "#666" }}>
+            {savingAb ? "Enregistrement…" : "% (ex: 70 pour 70 %)"}
+          </span>
+        </div>
+      </div>
+
+
+      
     </div>
   );
 }
