@@ -45,6 +45,7 @@ router.patch("/", async (req, res) => {
       "livraison_eur_m2",
       "prix_container_eur_m2",
       "installation_eur_m2",
+      "abattement_comptant",
     ];
 
     const update = {};
