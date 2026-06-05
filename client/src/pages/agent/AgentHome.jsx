@@ -23,6 +23,7 @@ import {
   getWallLedsProductId,
   createDefaultPitchInstance,
   loadPitchesByCategory,
+  applyApport,
 } from "./agentHome.helpers";
 
 const DEFAULT_STATIC = normalizeStaticVals({
@@ -137,6 +138,9 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const [societeSuggestions, setSocieteSuggestions] = useState([]);
 const [showSocieteSuggestions, setShowSocieteSuggestions] = useState(false);
 const [societeLoading, setSocieteLoading] = useState(false);
+
+  const [apport, setApport] = useState(0);
+  const [leaseurRates, setLeaseurRates] = useState([]);
 
 
   const googleLoaded = useGoogleMaps();
@@ -339,6 +343,7 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
           finalType: pitchInstances?.[0]?.typeFinancement || "location_maintenance",
             wallLedsAbonnement,
   otherAbonnement,
+          apport,
 
         }),
       });
@@ -461,6 +466,17 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
       } catch (e) {
         console.warn("Impossible de charger memory-options (récap)", e);
         setMemOptionsCatalog([]);
+      }
+    })();
+  }, [API]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/leaseur-rates`);
+        if (res.ok) setLeaseurRates(await res.json());
+      } catch (e) {
+        console.warn("leaseur-rates load", e);
       }
     })();
   }, [API]);
@@ -1167,7 +1183,7 @@ if (hasOther) ht += otherAbonnement.price;
       tva,
       ttc,
     };
-}, [otherSelections, pitchInstances, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement]);
+}, [otherSelections, pitchInstances, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, leaseurRates, staticVals]);
 
 
   // --- helpers label PDF ---
@@ -2230,6 +2246,20 @@ const getOptionPrice = (pi, opt) => {
       <li>Commentaires : {client.commentaires || "—"}</li>
     </ul>
   </div>
+
+  <div className="agenthome-field" style={{ marginTop: 12 }}>
+    <label>Apport (€) :</label>
+    <input
+      type="number"
+      min="0"
+      step="100"
+      value={apport}
+      onChange={(e) => setApport(Math.max(0, parseInt(e.target.value || "0", 10) || 0))}
+      className="agenthome-input"
+    />
+  </div>
+
+  
 
   <div style={{ marginTop: 14, borderTop: "1px dashed #e5e7eb", paddingTop: 12 }}>
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
