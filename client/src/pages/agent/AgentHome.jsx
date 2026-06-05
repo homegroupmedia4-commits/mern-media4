@@ -2264,17 +2264,19 @@ const getOptionPrice = (pi, opt) => {
     </ul>
   </div>
 
-  <div className="agenthome-field" style={{ marginTop: 12 }}>
-    <label>Apport (€) :</label>
-    <input
-      type="number"
-      min="0"
-      step="100"
-      value={apport}
-      onChange={(e) => setApport(Math.max(0, parseInt(e.target.value || "0", 10) || 0))}
-      className="agenthome-input"
-    />
-  </div>
+{pitchInstances?.[0]?.typeFinancement !== "achat" && (
+    <div className="agenthome-field" style={{ marginTop: 12 }}>
+      <label>Apport (€) :</label>
+      <input
+        type="number"
+        min="0"
+        step="100"
+        value={apport}
+        onChange={(e) => setApport(Math.max(0, parseInt(e.target.value || "0", 10) || 0))}
+        className="agenthome-input"
+      />
+    </div>
+  )}
 
   
 
