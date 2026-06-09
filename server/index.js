@@ -16,6 +16,7 @@ const productsRouter = require("./routes/products");
 const finishesRouter = require("./routes/finishes");
 const fixationsRouter = require("./routes/fixations");
 const leaseurRatesRouter = require("./routes/leaseurRates");
+const faqRouter = require("./routes/faq");
 
 
 
@@ -64,7 +65,7 @@ app.use("/api/products", productsRouter);
 app.use("/api/finishes", finishesRouter);
 app.use("/api/fixations", fixationsRouter);
 
-
+app.use("/api/faq", faqRouter);
 
 
 
