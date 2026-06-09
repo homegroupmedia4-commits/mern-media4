@@ -106,14 +106,33 @@ export default function AdminFaq() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px", gap: 12 }}>
-            <div>
-              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>Catégorie</label>
-              <input
-                style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6 }}
-                value={form.category}
-                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-              />
-            </div>
+
+            
+          <div>
+  <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>Catégorie</label>
+  <select
+    style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, marginBottom: 6 }}
+    value={form.category}
+    onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+  >
+    <option value="">-- Choisir une catégorie --</option>
+    {[...new Set(items.map(i => i.category).filter(Boolean))].map((cat) => (
+      <option key={cat} value={cat}>{cat}</option>
+    ))}
+    <option value="__new__">+ Nouvelle catégorie...</option>
+  </select>
+  {form.category === "__new__" && (
+    <input
+      placeholder="Nom de la nouvelle catégorie"
+      style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6 }}
+      onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+    />
+  )}
+</div>
+
+
+
+            
 
             <div>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>Rôle</label>
@@ -178,7 +197,7 @@ export default function AdminFaq() {
                 <div style={{ fontWeight: 700, marginBottom: 4 }}>{item.question}</div>
                 <div style={{ color: "#6b7280", fontSize: 13, whiteSpace: "pre-wrap" }}>{item.answer}</div>
                 <div style={{ marginTop: 6, fontSize: 12, color: "#9ca3af" }}>
-                  Catégorie : {item.category || "—"} · Rôle : {item.role} · Ordre : {item.order} · {item.isActive ? "✅ Actif" : "❌ Inactif"}
+                  Catégorie : {item.category || "—"} · Rôle : {item.role} · Ordre : {item.order} · {item.isActive ? " Actif" : "Inactif"}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
