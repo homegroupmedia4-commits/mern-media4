@@ -26,6 +26,7 @@ import AgentFaq from "./pages/agent/AgentFaq";
 
 import AgentForgotPassword from "./pages/agent/AgentForgotPassword";
 import AgentResetPassword from "./pages/agent/AgentResetPassword";
+import AdminFaq from "./pages/AdminFaq";
 
 
 
@@ -52,6 +53,8 @@ export default function App() {
       <Route path="/adminmedia4" element={<AdminApp />}>
         <Route index element={<Navigate to="nosdevis" replace />} />
         <Route path="nosdevis" element={<AdminNosDevis />} />
+
+        <Route path="faq-admin" element={<AdminFaq />} />
 
       
 
