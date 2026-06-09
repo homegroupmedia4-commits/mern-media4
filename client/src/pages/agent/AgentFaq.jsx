@@ -1,143 +1,27 @@
-// client/src/pages/agent/AgentFaq.jsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AgentHeader from "./AgentHeader";
 import { USER_KEY } from "./agentHome.helpers";
 
 function FaqItem({ q, children, isOpen, onToggle }) {
   return (
-    <div
-      style={{
-        border: "1px solid #d9dde7",
-        background: "#fff",
-        margin: 0, // ✅ suppression marges
-      }}
-    >
+    <div style={{ border: "1px solid #d9dde7", background: "#fff", margin: 0 }}>
       <button
         type="button"
         onClick={onToggle}
-        style={{
-          width: "100%",
-          display: "flex",
-          gap: 10,
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 14px",
-          border: 0,
-          background: "transparent",
-          cursor: "pointer",
-          textAlign: "left",
-        }}
+        style={{ width: "100%", display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", padding: "12px 14px", border: 0, background: "transparent", cursor: "pointer", textAlign: "left" }}
         aria-expanded={isOpen}
       >
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <span style={{ fontSize: 18, lineHeight: 1 }}>–</span>
           <span style={{ fontWeight: 800, fontSize: 14 }}>{q}</span>
         </div>
-
-        <span style={{ fontSize: 16, opacity: 0.8 }}>
-          {isOpen ? "▾" : "▸"}
-        </span>
+        <span style={{ fontSize: 16, opacity: 0.8 }}>{isOpen ? "▾" : "▸"}</span>
       </button>
-
       {isOpen && (
-        <div
-          style={{
-            padding: "18px 16px",
-            color: "#5d6475",
-            lineHeight: 1.7,
-            borderTop: "1px solid #d9dde7",
-          }}
-        >
+        <div style={{ padding: "18px 16px", color: "#5d6475", lineHeight: 1.7, borderTop: "1px solid #d9dde7", whiteSpace: "pre-wrap" }}>
           {children}
         </div>
       )}
-    </div>
-  );
-}
-
-function FaqCategory({ title, qas, defaultOpenIndex = 0 }) {
-  const [openIdx, setOpenIdx] = useState(defaultOpenIndex);
-
-  return (
-    <div style={{ margin: 0 }}> {/* ✅ suppression marges */}
-      <h3
-        style={{
-          margin: "0 0 8px 0", // 🔽 réduit
-          fontSize: 22,
-          fontWeight: 900,
-        }}
-      >
-        {title}
-      </h3>
-
-      <div
-        style={{
-          display: "grid",
-          gap: 0, // ✅ IMPORTANT → blocs collés
-        }}
-      >
-        {qas.map((qa, idx) => {
-          const isOpen = openIdx === idx;
-
-          return (
-            <div
-              key={qa.q}
-              style={{
-                borderTop: idx === 0 ? "1px solid #d9dde7" : 0,
-                margin: 0, // ✅ suppression marges
-              }}
-            >
-              <FaqItem
-                q={qa.q}
-                isOpen={isOpen}
-                onToggle={() =>
-                  setOpenIdx((prev) => (prev === idx ? -1 : idx))
-                }
-              >
-                {qa.a}
-              </FaqItem>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function FaqSection({ title, items }) {
-  return (
-    <div
-      style={{
-        marginTop: 16, // 🔽 réduit
-      }}
-    >
-      <h2
-        style={{
-          margin: "0 0 10px 0", // 🔽 réduit
-          fontSize: 32,
-          fontWeight: 900,
-        }}
-      >
-        {title}
-      </h2>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-          gap: 12, // 🔽 réduit au lieu de 22
-          alignItems: "start",
-        }}
-      >
-        {items.map((cat) => (
-          <FaqCategory
-            key={cat.title}
-            title={cat.title}
-            qas={cat.qas}
-            defaultOpenIndex={0}
-          />
-        ))}
-      </div>
     </div>
   );
 }
@@ -147,99 +31,80 @@ export default function AgentFaq() {
     try {
       const raw = localStorage.getItem(USER_KEY);
       return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }, []);
 
   const role = String(agent?.role || "agent");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [openIdx, setOpenIdx] = useState({});
 
-  const showAgentFaq = role === "agent" || role === "responsable";
-  const showTechFaq = role === "technicien" || role === "responsable";
+  const API = window.location.origin;
 
-  const AGENT_FAQ = [
-    {
-      title: "1 – Garantie & Fin de contrat",
-      qas: [
-        {
-          q: "Est-ce que le matériel est garanti ?",
-          a: (
-            <>
-              Pour un achat, le matériel est garanti <b>pièces</b>. Pour un leasing, le matériel est garanti{" "}
-              <b>pièces, main-d’œuvre et déplacement</b>.
-            </>
-          ),
-        },
-        {
-          q: "Que se passe-t-il à la fin du contrat ?",
-          a: (
-            <>
-              Soit un <b>nouveau contrat</b> est signé, soit le <b>matériel est récupéré</b>.
-            </>
-          ),
-        },
-      ],
-    },
-    {
-      title: "2 – Performance & Visibilité",
-      qas: [
-        {
-          q: "Est-ce qu’on voit un écran au soleil ?",
-          a: (
-            <>
-              Oui, grâce à nos écrans <b>jusqu’à 4 500 candelas</b>.
-            </>
-          ),
-        },
-      ],
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/faq`);
+        const data = await res.json();
+        setItems(Array.isArray(data) ? data : []);
+      } catch {
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const TECH_FAQ = [
-    {
-      title: "Installation écran",
-      qas: [
-        { q: "Article n°1", a: "Lorem ipsum..." },
-        { q: "Article n°2", a: "Lorem ipsum..." },
-      ],
-    },
-  ];
+  // Filtre par rôle
+  const filtered = items.filter((item) => {
+    if (item.role === "tous") return true;
+    if (item.role === role) return true;
+    if (role === "responsable") return true;
+    return false;
+  });
+
+  // Grouper par catégorie
+  const grouped = filtered.reduce((acc, item) => {
+    const cat = item.category || "Général";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
 
   return (
     <div>
       <AgentHeader agent={agent} />
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px 40px" }}>
+        <h1 style={{ margin: 0, fontSize: 40, fontWeight: 1000 }}>FAQ</h1>
 
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "20px 16px 40px", // 🔽 réduit
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 40, fontWeight: 1000 }}>
-          FAQ
-        </h1>
+        {loading && <div style={{ marginTop: 20, color: "#9ca3af" }}>Chargement...</div>}
 
-        {showAgentFaq && (
-          <FaqSection title="FAQ agents" items={AGENT_FAQ} />
+        {!loading && filtered.length === 0 && (
+          <div style={{ marginTop: 20, color: "#9ca3af" }}>Aucune entrée FAQ disponible.</div>
         )}
 
-        {showTechFaq && (
-          <FaqSection title="FAQ techniciens" items={TECH_FAQ} />
-        )}
-
-        {!showAgentFaq && !showTechFaq && (
-          <div
-            style={{
-              marginTop: 12,
-              padding: 16,
-              border: "1px solid #eee",
-              borderRadius: 12,
-            }}
-          >
-            Aucun contenu FAQ pour ce rôle.
+        {Object.entries(grouped).map(([cat, catItems]) => (
+          <div key={cat} style={{ marginTop: 24 }}>
+            <h2 style={{ margin: "0 0 10px 0", fontSize: 22, fontWeight: 900 }}>{cat}</h2>
+            <div style={{ display: "grid", gap: 0 }}>
+              {catItems.map((item, idx) => {
+                const key = item._id;
+                const isOpen = openIdx[key] === true;
+                return (
+                  <div key={key} style={{ borderTop: idx === 0 ? "1px solid #d9dde7" : 0 }}>
+                    <FaqItem
+                      q={item.question}
+                      isOpen={isOpen}
+                      onToggle={() => setOpenIdx((p) => ({ ...p, [key]: !p[key] }))}
+                    >
+                      {item.answer}
+                    </FaqItem>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
