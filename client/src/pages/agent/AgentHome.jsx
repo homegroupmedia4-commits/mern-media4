@@ -166,7 +166,7 @@ const requiredFields = [
   ["ville", "Ville"],
   ["telephone", "Téléphone"],
   ["email", "E-mail"],
-  ["votreEmail", "Votre e-mail"],
+  // ["votreEmail", "Votre e-mail"],
   // ["commentaires", "Commentaires"],
 ];
 
@@ -2155,15 +2155,19 @@ const getOptionPrice = (pi, opt) => {
               />
             </div>
 
-            <div className="agenthome-field">
-              <label>Votre e-mail :</label>
-              <input
-                className="agenthome-input"
-                value={client.votreEmail}
-                required
-                onChange={(e) => setClient((p) => ({ ...p, votreEmail: e.target.value }))}
-              />
-            </div>
+            
+
+         <div className="agenthome-field">
+  <label>Votre e-mail :</label>
+  <input
+    className="agenthome-input agenthome-input--readonly"
+    value={client.votreEmail}
+    readOnly
+  />
+</div>
+
+
+            
 
             <div className="agenthome-field">
               <label>Adresse 2 :</label>
