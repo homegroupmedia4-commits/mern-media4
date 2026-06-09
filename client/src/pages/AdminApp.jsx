@@ -425,6 +425,14 @@ PDF
   TAEG leaseur
 </NavLink>
 
+
+    <NavLink
+  to={`${ADMIN_BASE}/faq-admin`}
+  className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+>
+  FAQ
+</NavLink>
+
   
   </div>
 ) : null}
