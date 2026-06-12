@@ -12,6 +12,8 @@ export default function AdminFaq() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [selectCat, setSelectCat] = useState(""); // ✅ state séparé pour le select
+  const [newCatInput, setNewCatInput] = useState(""); // ✅ state séparé pour le texte
 
   const token = localStorage.getItem("admin_token_v1") || localStorage.getItem("agent_token_v1");
 
@@ -35,6 +37,10 @@ export default function AdminFaq() {
       setError("Question et réponse obligatoires.");
       return;
     }
+    if (selectCat === "__new__" && !newCatInput.trim()) {
+      setError("Merci de saisir le nom de la nouvelle catégorie.");
+      return;
+    }
     setLoading(true);
     try {
       const url = editId ? `${API}/api/faq/${editId}` : `${API}/api/faq`;
@@ -47,6 +53,8 @@ export default function AdminFaq() {
       if (!res.ok) throw new Error();
       setSuccess(editId ? "Modifié !" : "Ajouté !");
       setForm(EMPTY);
+      setSelectCat("");
+      setNewCatInput("");
       setEditId(null);
       load();
     } catch {
@@ -67,6 +75,8 @@ export default function AdminFaq() {
 
   const handleEdit = (item) => {
     setEditId(item._id);
+    setSelectCat(item.category || "");
+    setNewCatInput("");
     setForm({
       question: item.question,
       answer: item.answer,
@@ -75,6 +85,13 @@ export default function AdminFaq() {
       order: item.order || 0,
       isActive: item.isActive !== false,
     });
+  };
+
+  const handleCancelEdit = () => {
+    setEditId(null);
+    setForm(EMPTY);
+    setSelectCat("");
+    setNewCatInput("");
   };
 
   return (
@@ -107,32 +124,44 @@ export default function AdminFaq() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px", gap: 12 }}>
 
-            
-          <div>
-  <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>Catégorie</label>
-  <select
-    style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, marginBottom: 6 }}
-    value={form.category}
-    onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-  >
-    <option value="">-- Choisir une catégorie --</option>
-    {[...new Set(items.map(i => i.category).filter(Boolean))].map((cat) => (
-      <option key={cat} value={cat}>{cat}</option>
-    ))}
-    <option value="__new__">+ Nouvelle catégorie...</option>
-  </select>
-  {form.category === "__new__" && (
-    <input
-      placeholder="Nom de la nouvelle catégorie"
-      style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6 }}
-      onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-    />
-  )}
-</div>
+            {/* ✅ Catégorie avec state séparé */}
+            <div>
+              <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>Catégorie</label>
+              <select
+                style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, marginBottom: 6 }}
+                value={selectCat}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectCat(val);
+                  if (val === "__new__") {
+                    setNewCatInput("");
+                    setForm((p) => ({ ...p, category: "" }));
+                  } else {
+                    setNewCatInput("");
+                    setForm((p) => ({ ...p, category: val }));
+                  }
+                }}
+              >
+                <option value="">-- Choisir une catégorie --</option>
+                {[...new Set(items.map(i => i.category).filter(Boolean))].map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+                <option value="__new__">+ Nouvelle catégorie...</option>
+              </select>
 
-
-
-            
+              {/* ✅ Input toujours visible si "__new__" sélectionné */}
+              {selectCat === "__new__" && (
+                <input
+                  placeholder="Nom de la nouvelle catégorie"
+                  style={{ width: "100%", padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6 }}
+                  value={newCatInput}
+                  onChange={(e) => {
+                    setNewCatInput(e.target.value);
+                    setForm((p) => ({ ...p, category: e.target.value }));
+                  }}
+                />
+              )}
+            </div>
 
             <div>
               <label style={{ display: "block", marginBottom: 4, fontWeight: 600 }}>Rôle</label>
@@ -179,7 +208,7 @@ export default function AdminFaq() {
           </button>
           {editId && (
             <button
-              onClick={() => { setEditId(null); setForm(EMPTY); }}
+              onClick={handleCancelEdit}
               style={{ padding: "8px 20px", background: "#6b7280", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}
             >
               Annuler
@@ -197,7 +226,7 @@ export default function AdminFaq() {
                 <div style={{ fontWeight: 700, marginBottom: 4 }}>{item.question}</div>
                 <div style={{ color: "#6b7280", fontSize: 13, whiteSpace: "pre-wrap" }}>{item.answer}</div>
                 <div style={{ marginTop: 6, fontSize: 12, color: "#9ca3af" }}>
-                  Catégorie : {item.category || "—"} · Rôle : {item.role} · Ordre : {item.order} · {item.isActive ? " Actif" : "Inactif"}
+                  Catégorie : {item.category || "—"} · Rôle : {item.role} · Ordre : {item.order} · {item.isActive ? "✅ Actif" : "❌ Inactif"}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
