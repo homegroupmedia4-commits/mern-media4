@@ -37,6 +37,27 @@ router.post("/", async (req, res) => {
   }
 });
 
+
+// PATCH /api/pitch-categories/reorder
+router.patch("/reorder", async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) return res.status(400).json({ message: "ids requis." });
+
+    await Promise.all(
+      ids.map((id, index) =>
+        PitchCategory.findByIdAndUpdate(id, { order: index })
+      )
+    );
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+
 // PATCH /api/pitch-categories/:id
 router.patch("/:id", async (req, res) => {
   try {
@@ -80,23 +101,6 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// PATCH /api/pitch-categories/reorder
-router.patch("/reorder", async (req, res) => {
-  try {
-    const { ids } = req.body;
-    if (!Array.isArray(ids)) return res.status(400).json({ message: "ids requis." });
 
-    await Promise.all(
-      ids.map((id, index) =>
-        PitchCategory.findByIdAndUpdate(id, { order: index })
-      )
-    );
-
-    res.json({ ok: true });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: "Erreur serveur." });
-  }
-});
 
 module.exports = router;
