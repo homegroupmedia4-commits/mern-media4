@@ -303,47 +303,45 @@ export default function PitchManagerPage() {
     }
   };
 
-  // ✅ Move pitch DANS sa catégorie uniquement
+
+
   const movePitch = async (catId, index, direction) => {
-    const group = pitchesByCategory.get(catId);
-    if (!group) return;
+  const group = pitchesByCategory.get(catId);
+  if (!group) return;
 
-    const catPitches = [...group.pitches];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= catPitches.length) return;
+  const catPitches = [...group.pitches];
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= catPitches.length) return;
 
-    // swap dans le groupe
-    [catPitches[index], catPitches[targetIndex]] = [catPitches[targetIndex], catPitches[index]];
+  // ✅ swap dans le groupe
+  [catPitches[index], catPitches[targetIndex]] = [catPitches[targetIndex], catPitches[index]];
 
-    // reconstruire la liste globale en remplaçant le groupe
-    const newPitches = pitches.map((p) => {
-      const found = catPitches.find((cp) => cp._id === p._id);
-      return found || p;
+  // ✅ reconstruire TOUTE la liste globale dans le bon ordre
+  const orderedIds = [];
+  const newPitchesList = [];
+
+  for (const [gid, grp] of pitchesByCategory.entries()) {
+    const currentGroup = String(gid) === String(catId) ? catPitches : grp.pitches;
+    currentGroup.forEach((p) => {
+      orderedIds.push(p._id);
+      newPitchesList.push(p);
     });
+  }
 
-    // réordonner globalement en respectant les groupes
-    const orderedIds = [];
-    for (const [, grp] of pitchesByCategory.entries()) {
-      if (String(grp.cat._id) === String(catId)) {
-        catPitches.forEach((p) => orderedIds.push(p._id));
-      } else {
-        grp.pitches.forEach((p) => orderedIds.push(p._id));
-      }
-    }
+  // ✅ forcer le re-render avec une nouvelle référence
+  setPitches([...newPitchesList]);
 
-    setPitches(newPitches);
-
-    try {
-      await fetch(`${API}/api/pitches/reorder`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: orderedIds }),
-      });
-    } catch (e) {
-      console.error(e);
-      setError("Erreur lors du réordonnancement.");
-    }
-  };
+  try {
+    await fetch(`${API}/api/pitches/reorder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: orderedIds }),
+    });
+  } catch (e) {
+    console.error(e);
+    setError("Erreur lors du réordonnancement.");
+  }
+};
 
   return (
     <div className="page">
