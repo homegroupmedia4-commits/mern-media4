@@ -17,7 +17,7 @@ router.get("/", async (req, res) => {
     const list = await Pitch.find(filter)
       .populate("categoryId", "name isActive")
       .populate("productId", "name isActive")
-      .sort({ createdAt: -1 });
+     .sort({ order: 1, createdAt: -1 });
 
     res.json(list);
   } catch (e) {
@@ -160,6 +160,25 @@ router.delete("/:id", async (req, res) => {
     const { id } = req.params;
     const doc = await Pitch.findByIdAndDelete(id);
     if (!doc) return res.status(404).json({ message: "Pitch introuvable." });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+// PATCH /api/pitches/reorder
+router.patch("/reorder", async (req, res) => {
+  try {
+    const { ids } = req.body; // tableau d'ids dans le nouvel ordre
+    if (!Array.isArray(ids)) return res.status(400).json({ message: "ids requis." });
+
+    await Promise.all(
+      ids.map((id, index) =>
+        Pitch.findByIdAndUpdate(id, { order: index })
+      )
+    );
+
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
