@@ -5,7 +5,7 @@ const PitchCategory = require("../models/PitchCategory");
 // GET /api/pitch-categories
 router.get("/", async (req, res) => {
   try {
-    const list = await PitchCategory.find().sort({ createdAt: -1 });
+    const list = await PitchCategory.find().sort({ order: 1, createdAt: -1 });
     res.json(list);
   } catch (e) {
     console.error(e);
@@ -73,6 +73,25 @@ router.delete("/:id", async (req, res) => {
     const { id } = req.params;
     const doc = await PitchCategory.findByIdAndDelete(id);
     if (!doc) return res.status(404).json({ message: "Catégorie introuvable." });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+// PATCH /api/pitch-categories/reorder
+router.patch("/reorder", async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) return res.status(400).json({ message: "ids requis." });
+
+    await Promise.all(
+      ids.map((id, index) =>
+        PitchCategory.findByIdAndUpdate(id, { order: index })
+      )
+    );
+
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
