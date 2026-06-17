@@ -308,6 +308,30 @@ const onEditChange = (key) => (e) =>
     }
   };
 
+
+  const movePitch = async (index, direction) => {
+  const newList = [...pitches];
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= newList.length) return;
+
+  // swap
+  [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
+  setPitches(newList);
+
+  try {
+    await fetch(`${API}/api/pitches/reorder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: newList.map((p) => p._id) }),
+    });
+  } catch (e) {
+    console.error(e);
+    setError("Erreur lors du réordonnancement.");
+  }
+};
+
+                              
+
   return (
     <div className="page">
       <div className="page-header">
@@ -444,9 +468,30 @@ const onEditChange = (key) => (e) =>
                             </>
                           ) : (
                             <>
+
+                              <button
+  className="btn btn-outline"
+  type="button"
+  onClick={() => movePitch(pitches.indexOf(row), "up")}
+  disabled={pitches.indexOf(row) === 0}
+>
+  ↑
+</button>
+<button
+  className="btn btn-outline"
+  type="button"
+  onClick={() => movePitch(pitches.indexOf(row), "down")}
+  disabled={pitches.indexOf(row) === pitches.length - 1}
+>
+  ↓
+</button>
+
+                              
                             <button className="btn btn-outline" type="button" onClick={() => openEdit(row)}>
   Modifier
 </button>
+
+                              
 
 
                               <button className={`btn ${row.isActive ? "btn-danger" : "btn-dark"}`} type="button" onClick={() => toggleActive(row)}>
