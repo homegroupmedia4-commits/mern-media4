@@ -15,7 +15,8 @@ const pitchSchema = new mongoose.Schema(
       required: true
     },
 
-    isActive: { type: Boolean, default: true },
+   isActive: { type: Boolean, default: true },
+order: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
