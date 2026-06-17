@@ -828,22 +828,14 @@ const pitchesByCategory = useMemo(() => {
     map.get(cid).push(p);
   }
 
-  // ✅ Trier chaque groupe par valeur pitch décroissante (P4.0 > P3.91 > P2.6...)
-  const parsePitch = (label) => {
-    const m = String(label || "").match(/P\s*([0-9]*\.?[0-9]+)/i);
-    return m ? parseFloat(m[1]) : 0;
-  };
-
-  for (const [cid, list] of map.entries()) {
-    map.set(cid, list.slice().sort((a, b) => {
-      const aVal = parsePitch(a?.name || a?.label || "");
-      const bVal = parsePitch(b?.name || b?.label || "");
-      return bVal - aVal; // décroissant
-    }));
-  }
+  // ✅ On respecte l'ordre venant de l'API (order sauvegardé en DB)
+  // L'ordre manuel défini dans l'admin prime
 
   return map;
 }, [pitches]);
+
+
+  
 
 
   const updatePitchInstance = (instanceId, patch) => {
