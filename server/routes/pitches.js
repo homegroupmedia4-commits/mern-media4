@@ -73,6 +73,27 @@ if (!productId) return res.status(400).json({ message: "Le champ 'productId' est
   }
 });
 
+
+// PATCH /api/pitches/reorder
+router.patch("/reorder", async (req, res) => {
+  try {
+    const { ids } = req.body; // tableau d'ids dans le nouvel ordre
+    if (!Array.isArray(ids)) return res.status(400).json({ message: "ids requis." });
+
+    await Promise.all(
+      ids.map((id, index) =>
+        Pitch.findByIdAndUpdate(id, { order: index })
+      )
+    );
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+
 // PATCH /api/pitches/:id -> rename / toggle / update
 // PATCH /api/pitches/:id -> update fields (name/code/dim/lumi/price/category/product/isActive)
 router.patch("/:id", async (req, res) => {
@@ -167,23 +188,6 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// PATCH /api/pitches/reorder
-router.patch("/reorder", async (req, res) => {
-  try {
-    const { ids } = req.body; // tableau d'ids dans le nouvel ordre
-    if (!Array.isArray(ids)) return res.status(400).json({ message: "ids requis." });
 
-    await Promise.all(
-      ids.map((id, index) =>
-        Pitch.findByIdAndUpdate(id, { order: index })
-      )
-    );
-
-    res.json({ ok: true });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: "Erreur serveur." });
-  }
-});
 
 module.exports = router;
