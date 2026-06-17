@@ -131,6 +131,29 @@ export default function CategoriesPitch() {
     }
   };
 
+
+  const moveCategory = async (index, direction) => {
+  const newList = [...rows];
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= newList.length) return;
+
+  [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
+  setRows(newList);
+
+  try {
+    await fetch(`${API}/api/pitch-categories/reorder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: newList.map((r) => r._id) }),
+    });
+  } catch (e) {
+    console.error(e);
+    setError("Erreur lors du réordonnancement.");
+  }
+};
+
+  
+
   return (
     <div className="page">
       <div className="page-header">
@@ -201,6 +224,26 @@ export default function CategoriesPitch() {
                           </>
                         ) : (
                           <>
+
+
+                            <button
+  className="btn btn-outline"
+  type="button"
+  onClick={() => moveCategory(rows.indexOf(row), "up")}
+  disabled={rows.indexOf(row) === 0}
+>
+  ↑
+</button>
+<button
+  className="btn btn-outline"
+  type="button"
+  onClick={() => moveCategory(rows.indexOf(row), "down")}
+  disabled={rows.indexOf(row) === rows.length - 1}
+>
+  ↓
+</button>
+
+                            
                             <button className="btn btn-outline" type="button" onClick={() => startEdit(row)}>
                               Modifier
                             </button>
