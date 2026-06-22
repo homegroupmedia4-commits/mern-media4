@@ -5,6 +5,16 @@ export const USER_KEY = "agent_user_v1";
 // ⚠️ même logique que ton CF7
 export const SPECIAL_GROUP = "Exterieur haute luminosité";
 
+export function parseCabinetDimensions(dimensionsStr) {
+  const raw = String(dimensionsStr || "").trim();
+  const m = raw.match(/^(\d+(?:\.\d+)?)\s*\*\s*(\d+(?:\.\d+)?)$/);
+  if (!m) return null;
+  const w = Number(m[1]);
+  const h = Number(m[2]);
+  if (!w || !h) return null;
+  return { widthMm: w, heightMm: h, widthM: w / 1000, heightM: h / 1000 };
+}
+
 export function toNum(v, def = 0) {
   const n = Number(String(v ?? "").replace(",", "."));
   return Number.isFinite(n) ? n : def;

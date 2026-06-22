@@ -24,6 +24,7 @@ import {
   createDefaultPitchInstance,
   loadPitchesByCategory,
   applyApport,
+  parseCabinetDimensions,
 } from "./agentHome.helpers";
 
 const DEFAULT_STATIC = normalizeStaticVals({
@@ -103,6 +104,12 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const [pitchInstances, setPitchInstances] = useState([]);
   // pitchId coché (pour afficher/masquer)
   const [selectedPitchIds, setSelectedPitchIds] = useState([]);
+
+  const [modeProjet, setModeProjet] = useState(false);
+  const isAdminOrResponsable = useMemo(() => {
+    const r = String(agent?.role || "").toLowerCase();
+    return ["admin", "superadmin", "responsable"].includes(r);
+  }, [agent]);
 
   // --- refs
   const [finishes, setFinishes] = useState([]);
@@ -1112,7 +1119,7 @@ const finPart =
         kind: "pitch",
         key: `pitch_${pi.instanceId}`,
         text:
-          `Murs leds – ${pitchTitle} – Largeur (m) : ${pi.largeurM || "—"} – Hauteur (m) : ${pi.hauteurM || "—"} ` +
+          `Murs leds – ${pitchTitle} – Largeur (metre) : ${pi.largeurM || "—"} – Hauteur (metre) : ${pi.hauteurM || "—"} ` +
           `– Largeur/Hauteur(px) : ${pi.largeurPx || "—"}x${pi.hauteurPx || "—"} px – ${pi.financementMonths || "—"} mois – ${finLabel}${finPart}` +
           `– Surface (m²) : ${pi.surfaceM2 || "—"} – ${priceLabel} : ${pi.prixTotalHtMois || "—"} – Quantité d'écrans : ${pi.quantite || "1"} ` +
           `${pi.categorieName ? `– Catégorie : ${pi.categorieName} ` : ""}` +
@@ -1408,15 +1415,11 @@ const getOptionPrice = (pi, opt) => {
                     onChange={() => togglePitch(pitch)}
                   />
 
-                  {/* <span className="agenthome-pitchLabel">
-                    {pitch.name || pitch.label || "Pitch"}
-                    {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
-                  </span> */}
-
                   <span className="agenthome-pitchLabel">
   {(() => {
     const base = String(pitch?.name || pitch?.label || "Pitch").trim();
-    const meta = [pitch?.dimensions, pitch?.luminosite, pitch?.codeProduit]
+    const dims = pitch?.dimensions ? pitch.dimensions + "mm" : "";
+    const meta = [dims, pitch?.luminosite, pitch?.codeProduit]
       .filter(Boolean)
       .join(", ");
     return meta ? `${base} (${meta})` : base;
@@ -1452,15 +1455,11 @@ const getOptionPrice = (pi, opt) => {
               onChange={() => togglePitch(pitch)}
             />
 
-            {/* <span className="agenthome-pitchLabel">
-              {pitch.name || pitch.label || "Pitch"}
-              {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
-            </span> */}
-
 <span className="agenthome-pitchLabel">
   {(() => {
     const base = String(pitch?.name || pitch?.label || "Pitch").trim();
-    const meta = [pitch?.dimensions, pitch?.luminosite, pitch?.codeProduit]
+    const dims = pitch?.dimensions ? pitch.dimensions + "mm" : "";
+    const meta = [dims, pitch?.luminosite, pitch?.codeProduit]
       .filter(Boolean)
       .join(", ");
     return meta ? `${base} (${meta})` : base;
@@ -1511,7 +1510,8 @@ const getOptionPrice = (pi, opt) => {
                   <div className="agenthome-pitchTitleLine">
                     <strong>
   {(() => {
-    const meta = [pi.dimensions, pi.luminosite, pi.codeProduit].filter(Boolean).join(", ");
+    const dims = pi.dimensions ? pi.dimensions + "mm" : "";
+    const meta = [dims, pi.luminosite, pi.codeProduit].filter(Boolean).join(", ");
     return meta ? `${pi.pitchLabel} (${meta})` : pi.pitchLabel;
   })()}
 </strong>
@@ -1537,30 +1537,96 @@ const getOptionPrice = (pi, opt) => {
                 <>
                   {/* Dimensions */}
                   <div className="agenthome-subsection">
-                    <div className="agenthome-subsectionTitle">Dimensions :</div>
+                    <div className="agenthome-subsectionTitle" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <span>Dimensions :</span>
+                      {isAdminOrResponsable && (
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 400, cursor: "pointer", color: "#666" }}>
+                          <input
+                            type="checkbox"
+                            checked={modeProjet}
+                            onChange={(e) => setModeProjet(e.target.checked)}
+                            style={{ width: 15, height: 15 }}
+                          />
+                          Mode projet
+                        </label>
+                      )}
+                    </div>
 
                     <div className="agenthome-grid2">
+                      {(() => {
+                        const cab = parseCabinetDimensions(pi.dimensions);
+                        const stepW = cab ? cab.widthM : null;
+                        const stepH = cab ? cab.heightM : null;
+                        const canStep = !!cab && !modeProjet;
+
+                        const stepDim = (axis, direction) => {
+                          const step = axis === "largeur" ? stepW : stepH;
+                          if (!step) return;
+                          const current = Number(String(pi[axis === "largeur" ? "largeurM" : "hauteurM"] || "0").replace(",", ".")) || 0;
+                          const next = direction === "up" ? current + step : current - step;
+                          const min = step;
+                          const clamped = next < min ? min : next;
+                          const rounded = Math.round(clamped * 1000) / 1000;
+                          const field = axis === "largeur" ? "largeurM" : "hauteurM";
+                          updatePitchInstance(pi.instanceId, { [field]: String(rounded) });
+                        };
+
+                        return (
+                          <>
                       <div className="agenthome-field">
-                        <label>Largeur (m) :</label>
-                        <input
-                          value={pi.largeurM}
-                          onChange={(e) =>
-                            updatePitchInstance(pi.instanceId, { largeurM: e.target.value })
-                          }
-                          className="agenthome-input"
-                        />
+                        <label>Largeur (metre) :</label>
+                        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                          <input
+                            value={pi.largeurM}
+                            onChange={(e) =>
+                              updatePitchInstance(pi.instanceId, { largeurM: e.target.value })
+                            }
+                            readOnly={canStep}
+                            className={`agenthome-input${canStep ? " agenthome-input--readonly" : ""}`}
+                            style={{ flex: 1 }}
+                          />
+                          {canStep && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                              <button type="button" onClick={() => stepDim("largeur", "up")}
+                                style={{ border: "1px solid #d8dbe6", borderRadius: 6, background: "#f6f7fb", cursor: "pointer", width: 28, height: 19, fontSize: 11, lineHeight: 1, padding: 0 }}
+                              >&#9650;</button>
+                              <button type="button" onClick={() => stepDim("largeur", "down")}
+                                style={{ border: "1px solid #d8dbe6", borderRadius: 6, background: "#f6f7fb", cursor: "pointer", width: 28, height: 19, fontSize: 11, lineHeight: 1, padding: 0 }}
+                              >&#9660;</button>
+                            </div>
+                          )}
+                        </div>
+                        {canStep && <span style={{ fontSize: 11, color: "#999", marginTop: 2 }}>pas : {stepW}m ({cab.widthMm}mm)</span>}
                       </div>
 
                       <div className="agenthome-field">
-                        <label>Hauteur (m) :</label>
-                        <input
-                          value={pi.hauteurM}
-                          onChange={(e) =>
-                            updatePitchInstance(pi.instanceId, { hauteurM: e.target.value })
-                          }
-                          className="agenthome-input"
-                        />
+                        <label>Hauteur (metre) :</label>
+                        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                          <input
+                            value={pi.hauteurM}
+                            onChange={(e) =>
+                              updatePitchInstance(pi.instanceId, { hauteurM: e.target.value })
+                            }
+                            readOnly={canStep}
+                            className={`agenthome-input${canStep ? " agenthome-input--readonly" : ""}`}
+                            style={{ flex: 1 }}
+                          />
+                          {canStep && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                              <button type="button" onClick={() => stepDim("hauteur", "up")}
+                                style={{ border: "1px solid #d8dbe6", borderRadius: 6, background: "#f6f7fb", cursor: "pointer", width: 28, height: 19, fontSize: 11, lineHeight: 1, padding: 0 }}
+                              >&#9650;</button>
+                              <button type="button" onClick={() => stepDim("hauteur", "down")}
+                                style={{ border: "1px solid #d8dbe6", borderRadius: 6, background: "#f6f7fb", cursor: "pointer", width: 28, height: 19, fontSize: 11, lineHeight: 1, padding: 0 }}
+                              >&#9660;</button>
+                            </div>
+                          )}
+                        </div>
+                        {canStep && <span style={{ fontSize: 11, color: "#999", marginTop: 2 }}>pas : {stepH}m ({cab.heightMm}mm)</span>}
                       </div>
+                          </>
+                        );
+                      })()}
 
                       <div className="agenthome-field">
                         <label>Diagonale (cm) :</label>
