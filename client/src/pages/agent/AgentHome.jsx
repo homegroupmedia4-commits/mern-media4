@@ -106,10 +106,7 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const [selectedPitchIds, setSelectedPitchIds] = useState([]);
 
   const [modeProjet, setModeProjet] = useState(false);
-  const isAdminOrResponsable = useMemo(() => {
-    const r = String(agent?.role || "").toLowerCase();
-    return ["admin", "superadmin", "responsable"].includes(r);
-  }, [agent]);
+  const hasAdminToken = useMemo(() => !!localStorage.getItem("admin_token_v1"), [agent]);
 
   // --- refs
   const [finishes, setFinishes] = useState([]);
@@ -1346,18 +1343,23 @@ const getOptionPrice = (pi, opt) => {
 
               <select
                 className="agenthome-select"
-                value={selectedCategoryId}
+                value={showAllPitches ? "__all__" : selectedCategoryId}
                   onChange={(e) => {
-    setSelectedCategoryId(e.target.value);
-    setShowAllPitches(false); // ✅ dès qu'il change -> on filtre
+    const val = e.target.value;
+    if (val === "__all__") {
+      setShowAllPitches(true);
+      setSelectedCategoryId(categories[0]?._id || "");
+    } else {
+      setSelectedCategoryId(val);
+      setShowAllPitches(false);
+    }
   }}
                 disabled={loadingCategories}
               >
 
                {loadingCategories ? <option value="">Chargement...</option> : null}
 
-
-
+                <option value="__all__">Tous</option>
                 {categories.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
@@ -1393,7 +1395,7 @@ const getOptionPrice = (pi, opt) => {
 
         return (
           <div key={catId} className="agenthome-pitchGroup">
-            <div className="agenthome-pitchGroupTitle">
+            <div className="agenthome-pitchGroupTitle" style={{ fontWeight: 700 }}>
               {cat?.name || "Catégorie"}
             </div>
 
@@ -1539,7 +1541,7 @@ const getOptionPrice = (pi, opt) => {
                   <div className="agenthome-subsection">
                     <div className="agenthome-subsectionTitle" style={{ display: "flex", alignItems: "center", gap: 14 }}>
                       <span>Dimensions :</span>
-                      {isAdminOrResponsable && (
+                      {hasAdminToken && (
                         <label style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 400, cursor: "pointer", color: "#666" }}>
                           <input
                             type="checkbox"

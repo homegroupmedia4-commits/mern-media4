@@ -490,8 +490,33 @@ const rowsForProduct = otherSizes.filter((r) => {
             <div className="agenthome-muted" style={{ marginBottom: 8 }}>
               {productName}
 
-              
+
             </div>
+
+            {loadingOtherSizes ? (
+              <div className="agenthome-muted">Chargement des tailles…</div>
+            ) : rowsForProduct.length ? (
+              <div className="agenthome-products" style={{ marginTop: 8 }}>
+                {rowsForProduct
+                  .slice()
+                  .sort((a, b) => (a.sizeInches || 0) - (b.sizeInches || 0))
+                  .map((row) => {
+                    const checked = !!checkedActive[row._id];
+                    return (
+                      <label key={row._id} className="agenthome-check">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleOtherSize(productId, row)}
+                        />
+                        <span>{row.sizeInches} pouces</span>
+                      </label>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="agenthome-muted">Aucune taille configurée pour cette durée.</div>
+            )}
 
             {/* Abonnement Autres produits — affiché 1 seule fois */}
 {otherSelectedProducts.indexOf(p) === 0 && (
@@ -613,34 +638,8 @@ const rowsForProduct = otherSizes.filter((r) => {
   </div>
 )}
 
-              
+
 </div>
-
-
-            {loadingOtherSizes ? (
-              <div className="agenthome-muted">Chargement des tailles…</div>
-            ) : rowsForProduct.length ? (
-              <div className="agenthome-products" style={{ marginTop: 8 }}>
-                {rowsForProduct
-                  .slice()
-                  .sort((a, b) => (a.sizeInches || 0) - (b.sizeInches || 0))
-                  .map((row) => {
-                    const checked = !!checkedActive[row._id];
-                    return (
-                      <label key={row._id} className="agenthome-check">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleOtherSize(productId, row)}
-                        />
-                        <span>{row.sizeInches} pouces</span>
-                      </label>
-                    );
-                  })}
-              </div>
-            ) : (
-              <div className="agenthome-muted">Aucune taille configurée pour cette durée.</div>
-            )}
 
             {hasChecked ? (
               <div className="agenthome-subcard" style={{ marginTop: 10 }}>
