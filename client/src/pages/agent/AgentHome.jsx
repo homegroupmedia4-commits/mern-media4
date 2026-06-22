@@ -397,6 +397,7 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setStaticVals(normalizeStaticVals(data || {}));
+        setModeProjet(!!data.modeProjet);
       } catch (e) {
         console.warn("STATIC VALUES: defaults utilisés", e);
         setStaticVals(DEFAULT_STATIC);

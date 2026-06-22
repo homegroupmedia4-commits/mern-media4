@@ -21,6 +21,10 @@ export default function PitchManagerPage() {
 
   const [tab, setTab] = useState(() => SLUG_TO_TAB[slug] || "add");
 
+  const [modeProjet, setModeProjet] = useState(false);
+  const [modeProjetSaving, setModeProjetSaving] = useState(false);
+  const [modeProjetError, setModeProjetError] = useState("");
+
   const [cats, setCats] = useState([]);
   const [catsLoading, setCatsLoading] = useState(true);
   const [catsError, setCatsError] = useState("");
@@ -147,10 +151,47 @@ export default function PitchManagerPage() {
     }
   };
 
+  const getAuthToken = () =>
+    localStorage.getItem("admin_token_v1") ||
+    localStorage.getItem("agent_token_v1") || "";
+
+  const loadModeProjet = async () => {
+    try {
+      const res = await fetch(`${API}/api/static-values`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setModeProjet(!!data.modeProjet);
+    } catch {}
+  };
+
+  const toggleModeProjet = async (checked) => {
+    setModeProjet(checked);
+    setModeProjetSaving(true);
+    setModeProjetError("");
+    try {
+      const res = await fetch(`${API}/api/static-values`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ modeProjet: checked }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } catch (e) {
+      console.error(e);
+      setModeProjet(!checked);
+      setModeProjetError("Erreur sauvegarde mode projet.");
+    } finally {
+      setModeProjetSaving(false);
+    }
+  };
+
   useEffect(() => {
     loadProducts();
     loadCategories();
     loadPitches();
+    loadModeProjet();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -347,6 +388,23 @@ export default function PitchManagerPage() {
     <div className="page">
       <div className="page-header">
         <h2 className="page-title">Pitch Manager</h2>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
+            <input
+              type="checkbox"
+              checked={modeProjet}
+              onChange={(e) => toggleModeProjet(e.target.checked)}
+              disabled={modeProjetSaving}
+              style={{ width: 16, height: 16 }}
+            />
+            Mode projet
+          </label>
+          <span style={{ fontSize: 12, fontWeight: 700, color: modeProjet ? "#0f7a3a" : "#999" }}>
+            {modeProjetSaving ? "Sauvegarde..." : modeProjet ? "Active" : "Desactive"}
+          </span>
+          {modeProjetError && <span style={{ fontSize: 12, color: "#b10000" }}>{modeProjetError}</span>}
+        </div>
       </div>
 
       {error ? <div className="alert">{error}</div> : null}

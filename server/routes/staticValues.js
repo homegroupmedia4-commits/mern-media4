@@ -59,6 +59,10 @@ router.patch("/", async (req, res) => {
       }
     }
 
+    if (typeof req.body.modeProjet !== "undefined") {
+      update.modeProjet = !!req.body.modeProjet;
+    }
+
     const updated = await StaticValues.findByIdAndUpdate(doc._id, update, { new: true });
     res.json(updated);
   } catch (e) {

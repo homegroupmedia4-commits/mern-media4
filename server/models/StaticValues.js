@@ -18,6 +18,7 @@ const staticValuesSchema = new mongoose.Schema(
     installation_eur_m2: { type: Number, default: 500 },
     installation_eur_m2: { type: Number, default: 500 },
     abattement_comptant: { type: Number, default: 0.7 },
+    modeProjet: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
