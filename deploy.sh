@@ -1,8 +1,7 @@
 #!/bin/bash
 echo "🚀 Déploiement..."
-echo "📥 Git sync forcé..."
-git fetch origin
-git reset --hard origin/main
+echo "📥 Git pull..."
+git pull
 echo "📦 Install + Build frontend..."
 cd client && npm install && npm run build && cd ..
 echo "📦 Install backend..."
