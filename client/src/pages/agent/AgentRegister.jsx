@@ -82,7 +82,56 @@ const API = "";
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const setField = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+
+  const generatePassword = () => {
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const digits = "0123456789";
+    const symbols = "!@#$%&*?-_";
+    const all = upper + lower + digits + symbols;
+
+    const mandatory = [
+      upper[Math.floor(Math.random() * upper.length)],
+      lower[Math.floor(Math.random() * lower.length)],
+      digits[Math.floor(Math.random() * digits.length)],
+      symbols[Math.floor(Math.random() * symbols.length)],
+    ];
+
+    const rest = Array.from({ length: 8 }, () =>
+      all[Math.floor(Math.random() * all.length)]
+    );
+
+    const pwd = [...mandatory, ...rest]
+      .sort(() => Math.random() - 0.5)
+      .join("");
+
+    setForm((p) => ({ ...p, password: pwd, confirmPassword: pwd }));
+    setShowPassword(true);
+    setShowConfirm(true);
+    setCopied(false);
+  };
+
+  const copyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(form.password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = form.password;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const loadParrains = async () => {
     setLoadingParrains(true);
@@ -213,7 +262,54 @@ const API = "";
             </div>
             <div className="field">
               <label>Mot de passe</label>
-              <input value={form.password} onChange={setField("password")} type="password" />
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <div style={{ position: "relative", flex: 1 }}>
+                  <input
+                    value={form.password}
+                    onChange={setField("password")}
+                    type={showPassword ? "text" : "password"}
+                    style={{ width: "100%", paddingRight: 36 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    title={showPassword ? "Cacher" : "Voir"}
+                    style={{
+                      position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
+                      background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1,
+                    }}
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={generatePassword}
+                  title="Générer un mot de passe sécurisé"
+                  style={{
+                    height: 40, padding: "0 10px", border: "1px solid #d8dbe6", borderRadius: 10,
+                    background: "#f6f7fb", cursor: "pointer", fontSize: 13, fontWeight: 600,
+                    whiteSpace: "nowrap", flexShrink: 0,
+                  }}
+                >
+                  Générer
+                </button>
+                {form.password && (
+                  <button
+                    type="button"
+                    onClick={copyPassword}
+                    title="Copier le mot de passe"
+                    style={{
+                      height: 40, padding: "0 10px", border: "1px solid #d8dbe6", borderRadius: 10,
+                      background: copied ? "#e6f4d7" : "#f6f7fb", cursor: "pointer", fontSize: 13,
+                      fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0,
+                      transition: "background 200ms",
+                    }}
+                  >
+                    {copied ? "Copié !" : "Copier"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -221,7 +317,25 @@ const API = "";
           <div className="row">
             <div className="field">
               <label>Confirmer le Mot de passe</label>
-              <input value={form.confirmPassword} onChange={setField("confirmPassword")} type="password" />
+              <div style={{ position: "relative" }}>
+                <input
+                  value={form.confirmPassword}
+                  onChange={setField("confirmPassword")}
+                  type={showConfirm ? "text" : "password"}
+                  style={{ width: "100%", paddingRight: 36 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  title={showConfirm ? "Cacher" : "Voir"}
+                  style={{
+                    position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1,
+                  }}
+                >
+                  {showConfirm ? "🙈" : "👁️"}
+                </button>
+              </div>
             </div>
             <div className="field">
               <label>Parrain</label>
