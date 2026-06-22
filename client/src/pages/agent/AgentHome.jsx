@@ -1285,7 +1285,7 @@ const getOptionPrice = (pi, opt) => {
     <div className="agenthome-page">
 
        
-<div className="agenthome-pageTitle">Demande de devis 6</div>
+<div className="agenthome-pageTitle">Demande de devis 7</div>
 
 
       <div className="agenthome-card agenthome-card--wide">
