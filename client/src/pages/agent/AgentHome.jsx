@@ -91,6 +91,11 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const showWalleds =
     !!wallLedsProductId && selectedProductIds.includes(wallLedsProductId);
 
+  const lcdProducts = useMemo(
+    () => products.filter((p) => /lcd/i.test(p?.name || "")),
+    [products]
+  );
+
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -115,6 +120,9 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
   const [otherSelections, setOtherSelections] = useState({});
+  const [showLcd, setShowLcd] = useState(false);
+  const [selectedLcdProductName, setSelectedLcdProductName] = useState("__all__");
+
     // --- Catalogues pour le récap "autres produits"
   const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
   const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
@@ -751,6 +759,29 @@ setPitchInstances((prev) =>
     });
   };
 
+  const toggleLcd = () => {
+    const lcdIds = lcdProducts.map((p) => p?._id || p?.id).filter(Boolean);
+    setShowLcd((prev) => {
+      const next = !prev;
+      if (next) {
+        setSelectedProductIds((ids) => {
+          const toAdd = lcdIds.filter((id) => !ids.includes(id));
+          return [...ids, ...toAdd];
+        });
+      } else {
+        const lcdSet = new Set(lcdIds);
+        setSelectedProductIds((ids) => ids.filter((id) => !lcdSet.has(id)));
+        setOtherSelections((prev) => {
+          const copy = { ...prev };
+          for (const id of lcdIds) delete copy[id];
+          return copy;
+        });
+        setSelectedLcdProductName("__all__");
+      }
+      return next;
+    });
+  };
+
   // ---------------------------
   // Pitch selection + instance creation
   // ---------------------------
@@ -1290,7 +1321,7 @@ const getOptionPrice = (pi, opt) => {
     <div className="agenthome-page">
 
        
-<div className="agenthome-pageTitle">Demande de devis 6</div>
+<div className="agenthome-pageTitle">Demande de devis </div>
 
 
       <div className="agenthome-card agenthome-card--wide">
@@ -1313,24 +1344,29 @@ const getOptionPrice = (pi, opt) => {
             <div className="agenthome-muted">Chargement...</div>
           ) : (
             <div className="agenthome-products">
-              {products.map((p) => {
-                const id = p?._id || p?.id;
-                const checked = id ? selectedProductIds.includes(id) : false;
-
-                return (
-                  <label key={id} className="agenthome-check">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => id && toggleProduct(id)}
-                    />
-                    <span>{p?.name || "Produit"}</span>
-                  </label>
-                );
-              })}
-              {products.length === 0 ? (
+              {wallLedsProductId && (
+                <label className="agenthome-check">
+                  <input
+                    type="checkbox"
+                    checked={selectedProductIds.includes(wallLedsProductId)}
+                    onChange={() => toggleProduct(wallLedsProductId)}
+                  />
+                  <span>Écrans LED</span>
+                </label>
+              )}
+              {lcdProducts.length > 0 && (
+                <label className="agenthome-check">
+                  <input
+                    type="checkbox"
+                    checked={showLcd}
+                    onChange={toggleLcd}
+                  />
+                  <span>Écrans LCD</span>
+                </label>
+              )}
+              {products.length === 0 && (
                 <div className="agenthome-muted">Aucun produit.</div>
-              ) : null}
+              )}
             </div>
           )}
         </div>
@@ -2039,8 +2075,12 @@ const getOptionPrice = (pi, opt) => {
   durations={durations}
   loadingDur={loadingRefs}
   onSelectionsChange={setOtherSelections}
-    abonnement={otherAbonnement}
+  abonnement={otherAbonnement}
   onAbonnementChange={setOtherAbonnement}
+  showLcd={showLcd}
+  selectedLcdProductName={selectedLcdProductName}
+  onLcdProductNameChange={setSelectedLcdProductName}
+  lcdProducts={lcdProducts}
 />
 
 

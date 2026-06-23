@@ -24,6 +24,12 @@ export default function AgentOtherProductsBlock({
 
   abonnement,
   onAbonnementChange,
+
+  // LCD grouping
+  showLcd = false,
+  selectedLcdProductName = "__all__",
+  onLcdProductNameChange,
+  lcdProducts = [],
 }) {
   const [otherSizes, setOtherSizes] = useState([]);
   const [loadingOtherSizes, setLoadingOtherSizes] = useState(false);
@@ -113,9 +119,30 @@ const data = text ? JSON.parse(text) : [];
     });
   }, [selectedProducts, wallLedsProductId]);
 
+  // Séparation LCD / non-LCD
+  const lcdProductIds = useMemo(
+    () => new Set((lcdProducts || []).map((p) => p?._id || p?.id).filter(Boolean)),
+    [lcdProducts]
+  );
+
+  const lcdSelectedProducts = useMemo(
+    () => otherSelectedProducts.filter((p) => lcdProductIds.has(p?._id || p?.id)),
+    [otherSelectedProducts, lcdProductIds]
+  );
+
+  const nonLcdSelectedProducts = useMemo(
+    () => otherSelectedProducts.filter((p) => !lcdProductIds.has(p?._id || p?.id)),
+    [otherSelectedProducts, lcdProductIds]
+  );
+
+  const lcdVisibleProducts = useMemo(() => {
+    if (selectedLcdProductName === "__all__") return lcdSelectedProducts;
+    return lcdSelectedProducts.filter((p) => p?.name === selectedLcdProductName);
+  }, [lcdSelectedProducts, selectedLcdProductName]);
+
   // Assure que chaque produit sélectionné a une config
   useEffect(() => {
-    if (!otherSelectedProducts.length) {
+    if (!otherSelectedProducts.length && !showLcd) {
       setOtherSelections({});
       return;
     }
@@ -394,11 +421,273 @@ return {
   // -----------------------------
   // UI
   // -----------------------------
-  if (!otherSelectedProducts.length) return null;
+  if (!otherSelectedProducts.length && !showLcd) return null;
 
   return (
     <>
-      {otherSelectedProducts.map((p) => {
+      {/* --------- BLOC LCD --------- */}
+      {showLcd && lcdSelectedProducts.length > 0 && (
+        <div className="agenthome-section">
+          <div className="agenthome-sectionTitle">Écrans LCD</div>
+
+          {/* Abonnement — affiché une seule fois pour tous les LCD */}
+          <div className="agenthome-selectCol" style={{ marginBottom: 10 }}>
+            <label className="agenthome-label">Abonnement (Autres produits) :</label>
+            <select
+              className="agenthome-select"
+              value={abonnement?.key || "bronze"}
+              onChange={(e) => {
+                const found = ABONNEMENT_OPTIONS.find((a) => a.key === e.target.value);
+                if (found) onAbonnementChange?.(found);
+              }}
+            >
+              {ABONNEMENT_OPTIONS.map((a) => (
+                <option key={a.key} value={a.key}>
+                  {a.label} — {a.price.toFixed(2)} € HT/mois
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtre par type LCD */}
+          <div className="agenthome-selectCol" style={{ marginBottom: 14 }}>
+            <label className="agenthome-label">Type d'écran LCD :</label>
+            <select
+              className="agenthome-select"
+              value={selectedLcdProductName}
+              onChange={(e) => onLcdProductNameChange?.(e.target.value)}
+            >
+              <option value="__all__">Tous</option>
+              {lcdSelectedProducts.map((p) => (
+                <option key={p?._id || p?.id} value={p?.name || ""}>
+                  {p?.name || "Produit"}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Un sous-bloc par produit LCD visible */}
+          {lcdVisibleProducts.map((p) => {
+            const productId = p?._id || p?.id;
+            const productName = p?.name || "Produit";
+
+            const sel = otherSelections[productId] || {
+              leasingMonths: getDefaultLeasingMonths(),
+              byMonths: {},
+            };
+
+            const getOtherOptionPriceLcd = (sel, opt) => {
+              const months = String(sel.leasingMonths || getDefaultLeasingMonths());
+              const checked = sel.byMonths?.[months]?.checked || {};
+              const rowIds = Object.keys(checked);
+              if (!rowIds.length) return 0;
+              const rowId = rowIds[0];
+              const line = checked[rowId];
+              const row = otherSizes.find((r) => r._id === rowId);
+              if (!row) return 0;
+              const memPrice = memOptions.find((m) => m._id === line?.memId)?.price ?? 0;
+              if (opt === "achat") {
+                const monthly = Number(row.price || 0) + Number(memPrice || 0);
+                const selectedMonths = Math.max(1, parseInt(months || 1, 10));
+                return Math.floor(monthly * selectedMonths * 0.6);
+              }
+              const rowProductId = String(row.productId?._id || row.productId || row.product || "");
+              const targetRow = otherSizes.find((r) => {
+                const rPid = String(r.productId?._id || r.productId || r.product || "");
+                return rPid === rowProductId && r.sizeInches === row.sizeInches && String(r.leasingMonths) === String(opt);
+              });
+              if (targetRow) return Math.floor(Number(targetRow.price || 0) + Number(memPrice || 0));
+              return Math.floor(Number(row.price || 0) + Number(memPrice || 0));
+            };
+
+            const activeMonthsLcd = String(sel.leasingMonths || getDefaultLeasingMonths());
+            const checkedActiveLcd = sel.byMonths?.[activeMonthsLcd]?.checked || {};
+
+            const getRowProductNameLcd = (row) => {
+              if (row?.product) return String(row.product);
+              if (row?.productId && typeof row.productId === "object") return String(row.productId?.name || row.productId?._id || "");
+              const pid = String(row?.productId || "");
+              const found = (products || []).find((x) => String(x?._id || x?.id) === pid);
+              return String(found?.name || found?.label || pid || "");
+            };
+
+            const rowsForProductLcd = otherSizes.filter((r) => {
+              const rowProductName = getRowProductNameLcd(r);
+              return (
+                norm(rowProductName) === norm(productName) &&
+                String(r.leasingMonths) === String(sel.leasingMonths) &&
+                r?.isActive !== false
+              );
+            });
+
+            const checkedIdsLcd = Object.keys(checkedActiveLcd || {});
+            const hasCheckedLcd = checkedIdsLcd.length > 0;
+
+            return (
+              <div key={productId} style={{ marginBottom: 16 }}>
+                {/* Titre du groupe (nom du produit LCD) */}
+                <div style={{ fontWeight: 800, fontSize: 14, color: "#78b13a", marginBottom: 8 }}>
+                  {productName}
+                </div>
+
+                {loadingOtherSizes ? (
+                  <div className="agenthome-muted">Chargement des tailles…</div>
+                ) : rowsForProductLcd.length ? (
+                  <div className="agenthome-products" style={{ marginTop: 4 }}>
+                    {rowsForProductLcd
+                      .slice()
+                      .sort((a, b) => (a.sizeInches || 0) - (b.sizeInches || 0))
+                      .map((row) => {
+                        const checked = !!checkedActiveLcd[row._id];
+                        return (
+                          <label key={row._id} className="agenthome-check">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleOtherSize(productId, row)}
+                            />
+                            <span>{row.sizeInches} pouces</span>
+                          </label>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <div className="agenthome-muted">Aucune taille configurée pour cette durée.</div>
+                )}
+
+                {/* Type financement */}
+                <div className="agenthome-selectCol" style={{ marginTop: 6 }}>
+                  <label className="agenthome-label">Type de financement :</label>
+                  <select
+                    className="agenthome-select"
+                    value={sel.typeFinancement || "location_maintenance"}
+                    onChange={(e) => setOtherTypeFinancement(productId, e.target.value)}
+                  >
+                    <option value="location_maintenance">Location maintenance</option>
+                    <option value="location_evenementiel">Location événementiel</option>
+                    <option value="achat">Achat</option>
+                  </select>
+                </div>
+
+                {/* Durée leasing */}
+                <div className="agenthome-selectCol">
+                  <label className="agenthome-label">Durée de leasing :</label>
+                  <select
+                    className="agenthome-select"
+                    value={sel.leasingMonths}
+                    onChange={(e) => setOtherLeasingMonths(productId, e.target.value)}
+                    disabled={loadingDur}
+                  >
+                    {durationOptions.map((d) => (
+                      <option key={d._id || d.months} value={String(d.months)}>
+                        {d.months} mois
+                      </option>
+                    ))}
+                  </select>
+
+                  {sel.typeFinancement !== "achat" && (
+                    <div className="agenthome-subsection" style={{ marginTop: 10 }}>
+                      <div className="agenthome-subsectionTitle">Options :</div>
+                      <div className="agenthome-optionsRow">
+                        {[...durationOptions.map((d) => String(d.months)), "achat"].map((opt) => {
+                          const checked = (sel.optionsFinancement || []).includes(opt) || String(sel.leasingMonths) === opt;
+                          return (
+                            <label key={opt} className="agenthome-optionItem">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  const current = sel.optionsFinancement || [];
+                                  const next = e.target.checked ? [...current, opt] : current.filter((o) => o !== opt);
+                                  setOtherSelections((prev) => ({ ...prev, [productId]: { ...prev[productId], optionsFinancement: next } }));
+                                }}
+                              />
+                              {opt === "achat"
+                                ? (() => { const prix = getOtherOptionPriceLcd(sel, "achat"); return prix > 0 ? `Achat : ${prix.toFixed(2)} € HT` : "Achat"; })()
+                                : (() => { const prix = getOtherOptionPriceLcd(sel, opt); return prix > 0 ? `${opt} mois : ${prix.toFixed(2)} € HT` : `${opt} mois`; })()
+                              }
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tailles sélectionnées */}
+                {hasCheckedLcd ? (
+                  <div className="agenthome-subcard" style={{ marginTop: 10 }}>
+                    <div className="agenthome-subcardTitle">Tailles sélectionnées : {productName}</div>
+                    {checkedIdsLcd.map((rowId) => {
+                      const row = otherSizes.find((r) => r._id === rowId);
+                      const line = checkedActiveLcd[rowId];
+                      if (!row || !line) return null;
+                      const calc = computeOtherLine({
+                        basePrice: row.price,
+                        memId: line.memId,
+                        qty: line.qty,
+                        typeFinancement: sel.typeFinancement || "location_maintenance",
+                        leasingMonths: sel.leasingMonths,
+                      });
+                      return (
+                        <div key={rowId} className="agenthome-pitchCard" style={{ marginTop: 10 }}>
+                          <div style={{ fontWeight: 700, marginBottom: 8 }}>• {row.sizeInches} pouces</div>
+                          <div className="agenthome-grid2">
+                            <div className="agenthome-field agenthome-field--full">
+                              <label>Mémoire :</label>
+                              <select
+                                className="agenthome-select"
+                                value={line.memId}
+                                onChange={(e) => updateOtherSize(productId, rowId, { memId: e.target.value })}
+                                disabled={loadingMemOptions}
+                              >
+                                {memOptions.length ? (
+                                  memOptions.map((m) => (
+                                    <option key={m._id} value={m._id}>{m.name} – {Number(m.price || 0).toFixed(2)} €</option>
+                                  ))
+                                ) : (
+                                  <option value="">— aucune mémoire —</option>
+                                )}
+                              </select>
+                            </div>
+                            <div className="agenthome-field">
+                              <label>Prix final ({productName}) :</label>
+                              <input className="agenthome-input agenthome-input--readonly" readOnly value={calc.unit.toFixed(2)} />
+                            </div>
+                            <div className="agenthome-field">
+                              <label>Quantité :</label>
+                              <input
+                                className="agenthome-input"
+                                type="number"
+                                min="1"
+                                step="1"
+                                value={line.qty}
+                                onChange={(e) => updateOtherSize(productId, rowId, { qty: e.target.value })}
+                              />
+                            </div>
+                            <div className="agenthome-field agenthome-field--full">
+                              <label>Montant HT :</label>
+                              <input className="agenthome-input agenthome-input--readonly" readOnly value={calc.total.toFixed(2)} />
+                            </div>
+                          </div>
+                          <div className="agenthome-muted" style={{ marginTop: 6 }}>
+                            Code produit : <b>{row.productCode || "—"}</b>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="agenthome-muted" style={{ marginTop: 8 }}>Aucune taille sélectionnée</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* --------- PRODUITS NON-LCD --------- */}
+      {nonLcdSelectedProducts.map((p) => {
         const productId = p?._id || p?.id;
         const productName = p?.name || "Produit";
 
@@ -518,8 +807,8 @@ const rowsForProduct = otherSizes.filter((r) => {
               <div className="agenthome-muted">Aucune taille configurée pour cette durée.</div>
             )}
 
-            {/* Abonnement Autres produits — affiché 1 seule fois */}
-{otherSelectedProducts.indexOf(p) === 0 && (
+            {/* Abonnement Autres produits — affiché 1 seule fois si pas de LCD */}
+{lcdSelectedProducts.length === 0 && nonLcdSelectedProducts.indexOf(p) === 0 && (
   <div className="agenthome-selectCol" style={{ marginTop: 6 }}>
     <label className="agenthome-label">Abonnement (Autres produits) :</label>
     <select
