@@ -152,6 +152,8 @@ const [showSocieteSuggestions, setShowSocieteSuggestions] = useState(false);
 const [societeLoading, setSocieteLoading] = useState(false);
 
   const [apport, setApport] = useState(0);
+  const [remise, setRemise] = useState(0);
+  const REMISE_MAX = 5;
   const [leaseurRates, setLeaseurRates] = useState([]);
 
 
@@ -1156,19 +1158,10 @@ const finPart =
       });
     }
 
-    // Totaux HT (autres + pitch)
-    const totalHtOther = lines
-      .filter((l) => l.kind === "other")
-      .reduce((sum, l) => {
-        // on “re-parse” le montant depuis la ligne serait fragile, donc on recalcule à part si tu veux.
-        // Ici on fait simple : on recalculera via data brute juste après, mais pour l’instant on garde lines.
-        return sum;
-      }, 0);
-
     // recalcul propre des totaux depuis la data brute :
-    let ht = 0;
+    let htEcrans = 0;
 
-    // ht autres produits
+    // ht autres produits (écrans LCD / non-LED)
     for (const pid of Object.keys(otherSelections || {})) {
       const sel = otherSelections?.[pid];
       if (!sel) continue;
@@ -1184,39 +1177,34 @@ const finPart =
 
         const basePrice = parseEuro(row.price);
         const memPrice = parseEuro(mem?.price);
-        
 
-       const monthly = basePrice + memPrice;
-const monthsInt = Math.max(1, parseInt(String(months || 1), 10) || 1);
-const typeFin = String(sel.typeFinancement || "location_maintenance");
-
-const unit = typeFin === "achat" ? (monthly * monthsInt) * 0.6 : monthly;
-
-const qty = Math.max(1, parseInt(String(checked?.[rowId]?.qty || 1), 10) || 1);
-ht += unit * qty;
-
-        
+        const monthly = basePrice + memPrice;
+        const monthsInt = Math.max(1, parseInt(String(months || 1), 10) || 1);
+        const typeFin = String(sel.typeFinancement || "location_maintenance");
+        const unit = typeFin === "achat" ? (monthly * monthsInt) * 0.6 : monthly;
+        const qty = Math.max(1, parseInt(String(checked?.[rowId]?.qty || 1), 10) || 1);
+        htEcrans += unit * qty;
       }
     }
 
     // ht murs leds
     for (const pi of pitchInstances || []) {
-      ht += parseEuro(pi.montantHt);
+      htEcrans += parseEuro(pi.montantHt);
     }
 
+    // Remise sur écrans uniquement
+    const htEcransAvecRemise = htEcrans * (1 - remise / 100);
 
+    // Services (abonnements)
+    const hasPitch = (pitchInstances || []).some((pi) => parseEuro(pi.montantHt) > 0);
+    const hasOther = Object.keys(otherSelections || {}).length > 0;
+    let htServices = 0;
+    if (hasPitch) htServices += wallLedsAbonnement.price;
+    if (hasOther) htServices += otherAbonnement.price;
 
+    const htAvantApport = htEcransAvecRemise + htServices;
 
-    // ✅ ABOBR (comme dans le PDF) : 19,95€ si on a au moins 1 ligne
-const hasPitch = (pitchInstances || []).some((pi) => parseEuro(pi.montantHt) > 0);
-const hasOther = Object.keys(otherSelections || {}).length > 0;
-
-if (hasPitch) ht += wallLedsAbonnement.price;
-if (hasOther) ht += otherAbonnement.price;
-
-
-
-// --- Application de l'apport ---
+    // --- Application de l'apport ---
     const dureeSel = String(pitchInstances?.[0]?.financementMonths || "63");
     const rate = (leaseurRates || []).find((r) => String(r.months) === dureeSel);
     const CL = Number(rate?.coutLeaseurSurCoutTotal || 0);
@@ -1224,25 +1212,28 @@ if (hasOther) ht += otherAbonnement.price;
 
     const htApresApport = Number(apport) > 0
       ? applyApport({
-          mensualiteInitiale: ht,
+          mensualiteInitiale: htAvantApport,
           apport,
           abattement: AB,
           coutLeaseur: CL,
           dureeMonths: dureeSel,
         })
-      : ht;
+      : htAvantApport;
 
     const tva = htApresApport * 0.2;
     const ttc = htApresApport + tva;
 
     return {
       lines,
+      htEcrans,
+      htServices,
+      htAvantApport,
       totalHt: htApresApport,
       tva,
       ttc,
     };
-    
-}, [otherSelections, pitchInstances, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, leaseurRates, staticVals]);
+
+}, [otherSelections, pitchInstances, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, remise, leaseurRates, staticVals]);
 
 
   // --- helpers label PDF ---
@@ -2295,44 +2286,6 @@ const getOptionPrice = (pi, opt) => {
             </div>
           </div>
 
-          <div className="agenthome-offers">
-            <label className="agenthome-check">
-              <input
-                type="checkbox"
-                checked={client.fraisInstallationOfferts}
-                required
-                onChange={(e) =>
-                  setClient((p) => ({ ...p, fraisInstallationOfferts: e.target.checked }))
-                }
-              />
-              <span>Frais installation offerts</span>
-            </label>
-
-            <label className="agenthome-check">
-              <input
-                type="checkbox"
-                required
-                checked={client.fraisParametrageOfferts}
-                onChange={(e) =>
-                  setClient((p) => ({ ...p, fraisParametrageOfferts: e.target.checked }))
-                }
-              />
-              <span>Frais paramétrage offerts</span>
-            </label>
-
-            <label className="agenthome-check">
-              <input
-                type="checkbox"
-                required
-                checked={client.fraisPortOfferts}
-                onChange={(e) =>
-                  setClient((p) => ({ ...p, fraisPortOfferts: e.target.checked }))
-                }
-              />
-              <span>Frais de port offerts</span>
-            </label>
-          </div>
-
           <div className="agenthome-field agenthome-field--full">
             <label>Commentaires :</label>
             <textarea
@@ -2383,7 +2336,50 @@ const getOptionPrice = (pi, opt) => {
     </ul>
   </div>
 
-{pitchInstances?.[0]?.typeFinancement !== "achat" && (
+  {/* A) Remise */}
+  <div className="agenthome-field" style={{ marginTop: 12 }}>
+    <label>Remise (%) — max {REMISE_MAX}% :</label>
+    <input
+      type="number"
+      min="0"
+      max={REMISE_MAX}
+      step="0.5"
+      value={remise}
+      onChange={(e) => setRemise(Math.min(REMISE_MAX, Math.max(0, Number(e.target.value) || 0)))}
+      className="agenthome-input"
+    />
+  </div>
+
+  {/* B) Frais */}
+  <div className="agenthome-offers" style={{ marginTop: 10 }}>
+    <label className="agenthome-check">
+      <input
+        type="checkbox"
+        checked={client.fraisInstallationOfferts}
+        onChange={(e) => setClient((p) => ({ ...p, fraisInstallationOfferts: e.target.checked }))}
+      />
+      <span>Frais installation offerts</span>
+    </label>
+    <label className="agenthome-check">
+      <input
+        type="checkbox"
+        checked={client.fraisParametrageOfferts}
+        onChange={(e) => setClient((p) => ({ ...p, fraisParametrageOfferts: e.target.checked }))}
+      />
+      <span>Frais paramétrage offerts</span>
+    </label>
+    <label className="agenthome-check">
+      <input
+        type="checkbox"
+        checked={client.fraisPortOfferts}
+        onChange={(e) => setClient((p) => ({ ...p, fraisPortOfferts: e.target.checked }))}
+      />
+      <span>Frais de port offerts</span>
+    </label>
+  </div>
+
+  {/* C) Apport */}
+  {pitchInstances?.[0]?.typeFinancement !== "achat" && (
     <div className="agenthome-field" style={{ marginTop: 12 }}>
       <label>Apport (€) :</label>
       <input
@@ -2397,8 +2393,42 @@ const getOptionPrice = (pi, opt) => {
     </div>
   )}
 
-  
+  {/* D) Tableau des durées */}
+  {pitchInstances.length > 0 && pitchInstances[0]?.typeFinancement !== "achat" && (() => {
+    const pi0 = pitchInstances[0];
+    const opts = pi0.optionsFinancement || [];
+    if (!opts.length) return null;
+    const dureeSel0 = String(pi0.financementMonths || "63");
+    const rate0 = (leaseurRates || []).find((r) => String(r.months) === dureeSel0);
+    const CL0 = Number(rate0?.coutLeaseurSurCoutTotal || 0);
+    const AB0 = Number(staticVals?.abattement_comptant ?? 0.7);
 
+    const optionsDurees = opts.map((opt) => {
+      const htPitch = opt === "achat" ? getOptionPrice(pi0, "achat") : getOptionPrice(pi0, opt);
+      const htPitchRemise = htPitch * (1 - remise / 100);
+      const htTotal = htPitchRemise + recap.htServices;
+      const htFinal = Number(apport) > 0
+        ? applyApport({ mensualiteInitiale: htTotal, apport, abattement: AB0, coutLeaseur: CL0, dureeMonths: dureeSel0 })
+        : htTotal;
+      const ttcFinal = htFinal * 1.2;
+      const label = opt === "achat" ? "Achat" : `${opt} mois`;
+      return { label, ht: htFinal, ttc: ttcFinal };
+    });
+
+    return (
+      <div style={{ marginTop: 10, padding: "10px 0", borderTop: "1px solid #e5e7eb" }}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>Récapitulatif par durée :</div>
+        {optionsDurees.map(({ label, ht, ttc }) => (
+          <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span>{label} :</span>
+            <span>{fmtEuro(ht)} HT / {fmtEuro(ttc)} TTC</span>
+          </div>
+        ))}
+      </div>
+    );
+  })()}
+
+  {/* E) Totaux */}
   <div style={{ marginTop: 14, borderTop: "1px dashed #e5e7eb", paddingTop: 12 }}>
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
       <span style={{ fontWeight: 700 }}>Montant total HT général :</span>
