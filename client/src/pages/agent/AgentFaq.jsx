@@ -13,12 +13,12 @@ function FaqItem({ q, children, isOpen, onToggle }) {
       >
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <span style={{ fontSize: 18, lineHeight: 1 }}>–</span>
-          <span style={{ fontWeight: 800, fontSize: 14 }}>{q}</span>
+          <span style={{ fontWeight: 800, fontSize: 14, color: "#213547" }}>{q}</span>
         </div>
         <span style={{ fontSize: 16, opacity: 0.8 }}>{isOpen ? "▾" : "▸"}</span>
       </button>
       {isOpen && (
-        <div style={{ padding: "18px 16px", color: "#5d6475", lineHeight: 1.7, borderTop: "1px solid #d9dde7", whiteSpace: "pre-wrap" }}>
+        <div style={{ padding: "18px 16px", color: "#213547", lineHeight: 1.7, borderTop: "1px solid #d9dde7", whiteSpace: "pre-wrap" }}>
           {children}
         </div>
       )}
@@ -38,6 +38,7 @@ export default function AgentFaq() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openIdx, setOpenIdx] = useState({});
+  const [search, setSearch] = useState("");
 
   const API = window.location.origin;
 
@@ -63,8 +64,16 @@ export default function AgentFaq() {
     return false;
   });
 
+  // Filtre par recherche
+  const searched = search.trim()
+    ? filtered.filter((item) => {
+        const s = search.trim().toLowerCase();
+        return (item.question || "").toLowerCase().includes(s) || (item.answer || "").toLowerCase().includes(s);
+      })
+    : filtered;
+
   // Grouper par catégorie
-  const grouped = filtered.reduce((acc, item) => {
+  const grouped = searched.reduce((acc, item) => {
     const cat = item.category || "Général";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
@@ -72,14 +81,22 @@ export default function AgentFaq() {
   }, {});
 
   return (
-    <div>
+    <div style={{ background: "#f6f7fb", minHeight: "100vh", color: "#213547" }}>
       <AgentHeader agent={agent} />
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px 40px" }}>
         <h1 style={{ margin: 0, fontSize: 40, fontWeight: 1000 }}>FAQ</h1>
 
+        <input
+          type="search"
+          placeholder="Rechercher une question…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ marginTop: 16, width: "100%", height: 40, border: "1px solid #d9dde7", borderRadius: 10, padding: "0 12px", fontSize: 14, outline: "none", background: "#fff", color: "#213547", boxSizing: "border-box" }}
+        />
+
         {loading && <div style={{ marginTop: 20, color: "#9ca3af" }}>Chargement...</div>}
 
-        {!loading && filtered.length === 0 && (
+        {!loading && searched.length === 0 && (
           <div style={{ marginTop: 20, color: "#9ca3af" }}>Aucune entrée FAQ disponible.</div>
         )}
 
