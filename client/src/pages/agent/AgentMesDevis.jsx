@@ -17,9 +17,27 @@ export default function AgentMesDevis() {
   const [error, setError] = useState("");
   const [metaVersion, setMetaVersion] = useState(0);
   const bumpMeta = () => setMetaVersion((v) => v + 1);
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState("asc");
+  const [colFilters, setColFilters] = useState({});
+  const [searchGlobal, setSearchGlobal] = useState("");
 
   const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
   const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
+
+  const handleSort = (col) => {
+    if (sortCol === col) {
+      if (sortDir === "asc") setSortDir("desc");
+      else if (sortDir === "desc") { setSortCol(null); setSortDir("asc"); }
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+  };
+
+  const setColFilter = (col, val) => {
+    setColFilters((prev) => ({ ...prev, [col]: val }));
+  };
 
   const fmt2 = (n) => {
     const x = Number(n);
@@ -229,12 +247,94 @@ export default function AgentMesDevis() {
       }
     }
 
-    if (filtre === "led") return out.filter((r) => r.kind === "led");
-    if (filtre === "lcd") return out.filter((r) => r.kind === "lcd");
-    return out;
-  }, [rows, filtre, otherSizesCatalog, memOptionsCatalog, metaVersion]);
+    // Appliquer recherche globale
+    let result = filtre === "led" ? out.filter(r => r.kind === "led")
+      : filtre === "lcd" ? out.filter(r => r.kind === "lcd")
+      : out;
+
+    // Recherche globale
+    if (searchGlobal.trim()) {
+      const q = searchGlobal.trim().toLowerCase();
+      result = result.filter(r => {
+        const c = r.client || {};
+        return [
+          r.dateStr, r.devisNumber, c.societe, c.codePostal, c.ville,
+          c.nom, c.prenom, c.email, r.produit, r.pitch,
+          r.typeFinancement, String(r.dureeMois), String(r.qty),
+          String(r.montantHt), r.codeProduit,
+        ].some(v => String(v || "").toLowerCase().includes(q));
+      });
+    }
+
+    // Filtres par colonne
+    const COLS = {
+      dateStr: r => r.dateStr,
+      devisNumber: r => r.devisNumber,
+      societe: r => r.client?.societe,
+      cpVille: r => `${r.client?.codePostal || ""} ${r.client?.ville || ""}`,
+      nom: r => r.client?.nom,
+      prenom: r => r.client?.prenom,
+      email: r => r.client?.email,
+      produit: r => r.produit,
+      pitch: r => r.pitch,
+      typeFinancement: r => r.typeFinancement,
+      dureeMois: r => String(r.dureeMois),
+      qty: r => String(r.qty),
+      montantHt: r => String(r.montantHt),
+      devisNumber2: r => r.devisNumber,
+      codeProduit: r => r.codeProduit,
+    };
+
+    for (const [col, val] of Object.entries(colFilters)) {
+      if (!val || !val.trim()) continue;
+      const getter = COLS[col];
+      if (!getter) continue;
+      const q = val.trim().toLowerCase();
+      result = result.filter(r => String(getter(r) || "").toLowerCase().includes(q));
+    }
+
+    // Tri
+    if (sortCol && COLS[sortCol]) {
+      const getter = COLS[sortCol];
+      result = [...result].sort((a, b) => {
+        const av = String(getter(a) || "").toLowerCase();
+        const bv = String(getter(b) || "").toLowerCase();
+        const an = Number(av);
+        const bn = Number(bv);
+        if (!isNaN(an) && !isNaN(bn)) {
+          return sortDir === "asc" ? an - bn : bn - an;
+        }
+        return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+
+    return result;
+  }, [rows, filtre, otherSizesCatalog, memOptionsCatalog, metaVersion, searchGlobal, sortCol, sortDir, colFilters]);
 
   const hasAny = flattened.length > 0;
+
+  const SortTh = ({ col, label, width }) => {
+    const active = sortCol === col;
+    const arrow = !active ? "↕" : sortDir === "asc" ? "▲" : "▼";
+    return (
+      <th style={{ minWidth: width || 80, padding: "4px 4px 0" }}>
+        <div
+          onClick={() => handleSort(col)}
+          style={{ cursor: "pointer", fontWeight: 700, userSelect: "none", whiteSpace: "nowrap" }}
+        >
+          {label} <span style={{ fontSize: 10, color: active ? "#78b13a" : "#aaa" }}>{arrow}</span>
+        </div>
+        <input
+          type="text"
+          placeholder="..."
+          value={colFilters[col] || ""}
+          onChange={(e) => setColFilter(col, e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          style={{ width: "100%", fontSize: 11, padding: "2px 4px", marginTop: 2, border: "1px solid #e5e7eb", borderRadius: 4, boxSizing: "border-box" }}
+        />
+      </th>
+    );
+  };
 
   return (
     <>
@@ -249,6 +349,15 @@ export default function AgentMesDevis() {
             <button type="button" className={`agentdevis-tab ${filtre === "lcd" ? "is-active" : ""}`} onClick={() => setFiltre("lcd")}>Écrans LCD</button>
           </div>
 
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+            <input
+              type="text"
+              placeholder="Recherche générale..."
+              value={searchGlobal}
+              onChange={(e) => setSearchGlobal(e.target.value)}
+              style={{ width: 220, padding: "5px 10px", fontSize: 13, border: "1px solid #d8dbe6", borderRadius: 6 }}
+            />
+          </div>
           <div className="agentdevis-tableCard">
             {loading ? <div className="agentdevis-muted">Chargement...</div> : null}
             {error ? <div className="agentdevis-error">{error}</div> : null}
@@ -258,25 +367,25 @@ export default function AgentMesDevis() {
                 <table className="agentdevis-table">
                   <thead>
                     <tr>
-                      <th>Date / Heure</th>
-                      <th>N° devis</th>
+                      <SortTh col="dateStr" label="Date / Heure" width={110} />
+                      <SortTh col="devisNumber" label="N° devis" width={80} />
                       <th>↓</th>
-                      <th>Magasin</th>
-                      <th>CP / Ville</th>
+                      <SortTh col="societe" label="Magasin" width={120} />
+                      <SortTh col="cpVille" label="CP / Ville" width={100} />
                       <th>Statut</th>
                       <th>Note interne</th>
                       <th>Relance</th>
-                      <th>Nom</th>
-                      <th>Prénom</th>
-                      <th>Email</th>
-                      <th>Produit</th>
-                      <th>Pitch</th>
-                      <th>Type financement</th>
-                      <th>Durée (mois)</th>
-                      <th>Quantité</th>
-                      <th>Montant HT</th>
-                      <th>Code devis</th>
-                      <th>Code produit</th>
+                      <SortTh col="nom" label="Nom" width={90} />
+                      <SortTh col="prenom" label="Prénom" width={90} />
+                      <SortTh col="email" label="Email" width={140} />
+                      <SortTh col="produit" label="Produit" width={90} />
+                      <SortTh col="pitch" label="Pitch" width={80} />
+                      <SortTh col="typeFinancement" label="Type financement" width={120} />
+                      <SortTh col="dureeMois" label="Durée (mois)" width={80} />
+                      <SortTh col="qty" label="Quantité" width={70} />
+                      <SortTh col="montantHt" label="Montant HT" width={90} />
+                      <SortTh col="devisNumber2" label="Code devis" width={80} />
+                      <SortTh col="codeProduit" label="Code produit" width={90} />
                     </tr>
                   </thead>
                   <tbody>
