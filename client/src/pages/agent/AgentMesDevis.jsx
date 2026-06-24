@@ -146,6 +146,23 @@ export default function AgentMesDevis() {
     }
   };
 
+  const openPrefill = (r) => {
+    const d = rows.find((row) => (row._id || row.id) === r.devisId);
+    if (!d) return;
+
+    const prefill = {
+      client: d.client || {},
+      pitchInstances: d.pitchInstances || [],
+      otherSelections: d.otherSelections || {},
+      wallLedsAbonnement: d.wallLedsAbonnement || null,
+      otherAbonnement: d.otherAbonnement || null,
+      apport: d.apport || 0,
+    };
+
+    localStorage.setItem("m4_prefill", JSON.stringify(prefill));
+    window.open("/agent/home", "_blank", "noopener,noreferrer");
+  };
+
   const flattened = useMemo(() => {
     const out = [];
 
@@ -370,6 +387,7 @@ export default function AgentMesDevis() {
                       <SortTh col="dateStr" label="Date / Heure" width={110} />
                       <SortTh col="devisNumber" label="N° devis" width={80} />
                       <th>↓</th>
+                      <th>✏️</th>
                       <SortTh col="societe" label="Magasin" width={120} />
                       <SortTh col="cpVille" label="CP / Ville" width={100} />
                       <th>Statut</th>
@@ -404,6 +422,22 @@ export default function AgentMesDevis() {
                               title="Télécharger le devis"
                               style={{ padding: "4px 10px", fontSize: 16 }}
                             >↓</button>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              title="Modifier ce devis"
+                              onClick={() => openPrefill(r)}
+                              style={{
+                                background: "#f97316",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: 6,
+                                padding: "4px 10px",
+                                fontSize: 16,
+                                cursor: "pointer",
+                              }}
+                            >✏️</button>
                           </td>
                           <td>{c.societe || ""}</td>
                           <td>{`${c.codePostal || ""} ${c.ville || ""}`.trim()}</td>
@@ -451,7 +485,7 @@ export default function AgentMesDevis() {
                     })}
                     {!hasAny && !loading ? (
                       <tr>
-                        <td colSpan={19} className="agentdevis-empty">Aucun devis.</td>
+                        <td colSpan={20} className="agentdevis-empty">Aucun devis.</td>
                       </tr>
                     ) : null}
                   </tbody>

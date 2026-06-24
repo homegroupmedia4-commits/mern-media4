@@ -1,5 +1,5 @@
 // src/pages/agent/AgentHome.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./AgentHome.css";
 import AgentOtherProductsBlock from "./AgentOtherProductsBlock";
@@ -114,6 +114,7 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const hasAdminToken = useMemo(() => !!localStorage.getItem("admin_token_v1"), [agent]);
 
   // --- refs
+  const prefillApplied = useRef(false);
   const [finishes, setFinishes] = useState([]);
   const [fixations, setFixations] = useState([]);
   const [durations, setDurations] = useState([]);
@@ -447,6 +448,47 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ---------------------------
+  // PREFILL depuis localStorage (m4_prefill)
+  // ---------------------------
+  useEffect(() => {
+    if (prefillApplied.current) return;
+    prefillApplied.current = true;
+
+    const raw = localStorage.getItem("m4_prefill");
+    if (!raw) return;
+    localStorage.removeItem("m4_prefill");
+
+    try {
+      const prefill = JSON.parse(raw);
+
+      if (prefill.client) setClient(prefill.client);
+      setApport(prefill.apport || 0);
+      if (prefill.wallLedsAbonnement) setWallLedsAbonnement(prefill.wallLedsAbonnement);
+      if (prefill.otherAbonnement) setOtherAbonnement(prefill.otherAbonnement);
+
+      if (prefill.pitchInstances?.length > 0) {
+        setSelectedProductIds((prev) => [...prev, wallLedsProductId].filter(Boolean));
+        setPitchInstances(prefill.pitchInstances);
+        setSelectedPitchIds(prefill.pitchInstances.map((pi) => pi.pitchId).filter(Boolean));
+      }
+
+      if (prefill.otherSelections && Object.keys(prefill.otherSelections).length > 0) {
+        setOtherSelections(prefill.otherSelections);
+        setSelectedProductIds((prev) => {
+          const otherIds = Object.keys(prefill.otherSelections);
+          const toAdd = otherIds.filter((id) => !prev.includes(id));
+          return [...prev, ...toAdd];
+        });
+        const lcdIds = lcdProducts.map((p) => p?._id || p?.id).filter(Boolean);
+        const hasLcd = Object.keys(prefill.otherSelections).some((id) => lcdIds.includes(id));
+        if (hasLcd) setShowLcd(true);
+      }
+    } catch (e) {
+      console.warn("m4_prefill parse error", e);
+    }
+  }, [wallLedsProductId, lcdProducts]);
 
   // ---------------------------
   // LOAD: Products (checkbox)
