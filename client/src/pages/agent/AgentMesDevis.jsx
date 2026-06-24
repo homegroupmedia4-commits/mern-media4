@@ -4,18 +4,20 @@ import { TOKEN_KEY, USER_KEY, safeJsonParse } from "./agentHome.helpers";
 import "./AgentMesDevis.css";
 
 export default function AgentMesDevis() {
-const API = "";
-  const [agent, setAgent] = useState(() => {
+  const API = "";
+
+  const [agent] = useState(() => {
     const cached = localStorage.getItem(USER_KEY);
     return cached ? safeJsonParse(cached) : null;
   });
 
-  const [tab, setTab] = useState("other"); // "walleds" | "other"
+  const [filtre, setFiltre] = useState("all");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [metaVersion, setMetaVersion] = useState(0);
+  const bumpMeta = () => setMetaVersion((v) => v + 1);
 
-  // catalogues pour reconstruire les autres produits
   const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
   const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
 
@@ -24,26 +26,18 @@ const API = "";
     return Number.isFinite(x) ? x.toFixed(2) : "";
   };
 
-  const labelTypeFin = (v) => {
-  if (v === "achat") return "Achat";
-  if (v === "location_evenementiel") return "Location événementiel";
-  return "Location maintenance";
-};
-
   const fmtDateFR = (iso) => {
     try {
       const d = iso ? new Date(iso) : null;
       if (!d || Number.isNaN(d.getTime())) return "";
       return d.toLocaleString("fr-FR", {
-        year: "numeric",
+        year: "2-digit",
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
       });
-    } catch {
-      return "";
-    }
+    } catch { return ""; }
   };
 
   const getCheckedBucket = (sel) => {
@@ -55,16 +49,21 @@ const API = "";
     return sel.checked || {};
   };
 
-  // -----------------------------
-  // Load devis
-  // -----------------------------
+  const getDevisMeta = (devisId) => {
+    try {
+      const raw = localStorage.getItem(`m4_devis_meta_${devisId}`);
+      return raw ? JSON.parse(raw) : { statut: "cree", commentaire: "", relance: "" };
+    } catch { return { statut: "cree", commentaire: "", relance: "" }; }
+  };
+
+  const setDevisMeta = (devisId, patch) => {
+    const current = getDevisMeta(devisId);
+    localStorage.setItem(`m4_devis_meta_${devisId}`, JSON.stringify({ ...current, ...patch }));
+  };
+
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      window.location.href = "/agent/login";
-      return;
-    }
-
+    if (!token) { window.location.href = "/agent/login"; return; }
     (async () => {
       setLoading(true);
       setError("");
@@ -85,21 +84,14 @@ const API = "";
     })();
   }, [API]);
 
-  // -----------------------------
-  // Load catalogues (autres produits)
-  // -----------------------------
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch(`${API}/api/other-product-sizes`);
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
-        const list = Array.isArray(data) ? data : [];
-        setOtherSizesCatalog(list.filter((x) => x?.isActive !== false));
-      } catch (e) {
-        console.warn("other-product-sizes load error", e);
-        setOtherSizesCatalog([]);
-      }
+        setOtherSizesCatalog((Array.isArray(data) ? data : []).filter((x) => x?.isActive !== false));
+      } catch (e) { console.warn("other-product-sizes load error", e); }
     })();
   }, [API]);
 
@@ -109,22 +101,14 @@ const API = "";
         const res = await fetch(`${API}/api/memory-options`);
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
-        const list = Array.isArray(data) ? data : [];
-        setMemOptionsCatalog(list.filter((x) => x?.isActive !== false));
-      } catch (e) {
-        console.warn("memory-options load error", e);
-        setMemOptionsCatalog([]);
-      }
+        setMemOptionsCatalog((Array.isArray(data) ? data : []).filter((x) => x?.isActive !== false));
+      } catch (e) { console.warn("memory-options load error", e); }
     })();
   }, [API]);
 
-  // -----------------------------
-  // Download PDF
-  // -----------------------------
   const downloadPdf = async (devisId) => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
-
     try {
       const res = await fetch(`${API}/api/agents/devis/${devisId}/pdf`, {
         method: "POST",
@@ -132,24 +116,18 @@ const API = "";
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-
       const fileRes = await fetch(`${API}${data.pdfUrl}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!fileRes.ok) throw new Error(await fileRes.text());
-
       const blob = await fileRes.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      window.open(URL.createObjectURL(blob), "_blank", "noopener,noreferrer");
     } catch (e) {
       console.error(e);
       alert("Impossible de télécharger ce devis.");
     }
   };
 
-  // -----------------------------
-  // Flatten rows (walleds / other)
-  // -----------------------------
   const flattened = useMemo(() => {
     const out = [];
 
@@ -159,222 +137,116 @@ const API = "";
       const c = d.client || {};
       const dateStr = fmtDateFR(d.createdAt);
 
-      if (tab === "walleds") {
-        const pitches = Array.isArray(d?.pitchInstances) ? d.pitchInstances : [];
-        for (const pi of pitches) {
-          const qty = Number(pi?.quantite || 1) || 1;
-          const mensualiteHt = Number(pi?.montantHt || 0) || 0;
-          const mensualiteTtc = mensualiteHt * 1.2;
-
-          const finitionLabel = pi?.finitionName || pi?.finitionId || "";
-
-const fixationBase = pi?.fixationName || "";
-const fixationComment = String(pi?.fixationComment || "").trim();
-const isPlafond = fixationBase.toLowerCase().includes("plafond");
-const fixationLabel =
-  isPlafond && fixationComment ? `${fixationBase} (${fixationComment})` : fixationBase;
-
-const typeFinancementLabel = pi?.typeFinancement || "";
-
-const fraisLabel = [
-  c?.fraisInstallationOfferts ? "Installation offerte" : null,
-  c?.fraisParametrageOfferts ? "Paramétrage offert" : null,
-  c?.fraisPortOfferts ? "Port offert" : null,
-].filter(Boolean).join(" • ");
-
-          
-
-          out.push({
-            kind: "walleds",
-            key: `${devisId}_pi_${pi?.instanceId || pi?.pitchId || Math.random()}`,
-            devisId,
-            devisNumber,
-            dateStr,
-            client: c,
-
-            // pitch cols
-            produit: "Murs leds",
-            pitch: pi?.pitchLabel || pi?.name || "",
-            categorie: pi?.categorieName || pi?.categoryName || "",
-            dimensions: pi?.dimensions || "",
-            luminosite: pi?.luminosite || "",
-             surfaceM2: pi?.surfaceM2 ?? "",
-            finition: finitionLabel,
-fixation: fixationLabel,
-typeFinancement: typeFinancementLabel,
-frais: fraisLabel,
-
-            largeurM: pi?.largeurM ?? "",
-            hauteurM: pi?.hauteurM ?? "",
-            largeurPx: pi?.largeurPx ?? "",
-            hauteurPx: pi?.hauteurPx ?? "",
-            dureeMois: pi?.financementMonths ?? "",
-            optionsFinancement: Array.isArray(pi?.optionsFinancement)
-  ? pi.optionsFinancement.map(o => o === "achat" ? "Achat" : `${o} mois`).join(", ")
-  : "",
-            qty,
-            mensualiteHt,
-            mensualiteTtc,
-
-            montantHt: mensualiteHt, // même valeur ici (HT mensuel)
-            codeProduit: pi?.codeProduit || pi?.code || "", // ✅ FIX
-          });
-        }
-        continue;
+      // A) pitchInstances → kind = "led"
+      const pitches = Array.isArray(d?.pitchInstances) ? d.pitchInstances : [];
+      for (const [idx, pi] of pitches.entries()) {
+        const qty = Number(pi?.quantite || 1) || 1;
+        const mensualiteHt = Number(pi?.montantHt || 0) || 0;
+        out.push({
+          kind: "led",
+          key: `${devisId}_pi_${pi?.instanceId || pi?.pitchId || idx}`,
+          devisId, devisNumber, dateStr, client: c,
+          produit: "Murs leds",
+          pitch: pi?.pitchLabel || pi?.name || "",
+          typeFinancement: pi?.typeFinancement || "",
+          dureeMois: pi?.financementMonths ?? "",
+          qty,
+          mensualiteHt,
+          mensualiteTtc: mensualiteHt * 1.2,
+          montantHt: mensualiteHt,
+          codeProduit: pi?.codeProduit || pi?.code || "",
+          categorie: pi?.categorieName || "",
+          dimensions: pi?.dimensions || "",
+          luminosite: pi?.luminosite || "",
+          surfaceM2: pi?.surfaceM2 ?? "",
+          finition: pi?.finitionName || "",
+          fixation: (() => {
+            const base = pi?.fixationName || "";
+            const comment = String(pi?.fixationComment || "").trim();
+            return base.toLowerCase().includes("plafond") && comment ? `${base} (${comment})` : base;
+          })(),
+          frais: [
+            c?.fraisInstallationOfferts ? "Installation offerte" : null,
+            c?.fraisParametrageOfferts ? "Paramétrage offert" : null,
+            c?.fraisPortOfferts ? "Port offert" : null,
+          ].filter(Boolean).join(" • "),
+          largeurM: pi?.largeurM ?? "",
+          hauteurM: pi?.hauteurM ?? "",
+          largeurPx: pi?.largeurPx ?? "",
+          hauteurPx: pi?.hauteurPx ?? "",
+          optionsFinancement: Array.isArray(pi?.optionsFinancement)
+            ? pi.optionsFinancement.map(o => o === "achat" ? "Achat" : `${o} mois`).join(", ")
+            : "",
+        });
       }
 
-//       // other
-//       const otherSelections = d.otherSelections || {};
-//       for (const pid of Object.keys(otherSelections)) {
-//         const sel = otherSelections[pid];
-//         const months = String(sel?.leasingMonths || "").trim();
-//         const checked = getCheckedBucket(sel);
+      // B) otherSelections → kind selon nom produit
+      const otherSelections = d.otherSelections || {};
+      for (const pid of Object.keys(otherSelections)) {
+        const sel = otherSelections[pid];
+        const months = String(sel?.leasingMonths || "").trim();
+        const checked = getCheckedBucket(sel);
 
-//         for (const rowId of Object.keys(checked || {})) {
-//           const line = checked[rowId];
-//           const sizeRow = otherSizesCatalog.find((r) => String(r._id) === String(rowId));
-//           if (!sizeRow) continue;
+        for (const rowId of Object.keys(checked || {})) {
+          const line = checked[rowId];
+          const sizeRow = otherSizesCatalog.find((r) => String(r._id) === String(rowId));
+          if (!sizeRow) continue;
 
-//           const mem = line?.memId
-//             ? memOptionsCatalog.find((m) => String(m._id) === String(line.memId))
-//             : null;
+          const mem = line?.memId
+            ? memOptionsCatalog.find((m) => String(m._id) === String(line.memId))
+            : null;
 
-//           const basePrice = Number(sizeRow.price || 0);
-//           const memPrice = Number(mem?.price || 0);
-//           const unit = basePrice + memPrice;
+          const basePrice = Number(sizeRow.price || 0);
+          const memPrice = Number(mem?.price || 0);
+          const monthly = basePrice + memPrice;
+          const monthsInt = Math.max(1, parseInt(String(months || 1), 10) || 1);
+          const typeFin = String(sel?.typeFinancement || "location_maintenance");
+          const unit = typeFin === "achat" ? (monthly * monthsInt) * 0.6 : monthly;
+          const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
+          const total = unit * qty;
 
-//           const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
-//           const total = unit * qty;
+          const productLabel = sizeRow.productId?.name || sizeRow.productName || sizeRow.product || "Produit";
+          const kind = String(productLabel).toLowerCase().includes("lcd") ? "lcd" : "other";
 
-//           out.push({
-//             kind: "other",
-//             key: `${devisId}_other_${pid}_${months}_${rowId}`,
-//             devisId,
-//             devisNumber,
-//             dateStr,
-//             client: c,
-
-//             const productLabel =
-//   sizeRow.productId?.name ||
-//   sizeRow.productName ||
-//   sizeRow.product ||
-//   line?.productLabel ||
-//   "Produit";
-
-// produit: String(productLabel),
-
-//             taillePouces: sizeRow.sizeInches ?? "",
-//             memoire: mem?.name || "—",
-//             prixUnitaire: unit,
-//             quantite: qty,
-//             totalHt: total,
-//             dureeMois: months || String(sizeRow.leasingMonths || ""),
-//             prixAssocie: memPrice, // “prix associé” = surcoût mémoire
-//             codeProduit: sizeRow.productCode || sizeRow.codeProduit || "",
-//           });
-//         }
-//       }
-
-      // other
-const otherSelections = d.otherSelections || {};
-for (const pid of Object.keys(otherSelections)) {
-  const sel = otherSelections[pid];
-  const months = String(sel?.leasingMonths || "").trim();
-  const checked = getCheckedBucket(sel);
-
-  for (const rowId of Object.keys(checked || {})) {
-    const line = checked[rowId];
-    const sizeRow = otherSizesCatalog.find((r) => String(r._id) === String(rowId));
-    if (!sizeRow) continue;
-
-    const mem = line?.memId
-      ? memOptionsCatalog.find((m) => String(m._id) === String(line.memId))
-      : null;
-
- const basePrice = Number(sizeRow.price || 0);
-const memPrice = Number(mem?.price || 0);
-
-// mensualité de base
-const monthly = basePrice + memPrice;
-
-// durée
-const monthsInt = Math.max(1, parseInt(String(months || 1), 10) || 1);
-
-// type financement (important)
-const typeFin = String(sel?.typeFinancement || "location_maintenance");
-
-// achat => (mensualité * mois) * 0.6
-const unit = typeFin === "achat" ? (monthly * monthsInt) * 0.6 : monthly;
-
-const qty = Math.max(1, parseInt(String(line?.qty || 1), 10) || 1);
-const total = unit * qty;
-
-    
-
-    // ✅ FIX : const AVANT out.push
-    const productLabel =
-      sizeRow.productId?.name ||
-      sizeRow.productName ||
-      sizeRow.product ||
-      line?.productLabel ||
-      "Produit";
-
-    out.push({
-      kind: "other",
-      key: `${devisId}_other_${pid}_${months}_${rowId}`,
-      devisId,
-      devisNumber,
-      dateStr,
-      client: c,
-
-      produit: String(productLabel),
-
-      taillePouces: sizeRow.sizeInches ?? "",
-      memoire: mem?.name || "—",
-      prixUnitaire: unit,
-      quantite: qty,
-      totalHt: total,
-       typeFinancement: typeFin, 
-      dureeMois: months || String(sizeRow.leasingMonths || ""),
-      optionsFinancement: Array.isArray(sel?.optionsFinancement)
-  ? sel.optionsFinancement.map(o => o === "achat" ? "Achat" : `${o} mois`).join(", ")
-  : "",
-      prixAssocie: memPrice, // “prix associé” = surcoût mémoire
-      codeProduit: sizeRow.productCode || sizeRow.codeProduit || "",
-    });
-  }
-}
-
+          out.push({
+            kind,
+            key: `${devisId}_other_${pid}_${months}_${rowId}`,
+            devisId, devisNumber, dateStr, client: c,
+            produit: String(productLabel),
+            pitch: "",
+            typeFinancement: typeFin,
+            dureeMois: months || String(sizeRow.leasingMonths || ""),
+            qty,
+            mensualiteHt: unit,
+            mensualiteTtc: unit * 1.2,
+            montantHt: total,
+            codeProduit: sizeRow.productCode || sizeRow.codeProduit || "",
+            optionsFinancement: Array.isArray(sel?.optionsFinancement)
+              ? sel.optionsFinancement.map(o => o === "achat" ? "Achat" : `${o} mois`).join(", ")
+              : "",
+          });
+        }
+      }
     }
 
+    if (filtre === "led") return out.filter((r) => r.kind === "led");
+    if (filtre === "lcd") return out.filter((r) => r.kind === "lcd");
     return out;
-  }, [rows, tab, otherSizesCatalog, memOptionsCatalog]);
+  }, [rows, filtre, otherSizesCatalog, memOptionsCatalog, metaVersion]);
 
   const hasAny = flattened.length > 0;
 
   return (
     <>
       <AgentHeader agent={agent} />
-
       <div className="agentdevis-page">
         <div className="agentdevis-wrap">
           <h1 className="agentdevis-title">Mes devis</h1>
 
           <div className="agentdevis-tabs">
-            <button
-              type="button"
-              className={`agentdevis-tab ${tab === "walleds" ? "is-active" : ""}`}
-              onClick={() => setTab("walleds")}
-            >
-              Murs leds
-            </button>
-            <button
-              type="button"
-              className={`agentdevis-tab ${tab === "other" ? "is-active" : ""}`}
-              onClick={() => setTab("other")}
-            >
-              Autres produits
-            </button>
+            <button type="button" className={`agentdevis-tab ${filtre === "all" ? "is-active" : ""}`} onClick={() => setFiltre("all")}>Tous</button>
+            <button type="button" className={`agentdevis-tab ${filtre === "led" ? "is-active" : ""}`} onClick={() => setFiltre("led")}>Écrans LED</button>
+            <button type="button" className={`agentdevis-tab ${filtre === "lcd" ? "is-active" : ""}`} onClick={() => setFiltre("lcd")}>Écrans LCD</button>
           </div>
 
           <div className="agentdevis-tableCard">
@@ -386,174 +258,91 @@ const total = unit * qty;
                 <table className="agentdevis-table">
                   <thead>
                     <tr>
-                      <th>Société</th>
-                      <th>Télécharger le devis</th>
+                      <th>Date / Heure</th>
+                      <th>N° devis</th>
+                      <th>↓</th>
+                      <th>Magasin</th>
+                      <th>CP / Ville</th>
+                      <th>Statut</th>
+                      <th>Note interne</th>
+                      <th>Relance</th>
                       <th>Nom</th>
                       <th>Prénom</th>
-                      <th>Téléphone</th>
                       <th>Email</th>
-
-                      {tab === "walleds" ? (
-                        <>
-                          <th>Produit</th>
-                          <th>Pitch</th>
-
-                          <th>Catégorie</th>
-                          <th>Dimensions</th>
-                          <th>Luminosité</th>
-
-                          <th>Surface (m²)</th>
-                          <th>Finition</th>
-<th>Fixation</th>
-<th>Type financement</th>
-<th>Frais</th>
-
-                          <th>Largeur (m)</th>
-                          <th>Hauteur (m)</th>
-
-                          <th>Largeur (px)</th>
-                          <th>Hauteur (px)</th>
-
-                          <th>Durée (mois)</th>
-                          <th>Options choisies</th>
-                          <th>Quantité</th>
-
-                          <th>Mensualité HT</th>
-                          <th>Mensualité TTC</th>
-
-                          <th>Montant HT</th>
-                          <th>Code devis</th>
-                          <th>Code produit</th>
-
-                          <th>Adresse</th>
-                          <th>Adresse 2</th>
-                          <th>Code Postal</th>
-                          <th>Ville</th>
-                          <th>Commentaires</th>
-                          <th>Date</th>
-                        </>
-                      ) : (
-                        <>
-                          <th>Produit</th>
-                          <th>Taille sélectionnée</th>
-                          <th>Mémoire</th>
-                          
-                          <th>Prix unitaire</th>
-                          <th>Quantité</th>
-                          <th>Total (HT)</th>
-                          <th>Type financement</th>
-                          <th>Durée leasing (mois)</th>
-                          <th>Options choisies</th>
-                          <th>Prix associé</th>
-                          <th>Code devis</th>
-                          <th>Code produit</th>
-
-                          <th>Adresse</th>
-                          <th>Adresse 2</th>
-                          <th>Code Postal</th>
-                          <th>Ville</th>
-                          <th>Commentaires</th>
-                          <th>Date</th>
-                        </>
-                      )}
+                      <th>Produit</th>
+                      <th>Pitch</th>
+                      <th>Type financement</th>
+                      <th>Durée (mois)</th>
+                      <th>Quantité</th>
+                      <th>Montant HT</th>
+                      <th>Code devis</th>
+                      <th>Code produit</th>
                     </tr>
                   </thead>
-
                   <tbody>
                     {flattened.map((r) => {
                       const c = r.client || {};
+                      const meta = getDevisMeta(r.devisId);
                       return (
                         <tr key={r.key}>
-                          <td>{c.societe || ""}</td>
+                          <td>{r.dateStr}</td>
+                          <td>{r.devisNumber}</td>
                           <td>
                             <button
                               className="agentdevis-download"
                               type="button"
                               onClick={() => downloadPdf(r.devisId)}
+                              title="Télécharger le devis"
+                              style={{ padding: "4px 10px", fontSize: 16 }}
+                            >↓</button>
+                          </td>
+                          <td>{c.societe || ""}</td>
+                          <td>{`${c.codePostal || ""} ${c.ville || ""}`.trim()}</td>
+                          <td>
+                            <select
+                              value={meta.statut}
+                              style={{ width: 100, fontSize: 12 }}
+                              onChange={(e) => { setDevisMeta(r.devisId, { statut: e.target.value }); bumpMeta(); }}
                             >
-                              Télécharger le devis
-                            </button>
+                              <option value="cree">Créé</option>
+                              <option value="envoye">Envoyé</option>
+                              <option value="valide">Validé</option>
+                              <option value="refuse">Refusé</option>
+                            </select>
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              defaultValue={meta.commentaire}
+                              style={{ width: 120, fontSize: 12 }}
+                              onBlur={(e) => { setDevisMeta(r.devisId, { commentaire: e.target.value }); bumpMeta(); }}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="date"
+                              value={meta.relance}
+                              style={{ width: 120, fontSize: 12 }}
+                              onChange={(e) => { setDevisMeta(r.devisId, { relance: e.target.value }); bumpMeta(); }}
+                            />
                           </td>
                           <td>{c.nom || ""}</td>
                           <td>{c.prenom || ""}</td>
-                          <td>{c.telephone || ""}</td>
                           <td>{c.email || ""}</td>
-
-                          {tab === "walleds" ? (
-                            <>
-                              <td>{r.produit}</td>
-                              <td>{r.pitch}</td>
-
-                              <td>{r.categorie}</td>
-                              <td>{r.dimensions}</td>
-                              <td>{r.luminosite}</td>
-
-                              <td>{r.surfaceM2 ?? ""}</td>
-                              <td>{r.finition || ""}</td>
-<td>{r.fixation || ""}</td>
-<td>{r.typeFinancement || ""}</td>
-<td>{r.frais || ""}</td>
-
-                              <td>{r.largeurM}</td>
-                              <td>{r.hauteurM}</td>
-
-                              <td>{r.largeurPx}</td>
-                              <td>{r.hauteurPx}</td>
-
-                              <td>{r.dureeMois}</td>
-                              <td>{r.optionsFinancement || "—"}</td>
-                              
-                              <td>{r.qty}</td>
-
-                              <td>{fmt2(r.mensualiteHt)}</td>
-                              <td>{fmt2(r.mensualiteTtc)}</td>
-
-                              <td>{fmt2(r.montantHt)}</td>
-                              <td>{r.devisNumber}</td>
-                              <td>{r.codeProduit}</td>
-
-                              <td>{c.adresse1 || ""}</td>
-                              <td>{c.adresse2 || ""}</td>
-                              <td>{c.codePostal || ""}</td>
-                              <td>{c.ville || ""}</td>
-                              <td>{c.commentaires || ""}</td>
-                              <td>{r.dateStr}</td>
-                            </>
-                          ) : (
-                            <>
-                              <td>{r.produit}</td>
-                              <td>{r.taillePouces !== "" ? `${r.taillePouces} pouces` : ""}</td>
-                              <td>{r.memoire}</td>
-                              <td>{fmt2(r.prixUnitaire)}</td>
-                              <td>{r.quantite}</td>
-                              <td>{fmt2(r.totalHt)}</td>
-                              <td>{labelTypeFin(r.typeFinancement)}</td>
-                              
-                              {/* <td>{r.typeFinancement || ""}</td> */}
-                              
-                              <td>{r.dureeMois}</td>
-                              <td>{r.optionsFinancement || "—"}</td>
-                              <td>{fmt2(r.prixAssocie)}</td>
-                              <td>{r.devisNumber}</td>
-                              <td>{r.codeProduit}</td>
-
-                              <td>{c.adresse1 || ""}</td>
-                              <td>{c.adresse2 || ""}</td>
-                              <td>{c.codePostal || ""}</td>
-                              <td>{c.ville || ""}</td>
-                              <td>{c.commentaires || ""}</td>
-                              <td>{r.dateStr}</td>
-                            </>
-                          )}
+                          <td>{r.produit}</td>
+                          <td>{r.pitch}</td>
+                          <td>{r.typeFinancement}</td>
+                          <td>{r.dureeMois}</td>
+                          <td>{r.qty}</td>
+                          <td>{fmt2(r.montantHt)}</td>
+                          <td>{r.devisNumber}</td>
+                          <td>{r.codeProduit}</td>
                         </tr>
                       );
                     })}
-
                     {!hasAny && !loading ? (
                       <tr>
-                        <td colSpan={tab === "walleds" ? 29 : 23} className="agentdevis-empty">
-                          Aucun devis.
-                        </td>
+                        <td colSpan={19} className="agentdevis-empty">Aucun devis.</td>
                       </tr>
                     ) : null}
                   </tbody>
