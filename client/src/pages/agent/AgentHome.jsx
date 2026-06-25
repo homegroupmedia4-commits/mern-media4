@@ -123,6 +123,7 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const [otherSelections, setOtherSelections] = useState({});
   const [showLcd, setShowLcd] = useState(false);
   const [selectedLcdProductName, setSelectedLcdProductName] = useState("__all__");
+  const [pendingPrefill, setPendingPrefill] = useState(null);
 
     // --- Catalogues pour le récap "autres produits"
   const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
@@ -450,7 +451,7 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
   }, []);
 
   // ---------------------------
-  // PREFILL depuis localStorage (m4_prefill)
+  // PREFILL — lecture localStorage (immédiat)
   // ---------------------------
   useEffect(() => {
     if (prefillApplied.current) return;
@@ -462,33 +463,50 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
 
     try {
       const prefill = JSON.parse(raw);
-
+      // Préremplir le client immédiatement (pas de dépendance async)
       if (prefill.client) setClient(prefill.client);
       setApport(prefill.apport || 0);
       if (prefill.wallLedsAbonnement) setWallLedsAbonnement(prefill.wallLedsAbonnement);
       if (prefill.otherAbonnement) setOtherAbonnement(prefill.otherAbonnement);
-
-      if (prefill.pitchInstances?.length > 0) {
-        setSelectedProductIds((prev) => [...prev, wallLedsProductId].filter(Boolean));
-        setPitchInstances(prefill.pitchInstances);
-        setSelectedPitchIds(prefill.pitchInstances.map((pi) => pi.pitchId).filter(Boolean));
-      }
-
-      if (prefill.otherSelections && Object.keys(prefill.otherSelections).length > 0) {
-        setOtherSelections(prefill.otherSelections);
-        setSelectedProductIds((prev) => {
-          const otherIds = Object.keys(prefill.otherSelections);
-          const toAdd = otherIds.filter((id) => !prev.includes(id));
-          return [...prev, ...toAdd];
-        });
-        const lcdIds = lcdProducts.map((p) => p?._id || p?.id).filter(Boolean);
-        const hasLcd = Object.keys(prefill.otherSelections).some((id) => lcdIds.includes(id));
-        if (hasLcd) setShowLcd(true);
-      }
+      // Stocker le reste en attente
+      setPendingPrefill(prefill);
     } catch (e) {
       console.warn("m4_prefill parse error", e);
     }
-  }, [wallLedsProductId, lcdProducts]);
+  }, []);
+
+  // ---------------------------
+  // PREFILL — application produits/pitches (quand wallLedsProductId disponible)
+  // ---------------------------
+  useEffect(() => {
+    if (!pendingPrefill) return;
+    if (!products.length) return; // attendre que les produits soient chargés
+
+    const prefill = pendingPrefill;
+    setPendingPrefill(null); // consommer une seule fois
+
+    if (prefill.pitchInstances?.length > 0 && wallLedsProductId) {
+      setSelectedProductIds((prev) => {
+        if (prev.includes(wallLedsProductId)) return prev;
+        return [...prev, wallLedsProductId];
+      });
+      setPitchInstances(prefill.pitchInstances);
+      setSelectedPitchIds(prefill.pitchInstances.map((pi) => pi.pitchId).filter(Boolean));
+    }
+
+    if (prefill.otherSelections && Object.keys(prefill.otherSelections).length > 0) {
+      setOtherSelections(prefill.otherSelections);
+      setSelectedProductIds((prev) => {
+        const otherIds = Object.keys(prefill.otherSelections);
+        const toAdd = otherIds.filter((id) => !prev.includes(id));
+        if (!toAdd.length) return prev;
+        return [...prev, ...toAdd];
+      });
+      const lcdIds = lcdProducts.map((p) => p?._id || p?.id).filter(Boolean);
+      const hasLcd = Object.keys(prefill.otherSelections).some((id) => lcdIds.includes(id));
+      if (hasLcd) setShowLcd(true);
+    }
+  }, [pendingPrefill, products, wallLedsProductId, lcdProducts]);
 
   // ---------------------------
   // LOAD: Products (checkbox)

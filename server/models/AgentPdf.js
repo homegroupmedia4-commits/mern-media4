@@ -116,6 +116,10 @@ otherAbonnement: {
     pdfBuffer: { type: Buffer, default: null },
     contentType: { type: String, default: "application/pdf" },
     pages: { type: Number, default: 1 },
+
+    statutDevis: { type: String, default: "cree" },
+    commentaireInterne: { type: String, default: "" },
+    relance: { type: String, default: "" },
   },
   { timestamps: true }
 );

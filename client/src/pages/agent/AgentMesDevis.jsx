@@ -3,6 +3,29 @@ import AgentHeader from "./AgentHeader";
 import { TOKEN_KEY, USER_KEY, safeJsonParse } from "./agentHome.helpers";
 import "./AgentMesDevis.css";
 
+function SortTh({ col, label, width, sortCol, sortDir, colFilters, onSort, onFilter }) {
+  const active = sortCol === col;
+  const arrow = !active ? "↕" : sortDir === "asc" ? "▲" : "▼";
+  return (
+    <th style={{ minWidth: width || 80, padding: "4px 4px 0" }}>
+      <div
+        onClick={() => onSort(col)}
+        style={{ cursor: "pointer", fontWeight: 700, userSelect: "none", whiteSpace: "nowrap" }}
+      >
+        {label} <span style={{ fontSize: 10, color: active ? "#78b13a" : "#aaa" }}>{arrow}</span>
+      </div>
+      <input
+        type="text"
+        placeholder="..."
+        value={colFilters[col] || ""}
+        onChange={(e) => onFilter(col, e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "100%", fontSize: 11, padding: "2px 4px", marginTop: 2, border: "1px solid #e5e7eb", borderRadius: 4, boxSizing: "border-box" }}
+      />
+    </th>
+  );
+}
+
 export default function AgentMesDevis() {
   const API = "";
 
@@ -15,12 +38,12 @@ export default function AgentMesDevis() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [metaVersion, setMetaVersion] = useState(0);
-  const bumpMeta = () => setMetaVersion((v) => v + 1);
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
   const [colFilters, setColFilters] = useState({});
   const [searchGlobal, setSearchGlobal] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
   const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
@@ -67,16 +90,27 @@ export default function AgentMesDevis() {
     return sel.checked || {};
   };
 
-  const getDevisMeta = (devisId) => {
+  const saveMeta = async (devisId, patch) => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
     try {
-      const raw = localStorage.getItem(`m4_devis_meta_${devisId}`);
-      return raw ? JSON.parse(raw) : { statut: "cree", commentaire: "", relance: "" };
-    } catch { return { statut: "cree", commentaire: "", relance: "" }; }
-  };
-
-  const setDevisMeta = (devisId, patch) => {
-    const current = getDevisMeta(devisId);
-    localStorage.setItem(`m4_devis_meta_${devisId}`, JSON.stringify({ ...current, ...patch }));
+      await fetch(`/api/agents/devis/${devisId}/meta`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(patch),
+      });
+      setRows((prev) =>
+        prev.map((r) => {
+          if (String(r._id || r.id) !== String(devisId)) return r;
+          return { ...r, ...patch };
+        })
+      );
+    } catch (e) {
+      console.error("saveMeta error", e);
+    }
   };
 
   useEffect(() => {
@@ -283,6 +317,30 @@ export default function AgentMesDevis() {
       });
     }
 
+    // Filtre plage de dates
+    if (dateFrom || dateTo) {
+      result = result.filter(r => {
+        if (!r.dateStr) return false;
+        const parts = r.dateStr.split(" ")[0].split("/");
+        if (parts.length < 3) return false;
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = 2000 + parseInt(parts[2], 10);
+        const d = new Date(year, month, day);
+        if (dateFrom) {
+          const from = new Date(dateFrom);
+          from.setHours(0, 0, 0, 0);
+          if (d < from) return false;
+        }
+        if (dateTo) {
+          const to = new Date(dateTo);
+          to.setHours(23, 59, 59, 999);
+          if (d > to) return false;
+        }
+        return true;
+      });
+    }
+
     // Filtres par colonne
     const COLS = {
       dateStr: r => r.dateStr,
@@ -326,32 +384,9 @@ export default function AgentMesDevis() {
     }
 
     return result;
-  }, [rows, filtre, otherSizesCatalog, memOptionsCatalog, metaVersion, searchGlobal, sortCol, sortDir, colFilters]);
+  }, [rows, filtre, otherSizesCatalog, memOptionsCatalog, searchGlobal, sortCol, sortDir, colFilters, dateFrom, dateTo]);
 
   const hasAny = flattened.length > 0;
-
-  const SortTh = ({ col, label, width }) => {
-    const active = sortCol === col;
-    const arrow = !active ? "↕" : sortDir === "asc" ? "▲" : "▼";
-    return (
-      <th style={{ minWidth: width || 80, padding: "4px 4px 0" }}>
-        <div
-          onClick={() => handleSort(col)}
-          style={{ cursor: "pointer", fontWeight: 700, userSelect: "none", whiteSpace: "nowrap" }}
-        >
-          {label} <span style={{ fontSize: 10, color: active ? "#78b13a" : "#aaa" }}>{arrow}</span>
-        </div>
-        <input
-          type="text"
-          placeholder="..."
-          value={colFilters[col] || ""}
-          onChange={(e) => setColFilter(col, e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-          style={{ width: "100%", fontSize: 11, padding: "2px 4px", marginTop: 2, border: "1px solid #e5e7eb", borderRadius: 4, boxSizing: "border-box" }}
-        />
-      </th>
-    );
-  };
 
   return (
     <>
@@ -384,32 +419,82 @@ export default function AgentMesDevis() {
                 <table className="agentdevis-table">
                   <thead>
                     <tr>
-                      <SortTh col="dateStr" label="Date / Heure" width={110} />
-                      <SortTh col="devisNumber" label="N° devis" width={80} />
+                      <th style={{ minWidth: 180, padding: "4px 4px 0" }}>
+                        <div
+                          onClick={() => handleSort("dateStr")}
+                          style={{ cursor: "pointer", fontWeight: 700, userSelect: "none", whiteSpace: "nowrap" }}
+                        >
+                          Date / Heure <span style={{ fontSize: 10, color: sortCol === "dateStr" ? "#78b13a" : "#aaa" }}>
+                            {sortCol !== "dateStr" ? "↕" : sortDir === "asc" ? "▲" : "▼"}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", gap: 2, marginTop: 2 }}>
+                          <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            style={{ width: "50%", fontSize: 10, padding: "2px 2px", border: "1px solid #e5e7eb", borderRadius: 4, boxSizing: "border-box" }}
+                            title="Du"
+                          />
+                          <input
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            style={{ width: "50%", fontSize: 10, padding: "2px 2px", border: "1px solid #e5e7eb", borderRadius: 4, boxSizing: "border-box" }}
+                            title="Au"
+                          />
+                        </div>
+                      </th>
+                      <SortTh col="devisNumber" label="N° devis" width={80} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
                       <th>↓</th>
                       <th>✏️</th>
-                      <SortTh col="societe" label="Magasin" width={120} />
-                      <SortTh col="cpVille" label="CP / Ville" width={100} />
+                      <SortTh col="societe" label="Magasin" width={120} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="cpVille" label="CP / Ville" width={100} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
                       <th>Statut</th>
                       <th>Note interne</th>
                       <th>Relance</th>
-                      <SortTh col="nom" label="Nom" width={90} />
-                      <SortTh col="prenom" label="Prénom" width={90} />
-                      <SortTh col="email" label="Email" width={140} />
-                      <SortTh col="produit" label="Produit" width={90} />
-                      <SortTh col="pitch" label="Pitch" width={80} />
-                      <SortTh col="typeFinancement" label="Type financement" width={120} />
-                      <SortTh col="dureeMois" label="Durée (mois)" width={80} />
-                      <SortTh col="qty" label="Quantité" width={70} />
-                      <SortTh col="montantHt" label="Montant HT" width={90} />
-                      <SortTh col="devisNumber2" label="Code devis" width={80} />
-                      <SortTh col="codeProduit" label="Code produit" width={90} />
+                      <SortTh col="nom" label="Nom" width={90} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="prenom" label="Prénom" width={90} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="email" label="Email" width={140} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="produit" label="Produit" width={90} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="pitch" label="Pitch" width={80} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <th style={{ minWidth: 120, padding: "4px 4px 0" }}>
+                        <div
+                          onClick={() => handleSort("typeFinancement")}
+                          style={{ cursor: "pointer", fontWeight: 700, userSelect: "none", whiteSpace: "nowrap" }}
+                        >
+                          Type financement <span style={{ fontSize: 10, color: sortCol === "typeFinancement" ? "#78b13a" : "#aaa" }}>
+                            {sortCol !== "typeFinancement" ? "↕" : sortDir === "asc" ? "▲" : "▼"}
+                          </span>
+                        </div>
+                        <select
+                          value={colFilters["typeFinancement"] || ""}
+                          onChange={(e) => setColFilter("typeFinancement", e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ width: "100%", fontSize: 11, padding: "2px 2px", marginTop: 2, border: "1px solid #e5e7eb", borderRadius: 4, boxSizing: "border-box" }}
+                        >
+                          <option value="">Tous</option>
+                          <option value="location_maintenance">Location maintenance</option>
+                          <option value="location_evenementiel">Location événementiel</option>
+                          <option value="achat">Achat</option>
+                        </select>
+                      </th>
+                      <SortTh col="dureeMois" label="Durée (mois)" width={80} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="qty" label="Quantité" width={70} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="montantHt" label="Montant HT" width={90} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="devisNumber2" label="Code devis" width={80} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
+                      <SortTh col="codeProduit" label="Code produit" width={90} sortCol={sortCol} sortDir={sortDir} colFilters={colFilters} onSort={handleSort} onFilter={setColFilter} />
                     </tr>
                   </thead>
                   <tbody>
                     {flattened.map((r) => {
                       const c = r.client || {};
-                      const meta = getDevisMeta(r.devisId);
+                      const row = rows.find((x) => String(x._id || x.id) === String(r.devisId)) || {};
+                      const meta = {
+                        statut: row.statutDevis || "cree",
+                        commentaire: row.commentaireInterne || "",
+                        relance: row.relance || "",
+                      };
                       return (
                         <tr key={r.key}>
                           <td>{r.dateStr}</td>
@@ -428,15 +513,7 @@ export default function AgentMesDevis() {
                               type="button"
                               title="Modifier ce devis"
                               onClick={() => openPrefill(r)}
-                              style={{
-                                background: "#f97316",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: 6,
-                                padding: "4px 10px",
-                                fontSize: 16,
-                                cursor: "pointer",
-                              }}
+                              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: "2px 6px" }}
                             >✏️</button>
                           </td>
                           <td>{c.societe || ""}</td>
@@ -445,7 +522,7 @@ export default function AgentMesDevis() {
                             <select
                               value={meta.statut}
                               style={{ width: 100, fontSize: 12 }}
-                              onChange={(e) => { setDevisMeta(r.devisId, { statut: e.target.value }); bumpMeta(); }}
+                              onChange={(e) => saveMeta(r.devisId, { statutDevis: e.target.value })}
                             >
                               <option value="cree">Créé</option>
                               <option value="envoye">Envoyé</option>
@@ -458,7 +535,7 @@ export default function AgentMesDevis() {
                               type="text"
                               defaultValue={meta.commentaire}
                               style={{ width: 120, fontSize: 12 }}
-                              onBlur={(e) => { setDevisMeta(r.devisId, { commentaire: e.target.value }); bumpMeta(); }}
+                              onBlur={(e) => saveMeta(r.devisId, { commentaireInterne: e.target.value })}
                             />
                           </td>
                           <td>
@@ -466,7 +543,7 @@ export default function AgentMesDevis() {
                               type="date"
                               value={meta.relance}
                               style={{ width: 120, fontSize: 12 }}
-                              onChange={(e) => { setDevisMeta(r.devisId, { relance: e.target.value }); bumpMeta(); }}
+                              onChange={(e) => saveMeta(r.devisId, { relance: e.target.value })}
                             />
                           </td>
                           <td>{c.nom || ""}</td>
