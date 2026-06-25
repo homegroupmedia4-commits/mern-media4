@@ -266,7 +266,7 @@ const cat = String(
 
 let optionsText = "";
 
-if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
+if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 1) {
 
   // ✅ Prix pré-calculés depuis le front (formule exacte)
   const precomputed = pi.optionsFinancementPrices || {};
@@ -303,9 +303,15 @@ if (Array.isArray(pi.optionsFinancement) && pi.optionsFinancement.length > 0) {
     
 
 // ✅ ENSUITE description
+const financementMonths = String(pi.financementMonths || "63").trim();
+const typeFinLabel = String(pi.typeFinancement || "").toLowerCase() === "achat"
+  ? "Achat"
+  : `${financementMonths} mois`;
+
 const description = [
   [part1, part2 ? `— ${part2} —` : null].filter(Boolean).join(" "),
   part3 ? `${part3} — ${ecranTwoLines}` : ecranTwoLines || "",
+  typeFinLabel,
   optionsText
 ]
   .filter(Boolean)
@@ -504,7 +510,7 @@ const total = unit * qty;
 
 let optionsText = "";
 
-if (Array.isArray(sel?.optionsFinancement) && sel.optionsFinancement.length > 0) {
+if (Array.isArray(sel?.optionsFinancement) && sel.optionsFinancement.length > 1) {
 
   // ✅ Prix pré-calculés front (vrais prix DB par durée)
   const precomputed = line?.optionsFinancementPrices || {};
@@ -723,7 +729,10 @@ const finishSuffix = finishLabel ? ` - ${finishLabel}` : "";
     "63";
 
  if (qtyTotalProducts > 0) {
-  let detail = `Devis mensuel sur la base d'un leasing de ${leasingMonths} mois\navec garantie incluse`;
+  const isAchatDetail = String(pitchInstances?.[0]?.typeFinancement || finalType || "").toLowerCase() === "achat";
+  let detail = isAchatDetail
+    ? `Devis sur la base d'un achat avec garantie de 12 mois incluse`
+    : `Devis mensuel sur la base d'une location maintenance de ${leasingMonths} mois\navec garantie incluse`;
 
   const clientComment = String(client?.commentaires || "").trim();
 if (clientComment) {
