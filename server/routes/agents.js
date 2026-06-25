@@ -1,4 +1,4 @@
-// server/routes/agents.js
+﻿// server/routes/agents.js
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
@@ -253,7 +253,7 @@ const cat = String(
     const ecranLabel = cat ? `Écran ${cat}` : "";
     const ecranTwoLines = ecranLabel
       ? ecranLabel.includes(" ou ")
-        ? ecranLabel.replace(" ou ", " ou\n") // simple découpe “ou” comme dans l’image
+        ? ecranLabel.replace(" ou ", " ou\n") // simple découpe "ou" comme dans l’image
         : ecranLabel
       : "";
 
@@ -922,7 +922,7 @@ function generateColoredDevisPdfBuffer({ docData }) {
       doc.fontSize(9).text("Tél : 01.85.41.01.00", left, headerTopY + 40);
       doc.fontSize(9).text("Site web : www.media4.fr", left, headerTopY + 52);
 
-      // ✅ Y “après header” (on laisse respirer)
+      // ✅ Y "après header" (on laisse respirer)
 let cursorY = headerTopY + 70;
 
 
@@ -1032,7 +1032,7 @@ cursorY = clientY + clientH + 12;
       })();
       const validity = `${docData.validityDays || 30} jours`;
 
-    const metaY = cursorY; // ✅ plus “collé”, dynamique
+    const metaY = cursorY; // ✅ plus "collé", dynamique
 
     const metaH = 18;
 const metaX = left;
@@ -1601,42 +1601,42 @@ if (filters.length) query.$and = filters;
 
 
 // ✅ PATCH /api/agents/devis/:id/meta — mettre à jour statut/commentaire/relance
-router.patch(“/devis/:id/meta”, requireAgentAuth, async (req, res) => {
+router.patch("/devis/:id/meta", requireAgentAuth, async (req, res) => {
   try {
     const agent = req.agent;
-    const doc = await AgentPdf.findById(req.params.id).select(“agentId statutDevis commentaireInterne relance”);
-    if (!doc) return res.status(404).json({ message: “Devis introuvable.” });
+    const doc = await AgentPdf.findById(req.params.id).select("agentId statutDevis commentaireInterne relance");
+    if (!doc) return res.status(404).json({ message: "Devis introuvable." });
 
-    const isAdmin = [“admin”, “superadmin”].includes(String(agent.role || “”)) || agent.isAdminToken;
+    const isAdmin = ["admin", "superadmin"].includes(String(agent.role || "")) || agent.isAdminToken;
     if (!isAdmin && String(doc.agentId) !== String(agent._id)) {
-      return res.status(403).json({ message: “Forbidden” });
+      return res.status(403).json({ message: "Forbidden" });
     }
 
-    const allowed = [“statutDevis”, “commentaireInterne”, “relance”];
+    const allowed = ["statutDevis", "commentaireInterne", "relance"];
     const patch = {};
     for (const k of allowed) {
-      if (req.body[k] !== undefined) patch[k] = String(req.body[k] || “”);
+      if (req.body[k] !== undefined) patch[k] = String(req.body[k] || "");
     }
 
     if (!Object.keys(patch).length) {
-      return res.status(400).json({ message: “Aucun champ à mettre à jour.” });
+      return res.status(400).json({ message: "Aucun champ à mettre à jour." });
     }
 
     const updated = await AgentPdf.findByIdAndUpdate(
       req.params.id,
       { $set: patch },
       { new: true }
-    ).select(“statutDevis commentaireInterne relance”);
+    ).select("statutDevis commentaireInterne relance");
 
     return res.json({ ok: true, ...updated.toObject() });
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ message: “Erreur serveur (meta devis).” });
+    return res.status(500).json({ message: "Erreur serveur (meta devis)." });
   }
 });
 
-// ✅ Liste agents pour filtre “Tous les utilisateurs”
-router.get(“/agents-lite”, requireAgentAuth, async (req, res) => {
+// ✅ Liste agents pour filtre "Tous les utilisateurs"
+router.get("/agents-lite", requireAgentAuth, async (req, res) => {
   try {
     const isAdmin = ["admin", "superadmin"].includes(String(req.agent.role || ""));
 
