@@ -404,8 +404,8 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   border-radius: 10px;
   cursor: pointer;
   font-weight: 700;
-  border: 1px solid rgba(0,0,0,0.2);
-  background: #fff;
+ background: #fff !important;
+   color:black !important;
 }
 
 .btn:hover{ opacity: 0.95; }
@@ -1317,7 +1317,8 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
   cursor: pointer;
   font-weight: 700;
   border: 1px solid rgba(0,0,0,0.2);
-  background: #fff;
+  background: #fff !important;
+   color:black !important;
 }
 
 .btn:hover{ opacity: 0.95; }
