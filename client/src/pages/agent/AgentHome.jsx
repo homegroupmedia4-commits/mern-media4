@@ -1023,7 +1023,7 @@ const montantWithFin =
           pouces: quote.pouces,
           largeurPx: quote.largeurPx,
           hauteurPx: quote.hauteurPx,
-          metreLineaire: String(quote.lineaireUsed),
+          // metreLineaire: String(quote.lineaireUsed), // ne pas écraser la saisie agent
           container: quote.container,
 
           

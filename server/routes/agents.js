@@ -952,7 +952,7 @@ const clientLines = [
   `${(c.adresse1 || "").trim()}` || "",
 
   `${(c.codePostal || "").trim()} ${(c.ville || "").trim()}`.trim(),
-  (c.nom || c.contactNom || "").trim() || "",
+  `${(c.prenom || "").trim()} ${(c.nom || c.contactNom || "").trim()}`.trim() || "",
   (c.email || "").trim(),
   (c.telephone || "").trim(),
 ].filter(Boolean);
