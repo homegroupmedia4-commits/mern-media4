@@ -2233,7 +2233,6 @@ const getOptionPrice = (pi, opt) => {
                     <span>{prod.designation}</span>
                     {prod.reference ? <span style={{ fontSize: 11, color: "#888", marginLeft: 4 }}>({prod.reference})</span> : null}
                   </label>
-                  <span style={{ fontSize: 12, color: "#555", whiteSpace: "nowrap" }}>{Number(prod.prixUnitaireHt).toFixed(2)} € HT</span>
                   {sel ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <label style={{ fontSize: 12 }}>Qté :</label>
