@@ -1516,7 +1516,11 @@ const getOptionPrice = (pi, opt) => {
   })()}
   {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
 </span>
-
+{pitch?.stock ? (
+  <span style={{ fontSize: 11, color: "#e07000", fontWeight: 600, marginLeft: 6 }}>
+    {pitch.stock}
+  </span>
+) : null}
 
 
                 </label>
@@ -1556,6 +1560,11 @@ const getOptionPrice = (pi, opt) => {
   })()}
   {sub ? <em className="agenthome-pitchSub"> {sub}</em> : null}
 </span>
+{pitch?.stock ? (
+  <span style={{ fontSize: 11, color: "#e07000", fontWeight: 600, marginLeft: 6 }}>
+    {pitch.stock}
+  </span>
+) : null}
 
           </label>
         );

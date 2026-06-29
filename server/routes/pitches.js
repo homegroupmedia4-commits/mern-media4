@@ -30,7 +30,7 @@ router.get("/", async (req, res) => {
 // POST /api/pitches -> créer
 router.post("/", async (req, res) => {
   try {
-const { name, codeProduit, dimensions, luminosite, price, categoryId, productId } = req.body;
+const { name, codeProduit, dimensions, luminosite, price, categoryId, productId, stock } = req.body;
 if (!productId) return res.status(400).json({ message: "Le champ 'productId' est requis." });
 
 
@@ -58,6 +58,7 @@ if (!productId) return res.status(400).json({ message: "Le champ 'productId' est
       price: p,
       categoryId,
         productId,
+      stock: String(stock || "").trim(),
       isActive: true,
     });
 
@@ -109,6 +110,7 @@ router.patch("/:id", async (req, res) => {
       categoryId,
       productId,
       isActive,
+      stock,
     } = req.body;
 
     const update = {};
@@ -158,6 +160,10 @@ router.patch("/:id", async (req, res) => {
 
     if (typeof isActive !== "undefined") {
       update.isActive = !!isActive;
+    }
+
+    if (typeof stock !== "undefined") {
+      update.stock = String(stock || "").trim();
     }
 
     const doc = await Pitch.findByIdAndUpdate(id, update, { new: true })

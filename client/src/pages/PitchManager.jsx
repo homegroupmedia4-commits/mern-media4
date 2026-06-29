@@ -44,6 +44,7 @@ export default function PitchManagerPage() {
     price: "",
     categoryId: "",
     productId: "",
+    stock: "",
   });
 
   const [saving, setSaving] = useState(false);
@@ -61,6 +62,7 @@ export default function PitchManagerPage() {
     categoryId: "",
     productId: "",
     isActive: true,
+    stock: "",
   });
 
   const activeCats = useMemo(() => cats.filter((c) => c.isActive), [cats]);
@@ -207,6 +209,7 @@ export default function PitchManagerPage() {
       price: Number(form.price),
       categoryId: form.categoryId,
       productId: form.productId,
+      stock: form.stock.trim(),
     };
 
     if (!payload.name || !payload.codeProduit || !payload.dimensions || !payload.luminosite) {
@@ -226,7 +229,7 @@ export default function PitchManagerPage() {
       if (!res.ok) throw new Error(await res.text());
       const created = await res.json();
       setPitches((prev) => [created, ...prev]);
-      setForm({ name: "", codeProduit: "", dimensions: "", luminosite: "", price: "", categoryId: "", productId: "" });
+      setForm({ name: "", codeProduit: "", dimensions: "", luminosite: "", price: "", categoryId: "", productId: "", stock: "" });
       goTab("list");
     } catch (e) {
       console.error(e);
@@ -251,6 +254,7 @@ export default function PitchManagerPage() {
       categoryId: row?.categoryId?._id || row?.categoryId || "",
       productId: row?.productId?._id || row?.productId || "",
       isActive: !!row.isActive,
+      stock: row.stock || "",
     });
     setEditOpen(true);
   };
@@ -268,6 +272,7 @@ export default function PitchManagerPage() {
       categoryId: editForm.categoryId,
       productId: editForm.productId,
       isActive: !!editForm.isActive,
+      stock: editForm.stock.trim(),
     };
 
     if (!payload.name || !payload.codeProduit || !payload.dimensions || !payload.luminosite) {
@@ -449,6 +454,15 @@ export default function PitchManagerPage() {
               ))}
             </select>
           </div>
+          <div className="pm-row">
+            <label className="pm-label">Stock</label>
+            <input
+              className="input pm-input"
+              value={form.stock}
+              onChange={onChange("stock")}
+              placeholder="ex: En stock / Sur commande / Délai 6 sem."
+            />
+          </div>
           {catsError ? <div className="alert">{catsError}</div> : null}
           <button className="btn btn-dark" type="button" onClick={addPitch} disabled={saving}>
             {saving ? "Ajout..." : "Ajouter"}
@@ -479,13 +493,14 @@ export default function PitchManagerPage() {
                   <table className="table table-wide">
                     <thead>
                       <tr>
-                        <th style={{ width: "7%" }}>ID</th>
-                        <th style={{ width: "14%" }}>Nom</th>
-                        <th style={{ width: "12%" }}>Code produit</th>
-                        <th style={{ width: "12%" }}>Dimensions</th>
-                        <th style={{ width: "12%" }}>Luminosité</th>
-                        <th style={{ width: "10%" }}>Prix</th>
-                        <th style={{ width: "10%" }}>Statut</th>
+                        <th style={{ width: "6%" }}>ID</th>
+                        <th style={{ width: "12%" }}>Nom</th>
+                        <th style={{ width: "10%" }}>Code produit</th>
+                        <th style={{ width: "10%" }}>Dimensions</th>
+                        <th style={{ width: "10%" }}>Luminosité</th>
+                        <th style={{ width: "12%" }}>Stock</th>
+                        <th style={{ width: "8%" }}>Prix</th>
+                        <th style={{ width: "9%" }}>Statut</th>
                         <th style={{ width: "23%" }}>Actions</th>
                       </tr>
                     </thead>
@@ -507,6 +522,7 @@ export default function PitchManagerPage() {
                             <td>{row.codeProduit}</td>
                             <td>{row.dimensions}</td>
                             <td>{row.luminosite}</td>
+                            <td>{row.stock || "—"}</td>
                             <td>{Number(row.price).toFixed(2)} €</td>
                             <td>
                               <span className={`badge ${row.isActive ? "on" : "off"}`}>
@@ -588,6 +604,15 @@ export default function PitchManagerPage() {
               <div className="pm-row">
                 <label className="pm-label">Luminosité</label>
                 <input className="input pm-input" value={editForm.luminosite} onChange={onEditChange("luminosite")} />
+              </div>
+              <div className="pm-row">
+                <label className="pm-label">Stock</label>
+                <input
+                  className="input pm-input"
+                  value={editForm.stock}
+                  onChange={onEditChange("stock")}
+                  placeholder="ex: En stock / Sur commande / Délai 6 sem."
+                />
               </div>
               <div className="pm-row">
                 <label className="pm-label">Prix</label>
