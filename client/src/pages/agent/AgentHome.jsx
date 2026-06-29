@@ -121,6 +121,10 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const [loadingRefs, setLoadingRefs] = useState(false);
 
   const [otherSelections, setOtherSelections] = useState({});
+  const [showServices, setShowServices] = useState(false);
+  const [serviceProducts, setServiceProducts] = useState([]);
+  const [serviceFamilies, setServiceFamilies] = useState([]);
+  const [serviceSelections, setServiceSelections] = useState([]);
   const [showLcd, setShowLcd] = useState(false);
   const [selectedLcdProductName, setSelectedLcdProductName] = useState("__all__");
   const [pendingPrefill, setPendingPrefill] = useState(null);
@@ -353,9 +357,10 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
         },
         body: JSON.stringify({
           client,
-          pitchInstances: enrichedPitchInstances, 
+          pitchInstances: enrichedPitchInstances,
           validityDays: 30,
             otherSelections: enrichedOtherSelections,
+          serviceSelections,
           finalType: pitchInstances?.[0]?.typeFinancement || "location_maintenance",
             wallLedsAbonnement,
   otherAbonnement,
@@ -552,6 +557,21 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
         if (res.ok) setLeaseurRates(await res.json());
       } catch (e) {
         console.warn("leaseur-rates load", e);
+      }
+    })();
+  }, [API]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [famRes, prodRes] = await Promise.all([
+          fetch(`${API}/api/service-families`),
+          fetch(`${API}/api/service-products`),
+        ]);
+        if (famRes.ok) setServiceFamilies(await famRes.json());
+        if (prodRes.ok) setServiceProducts(await prodRes.json());
+      } catch (e) {
+        console.warn("Services load error", e);
       }
     })();
   }, [API]);
@@ -1218,6 +1238,18 @@ const finPart =
       });
     }
 
+    // 3) SERVICES
+    for (const sel of serviceSelections || []) {
+      const qty = Math.max(1, parseInt(String(sel.quantite || 1), 10) || 1);
+      const pu = Number(sel.prixUnitaireHt || 0);
+      const total = pu * qty;
+      lines.push({
+        kind: "service",
+        key: `service_${sel.productId}`,
+        text: `Service – ${sel.designation}${sel.reference ? ` (${sel.reference})` : ""} – PU : ${fmtEuro(pu)} – Qté : ${qty} – Total : ${fmtEuro(total)}`,
+      });
+    }
+
     // recalcul propre des totaux depuis la data brute :
     let htEcrans = 0;
 
@@ -1262,7 +1294,12 @@ const finPart =
     if (hasPitch) htServices += wallLedsAbonnement.price;
     if (hasOther) htServices += otherAbonnement.price;
 
-    const htAvantApport = htEcransAvecRemise + htServices;
+    const htServicesExtra = (serviceSelections || []).reduce((s, sel) => {
+      const qty = Math.max(1, parseInt(String(sel.quantite || 1), 10) || 1);
+      return s + Number(sel.prixUnitaireHt || 0) * qty;
+    }, 0);
+
+    const htAvantApport = htEcransAvecRemise + htServices + htServicesExtra;
 
     // --- Application de l'apport ---
     const dureeSel = String(pitchInstances?.[0]?.financementMonths || "63");
@@ -1293,7 +1330,7 @@ const finPart =
       ttc,
     };
 
-}, [otherSelections, pitchInstances, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, remise, leaseurRates, staticVals]);
+}, [otherSelections, pitchInstances, serviceSelections, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, remise, leaseurRates, staticVals]);
 
 
   // --- helpers label PDF ---
@@ -1415,6 +1452,14 @@ const getOptionPrice = (pi, opt) => {
                   <span>Écrans LCD</span>
                 </label>
               )}
+              <label className="agenthome-check">
+                <input
+                  type="checkbox"
+                  checked={showServices}
+                  onChange={() => setShowServices((v) => !v)}
+                />
+                <span>Services</span>
+              </label>
               {products.length === 0 && (
                 <div className="agenthome-muted">Aucun produit.</div>
               )}
@@ -2143,6 +2188,80 @@ const getOptionPrice = (pi, opt) => {
   lcdProducts={lcdProducts}
 />
 
+
+        {/* --------- SERVICES --------- */}
+{showServices && serviceProducts.length > 0 ? (
+  <div className="agenthome-section">
+    <div className="agenthome-sectionTitle">Services :</div>
+    {(() => {
+      const byFamily = new Map();
+      for (const f of serviceFamilies) {
+        byFamily.set(String(f._id), { family: f, products: [] });
+      }
+      for (const p of serviceProducts) {
+        const fid = String(p.familyId?._id || p.familyId || "");
+        if (byFamily.has(fid)) byFamily.get(fid).products.push(p);
+      }
+      return Array.from(byFamily.values()).map(({ family, products: famProds }) => {
+        if (!famProds.length) return null;
+        return (
+          <div key={family._id} className="agenthome-subcard" style={{ marginBottom: 12 }}>
+            <div className="agenthome-subcardTitle">{family.name}</div>
+            {famProds.map((prod) => {
+              const sel = serviceSelections.find((s) => s.productId === String(prod._id));
+              const qty = sel ? sel.quantite : 0;
+              return (
+                <div key={prod._id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                  <label className="agenthome-check" style={{ flex: 1, minWidth: 200 }}>
+                    <input
+                      type="checkbox"
+                      checked={!!sel}
+                      onChange={() => {
+                        setServiceSelections((prev) => {
+                          const has = prev.find((s) => s.productId === String(prod._id));
+                          if (has) return prev.filter((s) => s.productId !== String(prod._id));
+                          return [...prev, {
+                            productId: String(prod._id),
+                            designation: prod.designation,
+                            reference: prod.reference || "",
+                            prixUnitaireHt: prod.prixUnitaireHt,
+                            quantite: 1,
+                          }];
+                        });
+                      }}
+                    />
+                    <span>{prod.designation}</span>
+                    {prod.reference ? <span style={{ fontSize: 11, color: "#888", marginLeft: 4 }}>({prod.reference})</span> : null}
+                  </label>
+                  <span style={{ fontSize: 12, color: "#555", whiteSpace: "nowrap" }}>{Number(prod.prixUnitaireHt).toFixed(2)} € HT</span>
+                  {sel ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <label style={{ fontSize: 12 }}>Qté :</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={qty}
+                        onChange={(e) => {
+                          const q = Math.max(1, parseInt(e.target.value || "1", 10) || 1);
+                          setServiceSelections((prev) =>
+                            prev.map((s) => s.productId === String(prod._id) ? { ...s, quantite: q } : s)
+                          );
+                        }}
+                        className="agenthome-input"
+                        style={{ width: 60 }}
+                      />
+                      <span style={{ fontSize: 12, color: "#555" }}>= {(Number(prod.prixUnitaireHt) * qty).toFixed(2)} € HT</span>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        );
+      });
+    })()}
+  </div>
+) : null}
 
         {/* --------- INFOS CLIENT --------- */}
         <div className="agenthome-section agenthome-section--client">

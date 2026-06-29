@@ -38,6 +38,7 @@ export default function AdminApp() {
     pitchs: true,
     autres: true,
     config: true,
+    services: true,
   }));
 
 const API = "";
@@ -265,7 +266,7 @@ const handleLogin = async (e) => {
               className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/pitchs`) ? "is-active" : ""}`}
               onClick={() => toggleGroup("pitchs")}
             >
-              <span>Pitchs</span>
+              <span>Écrans LED</span>
               <span className={`chev ${openGroups.pitchs ? "open" : ""}`}>▾</span>
             </button>
 
@@ -309,7 +310,7 @@ const handleLogin = async (e) => {
   }`}
   onClick={() => toggleGroup("autres")}
 >
-  <span>Autres produits</span>
+  <span>Écrans LCD</span>
   <span className={`chev ${openGroups.autres ? "open" : ""}`}>▾</span>
 </button>
 
@@ -345,8 +346,31 @@ const handleLogin = async (e) => {
   </div>
 ) : null}
 
+            <button
+  type="button"
+  className={`sidebar-group ${isPathActive(`${ADMIN_BASE}/services`) ? "is-active" : ""}`}
+  onClick={() => toggleGroup("services")}
+>
+  <span>Services</span>
+  <span className={`chev ${openGroups.services ? "open" : ""}`}>▾</span>
+</button>
 
-
+{openGroups.services ? (
+  <div className="sidebar-subnav">
+    <NavLink
+      to={`${ADMIN_BASE}/services/familles`}
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Familles
+    </NavLink>
+    <NavLink
+      to={`${ADMIN_BASE}/services/produits`}
+      className={({ isActive }) => `sidebar-subitem ${isActive ? "active" : ""}`}
+    >
+      Produits
+    </NavLink>
+  </div>
+) : null}
 
             <button
               type="button"

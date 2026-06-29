@@ -15,6 +15,7 @@ import CategoriesPitch from "./pages/CategoriesPitch";
 import PitchManagerPage from "./pages/PitchManager";
 
 import AdminFormules from "./pages/AdminFormules";
+import AdminServices from "./pages/AdminServices";
 import AdminTaegLeaseur from "./pages/AdminTaegLeaseur";
 
 /* ================= AGENT ================= */
@@ -55,6 +56,10 @@ export default function App() {
         <Route path="nosdevis" element={<AdminNosDevis />} />
 
         <Route path="faq-admin" element={<AdminFaq />} />
+
+        {/* ✅ Services */}
+        <Route path="services" element={<Navigate to="services/familles" replace />} />
+        <Route path="services/:slug" element={<AdminServices />} />
 
       
 

@@ -18,6 +18,7 @@ const crypto = require("crypto");
 const AgentPasswordReset = require("../models/AgentPasswordReset");
 
 const MemoryOption = require("../models/MemoryOption");
+const ServiceProduct = require("../models/ServiceProduct");
 const path = require("path");
 const fs = require("fs");
 const mongoose = require("mongoose");
@@ -205,6 +206,7 @@ async function buildLinesAndTotals({
   wallLedsAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },  // ✅
   otherAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },     // ✅
   apport = 0,
+  serviceSelections = [],
 }) {
 
   const isAchatGlobal = String(finalType) === "achat";
@@ -568,7 +570,28 @@ if (Array.isArray(sel?.optionsFinancement) && sel.optionsFinancement.length > 1)
 
 
   const qtyOtherTotal = otherMonthlyLines.reduce((s, l) => s + (Number(l.qty) || 0), 0);
-  const qtyTotalProducts = qtyPitchTotal + qtyOtherTotal; // ✅ PLAYER/ABOBR/PORT/PARA
+  const qtyTotalProducts = qtyPitchTotal + qtyOtherTotal; // ✅ PLAYER/ABOBR/PORT/PARA (services exclus)
+
+  // -----------------------------
+  // 2bis) SERVICES
+  // -----------------------------
+  const serviceLines = [];
+  for (const sel of (serviceSelections || [])) {
+    const qty = Math.max(1, parseInt(String(sel.quantite || 1), 10) || 1);
+    const pu = Number(sel.prixUnitaireHt || 0);
+    const montant = pu * qty;
+    serviceLines.push({
+      code: String(sel.reference || "SERV").trim() || "SERV",
+      description: String(sel.designation || "Service").trim(),
+      qty,
+      puHt: pu,
+      montantHt: fmt2(montant),
+      tva: tvaRate,
+      scope: "hors_mensualite",
+      kind: "service",
+    });
+  }
+  const servicesTotalHt = serviceLines.reduce((s, l) => s + Number(l.montantHt || 0), 0);
 
   // -----------------------------
   // 3) PLAYER (visuel)
@@ -818,7 +841,8 @@ function safeNumber(v) {
 const fraisAnnexesHt =
   portLine.reduce((s, l) => s + safeNumber(l.montantHt), 0) +
   instLines.reduce((s, l) => s + safeNumber(l.montantHt), 0) +
-  paraLine.reduce((s, l) => s + safeNumber(l.montantHt), 0);
+  paraLine.reduce((s, l) => s + safeNumber(l.montantHt), 0) +
+  servicesTotalHt;
 
   console.log("FRAIS ANNEXES DEBUG:", {
   port: portLine,
@@ -839,8 +863,9 @@ const fraisAnnexesTtc = fraisAnnexesHt + fraisAnnexesTva;
      ...finishMonthlyLines,
     ...otherMonthlyLines,
     ...playerLine,
- ...abobrLines,   
+ ...abobrLines,
     ...infoLine,
+    ...serviceLines,
     ...portLine,
     ...instLines,
     ...paraLine,
@@ -1675,6 +1700,7 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
   client = {},
   pitchInstances = [],
   otherSelections = {},
+  serviceSelections = [],
   validityDays = 30,
   finalType = "location_maintenance",
 
@@ -1682,7 +1708,7 @@ router.post("/devis", requireAgentAuth, async (req, res) => {
   otherAbonnement = { key: "bronze", label: "Bronze", price: 19.95 },
       apport = 0,
 
-      
+
 } = req.body || {};
 
 let ft = String(finalType || "")
@@ -1710,14 +1736,16 @@ console.log("FINAL TYPE NORMALIZED:", finalType);
 
     const hasPitch = Array.isArray(pitchInstances) && pitchInstances.length > 0;
     const hasOther = otherSelections && Object.keys(otherSelections).length > 0;
+    const hasService = Array.isArray(serviceSelections) && serviceSelections.length > 0;
 
-    if (!hasPitch && !hasOther) {
+    if (!hasPitch && !hasOther && !hasService) {
       return res.status(400).json({ message: "Aucun produit sélectionné." });
     }
 
     const { lines, totals, devisMentions } = await buildLinesAndTotals({
       pitchInstances,
       otherSelections,
+      serviceSelections,
       client,
       finalType,
       wallLedsAbonnement,   // ✅ AJOUTÉ
@@ -1742,6 +1770,7 @@ const saved = await AgentPdf.create({
       devisNumber,
       pitchInstances,
       otherSelections,
+      serviceSelections,
       validityDays,
     finalType, 
     wallLedsAbonnement,   // ✅
