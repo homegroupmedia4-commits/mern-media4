@@ -411,21 +411,21 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
 .btn:hover{ opacity: 0.95; }
 
 .btn-outline{
-  background:#fff;
+  background:#fff !important;
   color:#000000 !important;
   border-color:#000000 !important;
 }
 
 .btn-dark{
-  background:#0f1418;
+  background:#0f1418 !important;
   color:#fff !important;
-  border-color:#0f1418;
+  border-color:#0f1418 !important;
 }
 
 .btn-danger{
-  background: #e74c3c;
+  background: #e74c3c !important;
   color: #fff !important;
-  border-color: #e74c3c;
+  border-color: #e74c3c !important;
 }
 
 .btn-soft-danger{
@@ -1324,21 +1324,21 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
 .btn:hover{ opacity: 0.95; }
 
 .btn-outline{
-  background:#fff;
+  background:#fff !important;
   color:#000000 !important;
   border-color:#000000 !important;
 }
 
 .btn-dark{
-  background:#0f1418;
+  background:#0f1418 !important;
   color:#fff !important;
-  border-color:#0f1418;
+  border-color:#0f1418 !important;
 }
 
 .btn-danger{
-  background: #e74c3c;
+  background: #e74c3c !important;
   color: #fff !important;
-  border-color: #e74c3c;
+  border-color: #e74c3c !important;
 }
 
 .btn-soft-danger{
