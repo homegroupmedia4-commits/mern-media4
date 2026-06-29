@@ -423,9 +423,9 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
 }
 
 .btn-danger{
-  background: #e74c3c;
+  background: #e74c3c !important;
   color: #fff !important;
-  border-color: #e74c3c;
+  border-color: #e74c3c !important;
 }
 
 .btn-soft-danger{
@@ -1336,9 +1336,9 @@ body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
 }
 
 .btn-danger{
-  background: #e74c3c;
+  background: #e74c3c !important;
   color: #fff !important;
-  border-color: #e74c3c;
+  border-color: #e74c3c !important;
 }
 
 .btn-soft-danger{
