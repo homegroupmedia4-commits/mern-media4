@@ -2484,19 +2484,7 @@ const getOptionPrice = (pi, opt) => {
             />
           </div>
 
-          <div className="agenthome-clientActions">
-  <button
-    className="agenthome-btn agenthome-btn--green"
-    type="button"
-    onClick={handleValider}
-    disabled={savingDevis}
-  >
-    {savingDevis ? "Enregistrement..." : "Valider"}
-  </button>
-</div>
-
-
-{/* --------- RÉCAP --------- */}
+          {/* --------- RÉCAP --------- */}
 <div className="agenthome-subcard" style={{ marginTop: 14 }}>
   <div className="agenthome-subcardTitle">Récapitulatif de la sélection</div>
 
@@ -2632,6 +2620,17 @@ const getOptionPrice = (pi, opt) => {
       <span style={{ fontWeight: 800 }}>{fmtEuro(recap.ttc)}</span>
     </div>
   </div>
+</div>
+
+<div className="agenthome-clientActions">
+  <button
+    className="agenthome-btn agenthome-btn--green"
+    type="button"
+    onClick={handleValider}
+    disabled={savingDevis}
+  >
+    {savingDevis ? "Enregistrement..." : "Valider"}
+  </button>
 </div>
 
 

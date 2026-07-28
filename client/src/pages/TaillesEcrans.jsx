@@ -63,9 +63,9 @@ export default function TaillesEcrans() {
   const [memPrice, setMemPrice] = useState("");
   const [savingMem, setSavingMem] = useState(false);
 
-  // inline edit (autres produits)
-  const [editId, setEditId] = useState(null);
-  const [editDraft, setEditDraft] = useState(null);
+  // édition pivotée (produit + taille, prix par durée) via modale
+  const [editModalGroup, setEditModalGroup] = useState(null);
+  const [editModalDraft, setEditModalDraft] = useState(null);
 
   // inline edit (mem)
   const [memEditId, setMemEditId] = useState(null);
@@ -101,6 +101,38 @@ const goTab = (nextTab) => {
   const activeProducts = useMemo(() => {
     return (Array.isArray(products) ? products : []).filter((p) => p?.isActive !== false);
   }, [products]);
+
+  // Colonnes de durée du tableau pivoté : durées réelles en DB + minimum garanti 24/36/48/63
+  const pivotDurationCols = useMemo(() => {
+    const base = ["24", "36", "48", "63"];
+    const fromDb = durationOptions.map((d) => String(d.months));
+    const merged = Array.from(new Set([...base, ...fromDb]));
+    return merged.sort((a, b) => Number(a) - Number(b));
+  }, [durationOptions]);
+
+  // Tableau pivoté : une ligne par produit+taille, les durées deviennent des colonnes
+  const pivotedRows = useMemo(() => {
+    const map = new Map();
+    for (const r of rows) {
+      const pid = typeof r.productId === "object" ? r.productId?._id : r.productId;
+      const key = `${pid}_${r.sizeInches}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          productId: r.productId,
+          sizeInches: r.sizeInches,
+          productCode: r.productCode || "",
+          prices: {}, // { "24": { id, price }, "36": { id, price }, ... }
+          rowIds: [],
+        });
+      }
+      const group = map.get(key);
+      group.prices[String(r.leasingMonths)] = { id: r._id, price: r.price };
+      group.rowIds.push(r._id);
+      if (!group.productCode && r.productCode) group.productCode = r.productCode;
+    }
+    return Array.from(map.values());
+  }, [rows]);
 
   // ---------- LOADERS ----------
   const loadProducts = async () => {
@@ -213,71 +245,104 @@ const goTab = (nextTab) => {
     }
   };
 
-  const startEdit = (r) => {
-    setEditId(r?._id);
-    setEditDraft({
-      productId:
-  typeof r?.productId === "object" ? r.productId?._id : (r?.productId || ""),
+  const openEditModal = (group) => {
+    const draftPrices = {};
+    for (const m of pivotDurationCols) {
+      draftPrices[m] = group.prices[m] ? String(group.prices[m].price) : "";
+    }
+    const sampleRow = rows.find((r) => group.rowIds.includes(r._id));
 
-      sizeInches: r?.sizeInches ?? "",
-      leasingMonths: r?.leasingMonths ?? "",
-      price: r?.price ?? "",
-      productCode: r?.productCode || "",
-      isActive: r?.isActive !== false,
+    setEditModalGroup(group);
+    setEditModalDraft({
+      productId:
+        typeof group.productId === "object" ? (group.productId?._id || "") : (group.productId || ""),
+      sizeInches: String(group.sizeInches ?? ""),
+      productCode: group.productCode || "",
+      prices: draftPrices,
+      isActive: sampleRow?.isActive !== false,
     });
   };
 
-  const cancelEdit = () => {
-    setEditId(null);
-    setEditDraft(null);
+  const closeEditModal = () => {
+    setEditModalGroup(null);
+    setEditModalDraft(null);
   };
 
-  const saveEdit = async () => {
-    if (!editId || !editDraft) return;
+  const saveEditModal = async () => {
+    if (!editModalGroup || !editModalDraft) return;
     setError("");
     try {
-      const payload = {
-        productId:
-  typeof editDraft.productId === "object"
-    ? editDraft.productId?._id
-    : editDraft.productId || "",
+      const productId = editModalDraft.productId;
+      const sizeInches = Number(editModalDraft.sizeInches) || 0;
+      const productCode = String(editModalDraft.productCode || "").trim();
+      const isActive = !!editModalDraft.isActive;
 
-        sizeInches: Number(editDraft.sizeInches) || 0,
-        leasingMonths: Number(editDraft.leasingMonths) || 0,
-        price: Number(String(editDraft.price).replace(",", ".")) || 0,
-        productCode: String(editDraft.productCode || "").trim(),
-        isActive: !!editDraft.isActive,
-      };
+      for (const months of pivotDurationCols) {
+        const raw = String(editModalDraft.prices[months] ?? "").trim();
+        const existing = editModalGroup.prices[months];
 
-      const res = await fetch(`${API}/api/other-product-sizes/${editId}`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify(payload),
-      });
+        if (raw === "") {
+          if (existing?.id) {
+            await fetch(`${API}/api/other-product-sizes/${existing.id}`, {
+              method: "DELETE",
+              headers: authHeaders(),
+            });
+          }
+          continue;
+        }
 
-      if (!res.ok) throw new Error(await res.text());
+        const price = Number(raw.replace(",", ".")) || 0;
 
-      cancelEdit();
+        if (existing?.id) {
+          await fetch(`${API}/api/other-product-sizes/${existing.id}`, {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              productId,
+              sizeInches,
+              leasingMonths: Number(months),
+              price,
+              productCode,
+              isActive,
+            }),
+          });
+        } else {
+          await fetch(`${API}/api/other-product-sizes`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({
+              productId,
+              sizeInches,
+              leasingMonths: Number(months),
+              price,
+              productCode,
+            }),
+          });
+        }
+      }
+
+      closeEditModal();
       await loadOthers();
     } catch (e) {
       console.error(e);
-      setError("Impossible d’enregistrer la modification (autres produits).");
+      setError("Impossible d’enregistrer les modifications (autres produits).");
     }
   };
 
-  const deleteOther = async (id) => {
-    if (!id) return;
+  const deleteGroup = async (rowIds) => {
+    if (!confirm("Supprimer ce produit et tous ses prix ?")) return;
     setError("");
     try {
-      const res = await fetch(`${API}/api/other-product-sizes/${id}`, {
-        method: "DELETE",
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error(await res.text());
+      for (const id of rowIds) {
+        await fetch(`${API}/api/other-product-sizes/${id}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        });
+      }
       await loadOthers();
     } catch (e) {
       console.error(e);
-      setError("Impossible de supprimer la ligne (autres produits).");
+      setError("Impossible de supprimer ce produit.");
     }
   };
 
@@ -533,140 +598,45 @@ const productLabelById = (pidOrObj) => {
           <div className="table-wrap" style={{ marginTop: 12 }}>
             {loadingRows ? (
               <div className="muted">Chargement...</div>
-            ) : rows.length === 0 ? (
+            ) : pivotedRows.length === 0 ? (
               <div className="muted">Aucune donnée.</div>
             ) : (
               <table className="table table-wide">
                 <thead>
                   <tr>
-                    <th>Produit</th>
+                    <th>REF</th>
+                    <th>Type d'écran LCD</th>
                     <th>Taille</th>
-                    <th>Leasing</th>
-                    <th>Prix</th>
-                    <th>Code</th>
-                    <th>Actif</th>
+                    {pivotDurationCols.map((m) => (
+                      <th key={m}>{m} mois</th>
+                    ))}
+                    <th>Achat</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {rows.map((r) => {
-                    const isEditing = editId === r._id && editDraft;
-
-                    return (
-                      <tr key={r._id}>
-                        <td>
-                          {isEditing ? (
-                            <select
-                              className="input"
-                              value={editDraft.productId}
-                              onChange={(e) => setEditDraft((p) => ({ ...p, productId: e.target.value }))}
-                            >
-                              <option value="">—</option>
-                              {activeProducts.map((p) => (
-                                <option key={p._id} value={p._id}>
-                                  {p.name}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            productLabelById(r.productId)
-                          )}
+                  {pivotedRows.map((group) => (
+                    <tr key={group.key}>
+                      <td>{group.productCode || "—"}</td>
+                      <td>{productLabelById(group.productId)}</td>
+                      <td>{group.sizeInches != null ? `${group.sizeInches}"` : "—"}</td>
+                      {pivotDurationCols.map((m) => (
+                        <td key={m}>
+                          {group.prices[m] ? `${Number(group.prices[m].price).toFixed(2)} €` : "—"}
                         </td>
-
-                        <td>
-                          {isEditing ? (
-                            <input
-                              className="input"
-                              value={editDraft.sizeInches}
-                              onChange={(e) => setEditDraft((p) => ({ ...p, sizeInches: e.target.value }))}
-                              style={{ width: 110 }}
-                            />
-                          ) : (
-                            `${r.sizeInches ?? "—"}"`
-                          )}
-                        </td>
-
-                        <td>
-                          {isEditing ? (
-                            <select
-                              className="input"
-                              value={editDraft.leasingMonths}
-                              onChange={(e) => setEditDraft((p) => ({ ...p, leasingMonths: e.target.value }))}
-                            >
-                              <option value="">—</option>
-                              {durationOptions.map((d) => (
-                                <option key={d._id || d.months} value={d.months}>
-                                  {d.months} mois
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            r.leasingMonths ? `${r.leasingMonths} mois` : "—"
-                          )}
-                        </td>
-
-                        <td>
-                          {isEditing ? (
-                            <input
-                              className="input"
-                              value={editDraft.price}
-                              onChange={(e) => setEditDraft((p) => ({ ...p, price: e.target.value }))}
-                              style={{ width: 140 }}
-                            />
-                          ) : (
-                            Number.isFinite(Number(r.price)) ? `${Number(r.price).toFixed(2)} €` : "—"
-                          )}
-                        </td>
-
-                        <td>
-                          {isEditing ? (
-                            <input
-                              className="input"
-                              value={editDraft.productCode}
-                              onChange={(e) => setEditDraft((p) => ({ ...p, productCode: e.target.value }))}
-                            />
-                          ) : (
-                            r.productCode || "—"
-                          )}
-                        </td>
-
-                        <td>
-                          {isEditing ? (
-                            <input
-                              type="checkbox"
-                              checked={!!editDraft.isActive}
-                              onChange={(e) => setEditDraft((p) => ({ ...p, isActive: e.target.checked }))}
-                            />
-                          ) : (
-                            r.isActive === false ? "Non" : "Oui"
-                          )}
-                        </td>
-
-                        <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {!isEditing ? (
-                            <>
-                              <button className="btn btn-outline" type="button" onClick={() => startEdit(r)} disabled={isBusy}>
-                                Modifier
-                              </button>
-                              <button className="btn btn-outline" type="button" onClick={() => deleteOther(r._id)} disabled={isBusy}>
-                                Supprimer
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button className="btn btn-dark" type="button" onClick={saveEdit} disabled={isBusy}>
-                                Enregistrer
-                              </button>
-                              <button className="btn btn-outline" type="button" onClick={cancelEdit} disabled={isBusy}>
-                                Annuler
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                      ))}
+                      <td>—</td>
+                      <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button className="btn btn-outline" type="button" onClick={() => openEditModal(group)} disabled={isBusy}>
+                          ✏️
+                        </button>
+                        <button className="btn btn-outline" type="button" onClick={() => deleteGroup(group.rowIds)} disabled={isBusy}>
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             )}
@@ -815,6 +785,108 @@ const productLabelById = (pidOrObj) => {
                 </tbody>
               </table>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {editModalGroup && editModalDraft ? (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
+          onMouseDown={closeEditModal}
+        >
+          <div
+            style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(550px, 95vw)", maxHeight: "85vh", overflow: "auto", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>Modifier</div>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                title="Fermer"
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: 12 }}>
+              <div>
+                <div className="label">REF</div>
+                <input
+                  className="input"
+                  value={editModalDraft.productCode}
+                  onChange={(e) => setEditModalDraft((p) => ({ ...p, productCode: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <div className="label">Produit</div>
+                <select
+                  className="input"
+                  value={editModalDraft.productId}
+                  onChange={(e) => setEditModalDraft((p) => ({ ...p, productId: e.target.value }))}
+                >
+                  <option value="">—</option>
+                  {activeProducts.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="label">Taille (pouces)</div>
+                <input
+                  className="input"
+                  type="number"
+                  value={editModalDraft.sizeInches}
+                  onChange={(e) => setEditModalDraft((p) => ({ ...p, sizeInches: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <div className="label">Prix par durée (HT)</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, marginTop: 6 }}>
+                  {pivotDurationCols.map((m) => (
+                    <div key={m}>
+                      <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>{m} mois</div>
+                      <input
+                        className="input"
+                        value={editModalDraft.prices[m] ?? ""}
+                        onChange={(e) =>
+                          setEditModalDraft((p) => ({
+                            ...p,
+                            prices: { ...p.prices, [m]: e.target.value },
+                          }))
+                        }
+                        placeholder="—"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  id="editmodal_active"
+                  type="checkbox"
+                  checked={!!editModalDraft.isActive}
+                  onChange={(e) => setEditModalDraft((p) => ({ ...p, isActive: e.target.checked }))}
+                />
+                <label htmlFor="editmodal_active" className="label" style={{ margin: 0 }}>Actif</label>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "flex-end" }}>
+              <button className="btn btn-outline" type="button" onClick={closeEditModal}>
+                Annuler
+              </button>
+              <button className="btn btn-dark" type="button" onClick={saveEditModal}>
+                Enregistrer
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
