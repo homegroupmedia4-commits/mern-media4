@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AgentHeader from "./AgentHeader";
 import { TOKEN_KEY, USER_KEY, safeJsonParse } from "./agentHome.helpers";
 import "./AgentMesDevis.css";
@@ -44,6 +44,11 @@ export default function AgentMesDevis() {
   const [searchGlobal, setSearchGlobal] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  // Note interne : brouillon local (partagé entre le textarea inline et la modale) + debounce de sauvegarde
+  const [noteDrafts, setNoteDrafts] = useState({});
+  const [noteModalId, setNoteModalId] = useState(null);
+  const noteSaveTimers = useRef({});
 
   const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
   const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
@@ -111,6 +116,17 @@ export default function AgentMesDevis() {
     } catch (e) {
       console.error("saveMeta error", e);
     }
+  };
+
+  // Met à jour le brouillon (inline + modale partagent la même source) et sauvegarde avec debounce
+  const updateNoteDraft = (devisId, value) => {
+    setNoteDrafts((prev) => ({ ...prev, [devisId]: value }));
+    if (noteSaveTimers.current[devisId]) {
+      clearTimeout(noteSaveTimers.current[devisId]);
+    }
+    noteSaveTimers.current[devisId] = setTimeout(() => {
+      saveMeta(devisId, { commentaireInterne: value });
+    }, 400);
   };
 
   useEffect(() => {
@@ -531,12 +547,22 @@ export default function AgentMesDevis() {
                             </select>
                           </td>
                           <td>
-                            <input
-                              type="text"
-                              defaultValue={meta.commentaire}
-                              style={{ width: 120, fontSize: 12 }}
-                              onBlur={(e) => saveMeta(r.devisId, { commentaireInterne: e.target.value })}
-                            />
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
+                              <textarea
+                                value={noteDrafts[r.devisId] ?? meta.commentaire}
+                                onChange={(e) => updateNoteDraft(r.devisId, e.target.value)}
+                                rows={2}
+                                style={{ width: 120, fontSize: 12, fontFamily: "inherit", resize: "vertical" }}
+                              />
+                              <button
+                                type="button"
+                                title="Agrandir la note interne"
+                                onClick={() => setNoteModalId(r.devisId)}
+                                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 4px", lineHeight: 1, flexShrink: 0 }}
+                              >
+                                🔍
+                              </button>
+                            </div>
                           </td>
                           <td>
                             <input
@@ -572,6 +598,53 @@ export default function AgentMesDevis() {
           </div>
         </div>
       </div>
+
+      {noteModalId ? (() => {
+        const modalRow = rows.find((x) => String(x._id || x.id) === String(noteModalId));
+        const modalValue = noteDrafts[noteModalId] ?? (modalRow?.commentaireInterne || "");
+        return (
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
+            onMouseDown={() => setNoteModalId(null)}
+          >
+            <div
+              style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(500px, 92vw)", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>
+                  Note interne{modalRow?.devisNumber ? ` — ${modalRow.devisNumber}` : ""}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNoteModalId(null)}
+                  title="Fermer"
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1 }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <textarea
+                autoFocus
+                value={modalValue}
+                onChange={(e) => updateNoteDraft(noteModalId, e.target.value)}
+                style={{ width: "100%", minHeight: 300, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", padding: 8, border: "1px solid #d8dbe6", borderRadius: 6, resize: "vertical" }}
+              />
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setNoteModalId(null)}
+                  style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d8dbe6", background: "#f6f7fb", cursor: "pointer", fontSize: 13 }}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
     </>
   );
 }
