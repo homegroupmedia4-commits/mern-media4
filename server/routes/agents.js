@@ -16,6 +16,7 @@ const multer = require("multer");
 
 const crypto = require("crypto");
 const AgentPasswordReset = require("../models/AgentPasswordReset");
+const ClientNote = require("../models/ClientNote");
 
 const MemoryOption = require("../models/MemoryOption");
 const ServiceProduct = require("../models/ServiceProduct");
@@ -2535,6 +2536,61 @@ router.get("/client-societes", requireAgentAuth, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+
+// ✅ GET /api/agents/client-notes — commentaires par client (prospect/clients)
+router.get("/client-notes", requireAgentAuth, async (req, res) => {
+  try {
+    const agent = req.agent;
+    const isAdmin = ["admin", "superadmin"].includes(String(agent.role || "")) || agent.isAdminToken;
+
+    const query = isAdmin
+      ? (req.query.agentId ? { agentId: req.query.agentId } : {})
+      : { agentId: agent._id };
+
+    const notes = await ClientNote.find(query)
+      .select("clientKey commentaire updatedAt")
+      .lean();
+
+    res.json(
+      notes.map((n) => ({
+        clientKey: n.clientKey,
+        commentaire: n.commentaire || "",
+        updatedAt: n.updatedAt,
+      }))
+    );
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erreur serveur (client-notes)." });
+  }
+});
+
+// ✅ PATCH /api/agents/client-notes/:clientKey — upsert du commentaire client
+router.patch("/client-notes/:clientKey", requireAgentAuth, async (req, res) => {
+  try {
+    const agent = req.agent;
+    const clientKey = String(req.params.clientKey || "").trim();
+    if (!clientKey) return res.status(400).json({ message: "clientKey requis." });
+
+    const commentaire = String(req.body?.commentaire || "");
+
+    // Token admin pur (non lié à un Agent) : pas d'agentId valide, on ne persiste pas.
+    if (!agent._id) {
+      return res.json({ ok: true, clientKey, commentaire });
+    }
+
+    const updated = await ClientNote.findOneAndUpdate(
+      { clientKey, agentId: agent._id },
+      { commentaire },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    res.json({ ok: true, clientKey: updated.clientKey, commentaire: updated.commentaire || "" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Erreur serveur (client-notes patch)." });
   }
 });
 

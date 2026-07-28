@@ -63,6 +63,11 @@
   min-width: 1300px; /* force le scroll horizontal */
 }
 
+/* Tableau Prospect / Clients : moins de colonnes, min-width réduit (prime sur les media queries ci-dessous) */
+.agentdevis-prospect-table{
+  min-width: 900px !important;
+}
+
 .agentdevis-table th,
 .agentdevis-table td{
   padding: 12px 12px;

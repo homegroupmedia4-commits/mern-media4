@@ -50,6 +50,17 @@ export default function AgentMesDevis() {
   const [noteModalId, setNoteModalId] = useState(null);
   const noteSaveTimers = useRef({});
 
+  // Prospect / Clients : commentaire par client (indépendant de la note interne par devis)
+  const [clientNotes, setClientNotes] = useState({});
+  const [clientNoteModalKey, setClientNoteModalKey] = useState(null);
+  const [clientDevisModalKey, setClientDevisModalKey] = useState(null);
+  const clientNoteSaveTimers = useRef({});
+
+  // Prospect / Clients : tri + filtres par colonne (isolés du tableau devis)
+  const [prospectSortCol, setProspectSortCol] = useState(null);
+  const [prospectSortDir, setProspectSortDir] = useState("asc");
+  const [prospectColFilters, setProspectColFilters] = useState({});
+
   const [otherSizesCatalog, setOtherSizesCatalog] = useState([]);
   const [memOptionsCatalog, setMemOptionsCatalog] = useState([]);
 
@@ -129,6 +140,44 @@ export default function AgentMesDevis() {
     }, 400);
   };
 
+  // Commentaire client (Prospect/Clients) : brouillon local + debounce de sauvegarde
+  const updateClientNote = (clientKey, value) => {
+    setClientNotes((prev) => ({ ...prev, [clientKey]: value }));
+    if (clientNoteSaveTimers.current[clientKey]) {
+      clearTimeout(clientNoteSaveTimers.current[clientKey]);
+    }
+    clientNoteSaveTimers.current[clientKey] = setTimeout(async () => {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return;
+      try {
+        await fetch(`${API}/api/agents/client-notes/${encodeURIComponent(clientKey)}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ commentaire: value }),
+        });
+      } catch (e) {
+        console.error("client-note save error", e);
+      }
+    }, 400);
+  };
+
+  const handleProspectSort = (col) => {
+    if (prospectSortCol === col) {
+      if (prospectSortDir === "asc") setProspectSortDir("desc");
+      else if (prospectSortDir === "desc") { setProspectSortCol(null); setProspectSortDir("asc"); }
+    } else {
+      setProspectSortCol(col);
+      setProspectSortDir("asc");
+    }
+  };
+
+  const setProspectColFilter = (col, val) => {
+    setProspectColFilters((prev) => ({ ...prev, [col]: val }));
+  };
+
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) { window.location.href = "/agent/login"; return; }
@@ -171,6 +220,27 @@ export default function AgentMesDevis() {
         const data = await res.json();
         setMemOptionsCatalog((Array.isArray(data) ? data : []).filter((x) => x?.isActive !== false));
       } catch (e) { console.warn("memory-options load error", e); }
+    })();
+  }, [API]);
+
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/agents/client-notes`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        const map = {};
+        for (const n of (Array.isArray(data) ? data : [])) {
+          map[n.clientKey] = n.commentaire || "";
+        }
+        setClientNotes(map);
+      } catch (e) {
+        console.warn("client-notes load error", e);
+      }
     })();
   }, [API]);
 
@@ -402,6 +472,83 @@ export default function AgentMesDevis() {
     return result;
   }, [rows, filtre, otherSizesCatalog, memOptionsCatalog, searchGlobal, sortCol, sortDir, colFilters, dateFrom, dateTo]);
 
+  // -------------------------
+  // Prospect / Clients : déduplication des clients depuis les devis déjà chargés
+  // -------------------------
+  const prospectList = useMemo(() => {
+    const map = new Map();
+
+    for (const d of rows) {
+      const c = d.client || {};
+      const emailKey = String(c.email || "").trim().toLowerCase();
+      const societeKey = String(c.societe || "").trim().toLowerCase();
+      const clientKey = emailKey || societeKey;
+      if (!clientKey) continue;
+
+      const devisId = d._id || d.id;
+
+      if (!map.has(clientKey)) {
+        map.set(clientKey, {
+          clientKey,
+          societe: c.societe || "",
+          prenom: c.prenom || "",
+          telephone: c.telephone || "",
+          email: c.email || "",
+          codePostal: c.codePostal || "",
+          ville: c.ville || "",
+          adresse: c.adresse1 || "",
+          devisIds: [],
+        });
+      }
+
+      map.get(clientKey).devisIds.push(devisId);
+    }
+
+    return Array.from(map.values());
+  }, [rows]);
+
+  const PROSPECT_COLS = useMemo(() => ({
+    societe: (p) => p.societe,
+    prenom: (p) => p.prenom,
+    telephone: (p) => p.telephone,
+    email: (p) => p.email,
+    codePostal: (p) => p.codePostal,
+    ville: (p) => p.ville,
+    adresse: (p) => p.adresse,
+  }), []);
+
+  const filteredProspectList = useMemo(() => {
+    let result = prospectList;
+
+    if (searchGlobal.trim()) {
+      const q = searchGlobal.trim().toLowerCase();
+      result = result.filter((p) =>
+        [p.societe, p.prenom, p.email, p.ville, p.codePostal].some((v) =>
+          String(v || "").toLowerCase().includes(q)
+        )
+      );
+    }
+
+    for (const [col, val] of Object.entries(prospectColFilters)) {
+      if (!val || !val.trim()) continue;
+      const getter = PROSPECT_COLS[col];
+      if (!getter) continue;
+      const q = val.trim().toLowerCase();
+      result = result.filter((p) => String(getter(p) || "").toLowerCase().includes(q));
+    }
+
+    if (prospectSortCol && PROSPECT_COLS[prospectSortCol]) {
+      const getter = PROSPECT_COLS[prospectSortCol];
+      result = [...result].sort((a, b) => {
+        const av = String(getter(a) || "").toLowerCase();
+        const bv = String(getter(b) || "").toLowerCase();
+        return prospectSortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+    }
+
+    return result;
+  }, [prospectList, searchGlobal, prospectColFilters, prospectSortCol, prospectSortDir, PROSPECT_COLS]);
+
   const hasAny = flattened.length > 0;
 
   return (
@@ -415,6 +562,7 @@ export default function AgentMesDevis() {
             <button type="button" className={`agentdevis-tab ${filtre === "all" ? "is-active" : ""}`} onClick={() => setFiltre("all")}>Tous</button>
             <button type="button" className={`agentdevis-tab ${filtre === "led" ? "is-active" : ""}`} onClick={() => setFiltre("led")}>Écrans LED</button>
             <button type="button" className={`agentdevis-tab ${filtre === "lcd" ? "is-active" : ""}`} onClick={() => setFiltre("lcd")}>Écrans LCD</button>
+            <button type="button" className={`agentdevis-tab ${filtre === "prospects" ? "is-active" : ""}`} onClick={() => setFiltre("prospects")}>Prospect / Clients</button>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
@@ -431,6 +579,69 @@ export default function AgentMesDevis() {
             {error ? <div className="agentdevis-error">{error}</div> : null}
 
             {!loading && !error ? (
+              filtre === "prospects" ? (
+              <div className="agentdevis-tableScroll">
+                <table className="agentdevis-table agentdevis-prospect-table">
+                  <thead>
+                    <tr>
+                      <th>Voir devis</th>
+                      <SortTh col="societe" label="Magasin" width={140} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
+                      <SortTh col="prenom" label="Prénom" width={110} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
+                      <SortTh col="telephone" label="Tél" width={110} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
+                      <SortTh col="email" label="Email" width={160} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
+                      <SortTh col="codePostal" label="CP" width={80} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
+                      <SortTh col="ville" label="Ville" width={110} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
+                      <SortTh col="adresse" label="Adresse" width={160} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
+                      <th>Commentaire</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProspectList.map((p) => (
+                      <tr key={p.clientKey}>
+                        <td>
+                          <button
+                            type="button"
+                            title="Voir les devis de ce client"
+                            onClick={() => setClientDevisModalKey(p.clientKey)}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: "2px 6px" }}
+                          >👁</button>
+                        </td>
+                        <td>{p.societe || ""}</td>
+                        <td>{p.prenom || ""}</td>
+                        <td>{p.telephone || ""}</td>
+                        <td>{p.email || ""}</td>
+                        <td>{p.codePostal || ""}</td>
+                        <td>{p.ville || ""}</td>
+                        <td>{p.adresse || ""}</td>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
+                            <textarea
+                              value={clientNotes[p.clientKey] ?? ""}
+                              onChange={(e) => updateClientNote(p.clientKey, e.target.value)}
+                              rows={2}
+                              style={{ width: 120, fontSize: 12, fontFamily: "inherit", resize: "vertical" }}
+                            />
+                            <button
+                              type="button"
+                              title="Agrandir le commentaire"
+                              onClick={() => setClientNoteModalKey(p.clientKey)}
+                              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 4px", lineHeight: 1, flexShrink: 0 }}
+                            >
+                              🔍
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredProspectList.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="agentdevis-empty">Aucun client.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+              ) : (
               <div className="agentdevis-tableScroll">
                 <table className="agentdevis-table">
                   <thead>
@@ -594,10 +805,138 @@ export default function AgentMesDevis() {
                   </tbody>
                 </table>
               </div>
+              )
             ) : null}
           </div>
         </div>
       </div>
+
+      {clientDevisModalKey ? (() => {
+        const prospect = prospectList.find((p) => p.clientKey === clientDevisModalKey);
+        const devisRows = (prospect?.devisIds || [])
+          .map((id) => rows.find((r) => String(r._id || r.id) === String(id)))
+          .filter(Boolean);
+        return (
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
+            onMouseDown={() => setClientDevisModalKey(null)}
+          >
+            <div
+              style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(700px, 95vw)", maxHeight: "80vh", overflow: "auto", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>
+                  Devis — {prospect?.societe || prospect?.email || ""}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setClientDevisModalKey(null)}
+                  title="Fermer"
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1 }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}>N° devis</th>
+                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}>Date</th>
+                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}>Statut</th>
+                      <th style={{ textAlign: "right", padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}>Montant TTC</th>
+                      <th style={{ padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {devisRows.map((d) => (
+                      <tr key={d._id || d.id}>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5" }}>{d.devisNumber || ""}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5" }}>{fmtDateFR(d.createdAt)}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5" }}>{d.statutDevis || "cree"}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "right" }}>{fmt2(d.totals?.totalTtc)}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "right" }}>
+                          <button
+                            className="agentdevis-download"
+                            type="button"
+                            onClick={() => downloadPdf(d._id || d.id)}
+                            title="Télécharger le devis"
+                            style={{ padding: "4px 10px", fontSize: 14 }}
+                          >↓</button>
+                        </td>
+                      </tr>
+                    ))}
+                    {devisRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "10px 8px", color: "#6b7280" }}>Aucun devis.</td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => setClientDevisModalKey(null)}
+                  style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d8dbe6", background: "#f6f7fb", cursor: "pointer", fontSize: 13 }}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
+
+      {clientNoteModalKey ? (() => {
+        const prospect = prospectList.find((p) => p.clientKey === clientNoteModalKey);
+        const modalValue = clientNotes[clientNoteModalKey] ?? "";
+        return (
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
+            onMouseDown={() => setClientNoteModalKey(null)}
+          >
+            <div
+              style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(500px, 92vw)", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>
+                  Commentaire client — {prospect?.societe || prospect?.email || ""}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setClientNoteModalKey(null)}
+                  title="Fermer"
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1 }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <textarea
+                autoFocus
+                value={modalValue}
+                onChange={(e) => updateClientNote(clientNoteModalKey, e.target.value)}
+                style={{ width: "100%", minHeight: 300, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", padding: 8, border: "1px solid #d8dbe6", borderRadius: 6, resize: "vertical" }}
+              />
+
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setClientNoteModalKey(null)}
+                  style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d8dbe6", background: "#f6f7fb", cursor: "pointer", fontSize: 13 }}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
 
       {noteModalId ? (() => {
         const modalRow = rows.find((x) => String(x._id || x.id) === String(noteModalId));
