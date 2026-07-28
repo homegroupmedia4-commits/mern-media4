@@ -133,6 +133,32 @@ router.put("/:id", async (req, res) => {
       update.productCode = String(update.productCode || "").trim();
     if (typeof update.isActive !== "undefined") update.isActive = !!update.isActive;
 
+    // ✅ Vérifie la combinaison productId + sizeInches + leasingMonths, en excluant
+    // le document en cours de modification (sinon il se trouve lui-même comme doublon).
+    if (
+      typeof update.productId !== "undefined" ||
+      typeof update.sizeInches !== "undefined" ||
+      typeof update.leasingMonths !== "undefined"
+    ) {
+      const current = await OtherProductSize.findById(id);
+      if (!current) return res.status(404).json({ message: "Ligne introuvable." });
+
+      const exists = await OtherProductSize.findOne({
+        productId: typeof update.productId !== "undefined" ? update.productId : current.productId,
+        sizeInches:
+          typeof update.sizeInches !== "undefined" ? update.sizeInches : current.sizeInches,
+        leasingMonths:
+          typeof update.leasingMonths !== "undefined" ? update.leasingMonths : current.leasingMonths,
+        _id: { $ne: id }, // ← exclure le document en cours
+      });
+
+      if (exists) {
+        return res.status(409).json({
+          message: "Doublon (code produit ou combinaison produit/taille/durée).",
+        });
+      }
+    }
+
     const doc = await OtherProductSize.findByIdAndUpdate(id, update, { new: true }).populate(
       "productId",
       "name isActive"
