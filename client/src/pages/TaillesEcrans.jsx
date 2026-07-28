@@ -270,12 +270,25 @@ const goTab = (nextTab) => {
 
   const saveEditModal = async () => {
     if (!editModalGroup || !editModalDraft) return;
+
+    console.log("saveEditModal called", editModalDraft);
+
     setError("");
     try {
-      const productId = editModalDraft.productId;
+      // ✅ productId doit être un string simple (ObjectId), jamais l'objet populate
+      const productId = String(
+        (editModalDraft.productId && typeof editModalDraft.productId === "object"
+          ? editModalDraft.productId._id
+          : editModalDraft.productId) || ""
+      );
       const sizeInches = Number(editModalDraft.sizeInches) || 0;
       const productCode = String(editModalDraft.productCode || "").trim();
       const isActive = !!editModalDraft.isActive;
+
+      if (!productId) {
+        setError("Merci de choisir un produit.");
+        return;
+      }
 
       for (const months of pivotDurationCols) {
         const raw = String(editModalDraft.prices[months] ?? "").trim();
@@ -283,10 +296,16 @@ const goTab = (nextTab) => {
 
         if (raw === "") {
           if (existing?.id) {
-            await fetch(`${API}/api/other-product-sizes/${existing.id}`, {
+            const res = await fetch(`${API}/api/other-product-sizes/${existing.id}`, {
               method: "DELETE",
               headers: authHeaders(),
             });
+            console.log("PUT/POST/DELETE result", months, res.status);
+            if (!res.ok) {
+              const text = await res.text();
+              console.error("saveEditModal DELETE error", months, res.status, text);
+              throw new Error(text || `Erreur suppression (${months} mois).`);
+            }
           }
           continue;
         }
@@ -294,7 +313,8 @@ const goTab = (nextTab) => {
         const price = Number(raw.replace(",", ".")) || 0;
 
         if (existing?.id) {
-          await fetch(`${API}/api/other-product-sizes/${existing.id}`, {
+          // ✅ ligne existante -> PUT (isActive bien inclus, sinon le backend le repasserait à false)
+          const res = await fetch(`${API}/api/other-product-sizes/${existing.id}`, {
             method: "PUT",
             headers: authHeaders(),
             body: JSON.stringify({
@@ -306,8 +326,15 @@ const goTab = (nextTab) => {
               isActive,
             }),
           });
+          console.log("PUT/POST/DELETE result", months, res.status);
+          if (!res.ok) {
+            const text = await res.text();
+            console.error("saveEditModal PUT error", months, res.status, text);
+            throw new Error(text || `Erreur mise à jour (${months} mois).`);
+          }
         } else {
-          await fetch(`${API}/api/other-product-sizes`, {
+          // ✅ pas de ligne pour cette durée -> POST (création)
+          const res = await fetch(`${API}/api/other-product-sizes`, {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify({
@@ -318,13 +345,19 @@ const goTab = (nextTab) => {
               productCode,
             }),
           });
+          console.log("PUT/POST/DELETE result", months, res.status);
+          if (!res.ok) {
+            const text = await res.text();
+            console.error("saveEditModal POST error", months, res.status, text);
+            throw new Error(text || `Erreur création (${months} mois).`);
+          }
         }
       }
 
-      closeEditModal();
       await loadOthers();
+      closeEditModal();
     } catch (e) {
-      console.error(e);
+      console.error("saveEditModal failed", e);
       setError("Impossible d’enregistrer les modifications (autres produits).");
     }
   };
