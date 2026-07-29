@@ -26,6 +26,13 @@ const agentSchema = new mongoose.Schema(
       enum: ["agent", "technicien", "responsable"],
       default: "agent",
     },
+
+    remise: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
   },
   { timestamps: true }
 );

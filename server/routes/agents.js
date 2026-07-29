@@ -1514,7 +1514,7 @@ async function requireAgentAuth(req, res, next) {
     }
 
     // ✅ CAS AGENT NORMAL
-    const agent = await Agent.findById(payload.agentId).select("_id nom prenom email role");
+    const agent = await Agent.findById(payload.agentId).select("_id nom prenom email role remise");
     if (!agent) return res.status(404).json({ message: "Agent introuvable." });
 
     req.agent = agent;
@@ -2431,7 +2431,7 @@ router.get("/admin/list", requireAgentAuth, requireAdmin, async (req, res) => {
   .sort({ createdAt: -1 })
   .populate("parrainId", "_id nom prenom email")
   .select(
-    "_id nom prenom email role societe siret adresse codePostal ville telephonePortable telephoneFixe pays parrainId createdAt"
+    "_id nom prenom email role remise societe siret adresse codePostal ville telephonePortable telephoneFixe pays parrainId createdAt"
   )
   .lean();
 
@@ -2471,9 +2471,13 @@ router.put("/admin/agents/:id", requireAgentAuth, requireAdmin, async (req, res)
       }
     }
 
+    if (req.body.remise !== undefined) {
+      patch.remise = Math.max(0, Math.min(100, Number(req.body.remise) || 0));
+    }
+
     // normalisations
     if (patch.email) patch.email = String(patch.email).toLowerCase().trim();
-  
+
 if (patch.parrainId === "" || patch.parrainId === null) {
   patch.parrainId = null;
 } else if (patch.parrainId && !mongoose.Types.ObjectId.isValid(patch.parrainId)) {

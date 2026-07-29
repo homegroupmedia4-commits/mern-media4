@@ -1332,6 +1332,12 @@ const finPart =
 
 }, [otherSelections, pitchInstances, serviceSelections, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, remise, leaseurRates, staticVals]);
 
+  // ✅ Remise fixe de l'agent (définie par l'admin), appliquée en déduction du total HT général
+  const agentRemise = Number(agent?.remise || 0);
+  const totalHtApresRemise = recap.totalHt - (recap.totalHt * agentRemise) / 100;
+  const tvaApresRemise = totalHtApresRemise * 0.2;
+  const ttcApresRemise = totalHtApresRemise + tvaApresRemise;
+
 
   // --- helpers label PDF ---
 const normalizeForFilename = (s) =>
@@ -2610,14 +2616,23 @@ const getOptionPrice = (pi, opt) => {
       <span style={{ fontWeight: 700 }}>{fmtEuro(recap.totalHt)}</span>
     </div>
 
+    {agentRemise > 0 && (
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 6 }}>
+        <span style={{ fontWeight: 500, color: "#e67e22" }}>Remise {agentRemise}%</span>
+        <span style={{ fontWeight: 600, color: "#e67e22" }}>
+          − {fmtEuro((recap.totalHt * agentRemise) / 100)}
+        </span>
+      </div>
+    )}
+
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 6 }}>
       <span style={{ fontWeight: 700 }}>Montant TVA (20%) :</span>
-      <span style={{ fontWeight: 700 }}>{fmtEuro(recap.tva)}</span>
+      <span style={{ fontWeight: 700 }}>{fmtEuro(tvaApresRemise)}</span>
     </div>
 
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginTop: 10 }}>
       <span style={{ fontWeight: 800 }}>Mensualité TTC :</span>
-      <span style={{ fontWeight: 800 }}>{fmtEuro(recap.ttc)}</span>
+      <span style={{ fontWeight: 800 }}>{fmtEuro(ttcApresRemise)}</span>
     </div>
   </div>
 </div>

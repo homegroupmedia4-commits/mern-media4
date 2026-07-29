@@ -55,6 +55,7 @@ export default function AdminAgents() {
       telephonePortable: agent?.telephonePortable || "",
       telephoneFixe: agent?.telephoneFixe || "",
       pays: agent?.pays || "France",
+      remise: agent?.remise ?? 0,
     });
   };
 
@@ -75,7 +76,7 @@ export default function AdminAgents() {
           "Content-Type": "application/json",
           ...authHeaders(),
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ ...editForm, remise: parseFloat(editForm.remise) || 0 }),
       });
 
       if (!res.ok) throw new Error(await res.text());
@@ -152,6 +153,7 @@ export default function AdminAgents() {
                   "Prénom",
                   "Email",
                   "Rôle",
+                  "Remise (%)",
                   "Parrain",
                   "Société",
                   "SIRET",
@@ -185,7 +187,7 @@ export default function AdminAgents() {
             <tbody>
               {agents.length === 0 ? (
                 <tr>
-                  <td colSpan={15} style={{ padding: 12 }}>
+                  <td colSpan={16} style={{ padding: 12 }}>
                     Aucun agent pour l’instant.
                   </td>
                 </tr>
@@ -196,6 +198,7 @@ export default function AdminAgents() {
                     <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.prenom || "—"}</td>
                     <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.email || "—"}</td>
                     <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.role || "—"}</td>
+                    <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>{a.remise || 0}%</td>
 
                     <td style={{ padding: "10px 8px", borderBottom: "1px solid #f0f2f7" }}>
                       {a.parrainId
@@ -299,7 +302,20 @@ export default function AdminAgents() {
                       <option value="responsable">responsable</option>
                     </select>
                   </div>
-                  
+
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Remise (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={editForm.remise ?? 0}
+                      onChange={(e) => setEditForm((p) => ({ ...p, remise: e.target.value }))}
+                      style={{ width: "100%", padding: 10, border: "1px solid #e6e8ef", borderRadius: 10 }}
+                    />
+                  </div>
+
 <div>
   <label style={{ display: "block", fontSize: 12, marginBottom: 6 }}>Parrain</label>
   <select
