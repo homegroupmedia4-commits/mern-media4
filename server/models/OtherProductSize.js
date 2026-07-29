@@ -55,7 +55,10 @@ const otherProductSizeSchema = new mongoose.Schema(
  * ✅ Unicité métier
  * - un code produit = unique
  */
-otherProductSizeSchema.index({ productCode: 1 }, { unique: true, sparse: true });
+// NOTE: productCode n'est PAS unique (plusieurs durées partagent le même code, ex: TOT13)
+// Si l'ancien index unique persiste en DB, exécuter dans mongosh :
+//   db.otherproductsizes.dropIndex("productCode_1")
+otherProductSizeSchema.index({ productCode: 1 }, { sparse: true });
 
 otherProductSizeSchema.index(
   { productId: 1, sizeInches: 1, leasingMonths: 1 },
