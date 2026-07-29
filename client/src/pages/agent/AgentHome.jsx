@@ -2234,7 +2234,7 @@ const getOptionPrice = (pi, opt) => {
                     {prod.reference ? <span style={{ fontSize: 11, color: "#888", marginLeft: 4 }}>({prod.reference})</span> : null}
                   </label>
                   {sel ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <label style={{ fontSize: 12 }}>Qté :</label>
                       <input
                         type="number"
@@ -2249,7 +2249,7 @@ const getOptionPrice = (pi, opt) => {
                         className="agenthome-input"
                         style={{ width: 60 }}
                       />
-                      <span style={{ fontSize: 12, color: "#555" }}>= {(Number(prod.prixUnitaireHt) * qty).toFixed(2)} € HT</span>
+                      <span style={{ fontSize: 12, color: "#555" }}>PU : {Number(prod.prixUnitaireHt).toFixed(2)} € HT</span>
                     </div>
                   ) : null}
                 </div>
