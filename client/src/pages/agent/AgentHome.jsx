@@ -111,6 +111,9 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const [selectedPitchIds, setSelectedPitchIds] = useState([]);
 
   const [modeProjet, setModeProjet] = useState(false);
+  const [modeProjetSaving, setModeProjetSaving] = useState(false);
+  const [modeProjetError, setModeProjetError] = useState("");
+  const isAdmin = agent?.role === "admin";
   const hasAdminToken = useMemo(() => !!localStorage.getItem("admin_token_v1"), [agent]);
 
   // --- refs
@@ -169,6 +172,29 @@ const [societeLoading, setSocieteLoading] = useState(false);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     navigate("/agent/login");
+  };
+
+  const toggleModeProjet = async (checked) => {
+    setModeProjet(checked);
+    setModeProjetSaving(true);
+    setModeProjetError("");
+    try {
+      const res = await fetch(`${API}/api/static-values`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
+        },
+        body: JSON.stringify({ modeProjet: checked }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } catch (e) {
+      console.error(e);
+      setModeProjet(!checked);
+      setModeProjetError("Erreur sauvegarde mode projet.");
+    } finally {
+      setModeProjetSaving(false);
+    }
   };
 
   // ✅ HANDLE VALIDER (dans le composant)
@@ -451,6 +477,21 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
         setError("Session invalide. Reconnecte-toi.");
         logout();
       }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---------------------------
+  // MODE PROJET (chargement initial, même endpoint que PitchManager)
+  // ---------------------------
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/static-values`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setModeProjet(!!data.modeProjet);
+      } catch {}
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1427,7 +1468,22 @@ const getOptionPrice = (pi, opt) => {
   </div>
 </div>
 
-
+<div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: isAdmin ? "pointer" : "default", fontSize: 14 }}>
+    <input
+      type="checkbox"
+      checked={modeProjet}
+      onChange={(e) => isAdmin && toggleModeProjet(e.target.checked)}
+      disabled={!isAdmin || modeProjetSaving}
+      style={{ width: 16, height: 16 }}
+    />
+    Mode projet
+  </label>
+  <span style={{ fontSize: 12, fontWeight: 700, color: modeProjet ? "#0f7a3a" : "#999" }}>
+    {modeProjetSaving ? "Sauvegarde..." : modeProjet ? "Activé" : "Désactivé"}
+  </span>
+  {modeProjetError && <span style={{ fontSize: 12, color: "#b10000" }}>{modeProjetError}</span>}
+</div>
 
 
         {/* --------- Produits --------- */}
