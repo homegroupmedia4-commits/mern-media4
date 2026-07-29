@@ -52,6 +52,9 @@ export default function PitchManagerPage() {
   const [editingValue, setEditingValue] = useState("");
   const [editOpen, setEditOpen] = useState(false);
 
+  const [inlineStockId, setInlineStockId] = useState(null);
+  const [inlineStockValue, setInlineStockValue] = useState("");
+
   const [editForm, setEditForm] = useState({
     id: "",
     name: "",
@@ -318,6 +321,25 @@ export default function PitchManagerPage() {
     }
   };
 
+  const saveInlineStock = async (id) => {
+    setError("");
+    try {
+      const res = await fetch(`${API}/api/pitches/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stock: inlineStockValue.trim() }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const updated = await res.json();
+      setPitches((prev) => prev.map((p) => (p._id === id ? updated : p)));
+      setInlineStockId(null);
+      setInlineStockValue("");
+    } catch (e) {
+      console.error(e);
+      setError("Impossible de modifier le stock.");
+    }
+  };
+
   const toggleActive = async (row) => {
     setError("");
     try {
@@ -522,7 +544,49 @@ export default function PitchManagerPage() {
                             <td>{row.codeProduit}</td>
                             <td>{row.dimensions}</td>
                             <td>{row.luminosite}</td>
-                            <td>{row.stock || "—"}</td>
+                            <td>
+                              {inlineStockId === row._id ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                  <input
+                                    className="input input-inline"
+                                    value={inlineStockValue}
+                                    onChange={(e) => setInlineStockValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") saveInlineStock(row._id);
+                                      if (e.key === "Escape") { setInlineStockId(null); setInlineStockValue(""); }
+                                    }}
+                                    autoFocus
+                                    style={{ width: 120 }}
+                                  />
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={() => saveInlineStock(row._id)}
+                                    style={{ padding: "2px 8px" }}
+                                    title="Valider"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={() => { setInlineStockId(null); setInlineStockValue(""); }}
+                                    style={{ padding: "2px 8px" }}
+                                    title="Annuler"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <span
+                                  onClick={() => { setInlineStockId(row._id); setInlineStockValue(row.stock || ""); }}
+                                  style={{ cursor: "pointer", borderBottom: "1px dashed #ccc" }}
+                                  title="Cliquer pour modifier le stock"
+                                >
+                                  {row.stock || "—"}
+                                </span>
+                              )}
+                            </td>
                             <td>{Number(row.price).toFixed(2)} €</td>
                             <td>
                               <span className={`badge ${row.isActive ? "on" : "off"}`}>
