@@ -300,6 +300,7 @@ export default function AdminAgents() {
                       <option value="agent">agent</option>
                       <option value="technicien">technicien</option>
                       <option value="responsable">responsable</option>
+                      <option value="admin">admin</option>
                     </select>
                   </div>
 
