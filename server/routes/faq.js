@@ -5,7 +5,11 @@ const FaqItem = require("../models/FaqItem");
 // GET public (agent)
 router.get("/", async (req, res) => {
   try {
-    const items = await FaqItem.find({ isActive: true }).sort({ order: 1, createdAt: 1 });
+    const filter = { isActive: true };
+    if (req.query.role) {
+      filter.role = { $in: [req.query.role, "tous"] };
+    }
+    const items = await FaqItem.find(filter).sort({ order: 1, createdAt: 1 });
     res.json(items);
   } catch (e) {
     res.status(500).json({ message: "Erreur serveur." });

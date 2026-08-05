@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 
-const ROLES = ["agent", "technicien", "tous"];
+const ROLES = ["agent", "technicien", "responsable", "admin", "tous"];
 const EMPTY = { question: "", answer: "", category: "", role: "agent", order: 0, isActive: true };
 
 export default function AdminFaq() {
