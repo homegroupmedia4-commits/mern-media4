@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AgentHeader from "./AgentHeader";
 import { TOKEN_KEY, USER_KEY, safeJsonParse } from "./agentHome.helpers";
 import "./AgentMesDevis.css";
@@ -28,6 +29,25 @@ function SortTh({ col, label, width, sortCol, sortDir, colFilters, onSort, onFil
 
 export default function AgentMesDevis() {
   const API = "";
+  const navigate = useNavigate();
+
+  // Dark mode : suit la préférence du navigateur (prefers-color-scheme)
+  const [isDark, setIsDark] = useState(
+    () => window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e) => setIsDark(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const modalBg = isDark ? "#1e1e1e" : "#fff";
+  const modalText = isDark ? "#e0e0e0" : "#222";
+  const modalBorder = isDark ? "#333" : "#e0e0e0";
+  const modalHeaderBg = isDark ? "#2a2a2a" : "#f6f7fb";
+  const overlayBg = "rgba(0,0,0,0.5)";
 
   const [agent] = useState(() => {
     const cached = localStorage.getItem(USER_KEY);
@@ -593,6 +613,7 @@ export default function AgentMesDevis() {
                       <SortTh col="ville" label="Ville" width={110} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
                       <SortTh col="adresse" label="Adresse" width={160} sortCol={prospectSortCol} sortDir={prospectSortDir} colFilters={prospectColFilters} onSort={handleProspectSort} onFilter={setProspectColFilter} />
                       <th>Commentaire</th>
+                      <th>Nouveau devis</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -603,7 +624,7 @@ export default function AgentMesDevis() {
                             type="button"
                             title="Voir les devis de ce client"
                             onClick={() => setClientDevisModalKey(p.clientKey)}
-                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: "2px 6px" }}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: "2px 6px", color: isDark ? "#e0e0e0" : "#222" }}
                           >👁</button>
                         </td>
                         <td>{p.societe || ""}</td>
@@ -632,11 +653,44 @@ export default function AgentMesDevis() {
                             </button>
                           </div>
                         </td>
+                        <td>
+                          <button
+                            type="button"
+                            title="Créer un nouveau devis pour ce client"
+                            onClick={() => {
+                              const params = new URLSearchParams({
+                                societe: p.societe || "",
+                                prenom: p.prenom || "",
+                                telephone: p.telephone || "",
+                                email: p.email || "",
+                                codePostal: p.codePostal || "",
+                                ville: p.ville || "",
+                                adresse: p.adresse || "",
+                              });
+                              navigate(`/agent/home?${params.toString()}`);
+                            }}
+                            style={{
+                              background: "#0f7a3a",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "50%",
+                              width: 32,
+                              height: 32,
+                              fontSize: 18,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            +
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {filteredProspectList.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="agentdevis-empty">Aucun client.</td>
+                        <td colSpan={10} className="agentdevis-empty">Aucun client.</td>
                       </tr>
                     ) : null}
                   </tbody>
@@ -820,11 +874,11 @@ export default function AgentMesDevis() {
           .filter(Boolean);
         return (
           <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
+            style={{ position: "fixed", inset: 0, background: overlayBg, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
             onMouseDown={() => setClientDevisModalKey(null)}
           >
             <div
-              style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(700px, 95vw)", maxHeight: "80vh", overflow: "auto", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
+              style={{ background: modalBg, color: modalText, borderRadius: 10, padding: 16, width: "min(700px, 95vw)", maxHeight: "80vh", overflow: "auto", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
               onMouseDown={(e) => e.stopPropagation()}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -835,7 +889,7 @@ export default function AgentMesDevis() {
                   type="button"
                   onClick={() => setClientDevisModalKey(null)}
                   title="Fermer"
-                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1 }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1, color: modalText }}
                 >
                   ✕
                 </button>
@@ -845,21 +899,21 @@ export default function AgentMesDevis() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}>N° devis</th>
-                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}>Date</th>
-                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}>Statut</th>
-                      <th style={{ textAlign: "right", padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}>Montant TTC</th>
-                      <th style={{ padding: "6px 8px", borderBottom: "1px solid #eef1f7" }}></th>
+                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: `1px solid ${modalBorder}`, background: modalHeaderBg }}>N° devis</th>
+                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: `1px solid ${modalBorder}`, background: modalHeaderBg }}>Date</th>
+                      <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: `1px solid ${modalBorder}`, background: modalHeaderBg }}>Statut</th>
+                      <th style={{ textAlign: "right", padding: "6px 8px", borderBottom: `1px solid ${modalBorder}`, background: modalHeaderBg }}>Montant TTC</th>
+                      <th style={{ padding: "6px 8px", borderBottom: `1px solid ${modalBorder}`, background: modalHeaderBg }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {devisRows.map((d) => (
                       <tr key={d._id || d.id}>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5" }}>{d.devisNumber || ""}</td>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5" }}>{fmtDateFR(d.createdAt)}</td>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5" }}>{d.statutDevis || "cree"}</td>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "right" }}>{fmt2(d.totals?.totalTtc)}</td>
-                        <td style={{ padding: "6px 8px", borderBottom: "1px solid #f5f5f5", textAlign: "right" }}>
+                        <td style={{ padding: "6px 8px", borderBottom: `1px solid ${modalBorder}` }}>{d.devisNumber || ""}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: `1px solid ${modalBorder}` }}>{fmtDateFR(d.createdAt)}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: `1px solid ${modalBorder}` }}>{d.statutDevis || "cree"}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: `1px solid ${modalBorder}`, textAlign: "right" }}>{fmt2(d.totals?.totalTtc)}</td>
+                        <td style={{ padding: "6px 8px", borderBottom: `1px solid ${modalBorder}`, textAlign: "right" }}>
                           <button
                             className="agentdevis-download"
                             type="button"
@@ -872,7 +926,7 @@ export default function AgentMesDevis() {
                     ))}
                     {devisRows.length === 0 ? (
                       <tr>
-                        <td colSpan={5} style={{ padding: "10px 8px", color: "#6b7280" }}>Aucun devis.</td>
+                        <td colSpan={5} style={{ padding: "10px 8px", color: isDark ? "#9ca3af" : "#6b7280" }}>Aucun devis.</td>
                       </tr>
                     ) : null}
                   </tbody>
@@ -883,7 +937,7 @@ export default function AgentMesDevis() {
                 <button
                   type="button"
                   onClick={() => setClientDevisModalKey(null)}
-                  style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d8dbe6", background: "#f6f7fb", cursor: "pointer", fontSize: 13 }}
+                  style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${modalBorder}`, background: modalHeaderBg, color: modalText, cursor: "pointer", fontSize: 13 }}
                 >
                   Fermer
                 </button>
@@ -898,11 +952,11 @@ export default function AgentMesDevis() {
         const modalValue = clientNotes[clientNoteModalKey] ?? "";
         return (
           <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
+            style={{ position: "fixed", inset: 0, background: overlayBg, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
             onMouseDown={() => setClientNoteModalKey(null)}
           >
             <div
-              style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(500px, 92vw)", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
+              style={{ background: modalBg, color: modalText, borderRadius: 10, padding: 16, width: "min(500px, 92vw)", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
               onMouseDown={(e) => e.stopPropagation()}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -913,7 +967,7 @@ export default function AgentMesDevis() {
                   type="button"
                   onClick={() => setClientNoteModalKey(null)}
                   title="Fermer"
-                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1 }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1, color: modalText }}
                 >
                   ✕
                 </button>
@@ -923,14 +977,14 @@ export default function AgentMesDevis() {
                 autoFocus
                 value={modalValue}
                 onChange={(e) => updateClientNote(clientNoteModalKey, e.target.value)}
-                style={{ width: "100%", minHeight: 300, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", padding: 8, border: "1px solid #d8dbe6", borderRadius: 6, resize: "vertical" }}
+                style={{ width: "100%", minHeight: 300, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", padding: 8, border: `1px solid ${modalBorder}`, borderRadius: 6, resize: "vertical", background: modalBg, color: modalText }}
               />
 
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
                 <button
                   type="button"
                   onClick={() => setClientNoteModalKey(null)}
-                  style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d8dbe6", background: "#f6f7fb", cursor: "pointer", fontSize: 13 }}
+                  style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${modalBorder}`, background: modalHeaderBg, color: modalText, cursor: "pointer", fontSize: 13 }}
                 >
                   Fermer
                 </button>
@@ -945,11 +999,11 @@ export default function AgentMesDevis() {
         const modalValue = noteDrafts[noteModalId] ?? (modalRow?.commentaireInterne || "");
         return (
           <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
+            style={{ position: "fixed", inset: 0, background: overlayBg, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }}
             onMouseDown={() => setNoteModalId(null)}
           >
             <div
-              style={{ background: "#fff", borderRadius: 10, padding: 16, width: "min(500px, 92vw)", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
+              style={{ background: modalBg, color: modalText, borderRadius: 10, padding: 16, width: "min(500px, 92vw)", boxShadow: "0 10px 40px rgba(0,0,0,0.25)" }}
               onMouseDown={(e) => e.stopPropagation()}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -960,7 +1014,7 @@ export default function AgentMesDevis() {
                   type="button"
                   onClick={() => setNoteModalId(null)}
                   title="Fermer"
-                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1 }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, padding: 4, lineHeight: 1, color: modalText }}
                 >
                   ✕
                 </button>
@@ -970,14 +1024,14 @@ export default function AgentMesDevis() {
                 autoFocus
                 value={modalValue}
                 onChange={(e) => updateNoteDraft(noteModalId, e.target.value)}
-                style={{ width: "100%", minHeight: 300, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", padding: 8, border: "1px solid #d8dbe6", borderRadius: 6, resize: "vertical" }}
+                style={{ width: "100%", minHeight: 300, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box", padding: 8, border: `1px solid ${modalBorder}`, borderRadius: 6, resize: "vertical", background: modalBg, color: modalText }}
               />
 
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
                 <button
                   type="button"
                   onClick={() => setNoteModalId(null)}
-                  style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid #d8dbe6", background: "#f6f7fb", cursor: "pointer", fontSize: 13 }}
+                  style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${modalBorder}`, background: modalHeaderBg, color: modalText, cursor: "pointer", fontSize: 13 }}
                 >
                   Fermer
                 </button>

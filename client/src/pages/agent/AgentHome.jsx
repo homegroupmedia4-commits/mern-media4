@@ -497,6 +497,27 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
   }, []);
 
   // ---------------------------
+  // PREFILL — lecture des query params (venant du bouton "+" Prospects/Clients)
+  // ---------------------------
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromProspect = params.get("societe") || params.get("email");
+    if (fromProspect) {
+      setClient((prev) => ({
+        ...prev,
+        societe: params.get("societe") || prev.societe,
+        prenom: params.get("prenom") || prev.prenom,
+        telephone: params.get("telephone") || prev.telephone,
+        email: params.get("email") || prev.email,
+        codePostal: params.get("codePostal") || prev.codePostal,
+        ville: params.get("ville") || prev.ville,
+        adresse1: params.get("adresse") || prev.adresse1,
+      }));
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  // ---------------------------
   // PREFILL — application produits/pitches (quand wallLedsProductId disponible)
   // ---------------------------
   useEffect(() => {
