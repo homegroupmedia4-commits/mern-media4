@@ -562,7 +562,7 @@ export default function AgentMesDevis() {
             <button type="button" className={`agentdevis-tab ${filtre === "all" ? "is-active" : ""}`} onClick={() => setFiltre("all")}>Tous</button>
             <button type="button" className={`agentdevis-tab ${filtre === "led" ? "is-active" : ""}`} onClick={() => setFiltre("led")}>Écrans LED</button>
             <button type="button" className={`agentdevis-tab ${filtre === "lcd" ? "is-active" : ""}`} onClick={() => setFiltre("lcd")}>Écrans LCD</button>
-            <button type="button" className={`agentdevis-tab ${filtre === "prospects" ? "is-active" : ""}`} onClick={() => setFiltre("prospects")}>Prospect / Clients</button>
+            <button type="button" className={`agentdevis-tab ${filtre === "prospects" ? "is-active" : ""}`} onClick={() => setFiltre("prospects")}>Prospects / Clients</button>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
@@ -618,6 +618,7 @@ export default function AgentMesDevis() {
                             <textarea
                               value={clientNotes[p.clientKey] ?? ""}
                               onChange={(e) => updateClientNote(p.clientKey, e.target.value)}
+                              onMouseEnter={() => setClientNoteModalKey(p.clientKey)}
                               rows={2}
                               style={{ width: 120, fontSize: 12, fontFamily: "inherit", resize: "vertical" }}
                             />
@@ -762,6 +763,7 @@ export default function AgentMesDevis() {
                               <textarea
                                 value={noteDrafts[r.devisId] ?? meta.commentaire}
                                 onChange={(e) => updateNoteDraft(r.devisId, e.target.value)}
+                                onMouseEnter={() => setNoteModalId(r.devisId)}
                                 rows={2}
                                 style={{ width: 120, fontSize: 12, fontFamily: "inherit", resize: "vertical" }}
                               />
