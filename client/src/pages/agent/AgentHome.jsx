@@ -2256,42 +2256,54 @@ const getOptionPrice = (pi, opt) => {
                     <input
                       type="checkbox"
                       checked={!!sel}
-                      onChange={() => {
-                        setServiceSelections((prev) => {
-                          const has = prev.find((s) => s.productId === String(prod._id));
-                          if (has) return prev.filter((s) => s.productId !== String(prod._id));
-                          return [...prev, {
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setServiceSelections((prev) => [...prev, {
                             productId: String(prod._id),
                             designation: prod.designation,
                             reference: prod.reference || "",
                             prixUnitaireHt: prod.prixUnitaireHt,
                             quantite: 1,
-                          }];
-                        });
+                          }]);
+                        } else {
+                          setServiceSelections((prev) => prev.filter((s) => s.productId !== String(prod._id)));
+                        }
                       }}
                     />
                     <span>{prod.designation}</span>
                     {prod.reference ? <span style={{ fontSize: 11, color: "#888", marginLeft: 4 }}>({prod.reference})</span> : null}
                   </label>
-                  {sel ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <label style={{ fontSize: 12 }}>Qté :</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={qty}
-                        onChange={(e) => {
-                          const q = Math.max(1, parseInt(e.target.value || "1", 10) || 1);
-                          setServiceSelections((prev) =>
-                            prev.map((s) => s.productId === String(prod._id) ? { ...s, quantite: q } : s)
-                          );
-                        }}
-                        className="agenthome-input"
-                        style={{ width: 60 }}
-                      />
-                      <span style={{ fontSize: 12, color: "#555" }}>PU : {Number(prod.prixUnitaireHt).toFixed(2)} € HT</span>
-                    </div>
-                  ) : null}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12, color: "#555" }}>PU : {Number(prod.prixUnitaireHt).toFixed(2)} € HT</span>
+                    <label style={{ fontSize: 12 }}>Qté :</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={qty}
+                      onChange={(e) => {
+                        const q = Math.max(0, parseInt(e.target.value || "0", 10) || 0);
+                        if (q > 0) {
+                          setServiceSelections((prev) => {
+                            const exists = prev.some((s) => s.productId === String(prod._id));
+                            if (exists) {
+                              return prev.map((s) => s.productId === String(prod._id) ? { ...s, quantite: q } : s);
+                            }
+                            return [...prev, {
+                              productId: String(prod._id),
+                              designation: prod.designation,
+                              reference: prod.reference || "",
+                              prixUnitaireHt: prod.prixUnitaireHt,
+                              quantite: q,
+                            }];
+                          });
+                        } else {
+                          setServiceSelections((prev) => prev.filter((s) => s.productId !== String(prod._id)));
+                        }
+                      }}
+                      className="agenthome-input"
+                      style={{ width: 60 }}
+                    />
+                  </div>
                 </div>
               );
             })}
