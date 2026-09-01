@@ -111,6 +111,8 @@ const [otherAbonnement, setOtherAbonnement] = useState(DEFAULT_ABONNEMENT);
   const [selectedPitchIds, setSelectedPitchIds] = useState([]);
 
   const [modeProjet, setModeProjet] = useState(false);
+  const [modeProjetSaving, setModeProjetSaving] = useState(false);
+  const [modeProjetError, setModeProjetError] = useState("");
   const isAdmin = agent?.role === "admin";
   const hasAdminToken = useMemo(() => !!localStorage.getItem("admin_token_v1"), [agent]);
 
@@ -469,6 +471,33 @@ const saveRes = await fetch(`${API}/api/agents/devis`, {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ---------------------------
+  // MODE PROJET (toggle admin — persiste via PATCH, même pattern que PitchManager)
+  // ---------------------------
+  const toggleModeProjet = async (checked) => {
+    setModeProjet(checked);
+    setModeProjetSaving(true);
+    setModeProjetError("");
+    try {
+      const token = localStorage.getItem("admin_token_v1") || localStorage.getItem("agent_token_v1");
+      const res = await fetch(`${API}/api/static-values`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ modeProjet: checked }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } catch (e) {
+      console.error(e);
+      setModeProjet(!checked);
+      setModeProjetError("Erreur sauvegarde mode projet.");
+    } finally {
+      setModeProjetSaving(false);
+    }
+  };
 
   // ---------------------------
   // PREFILL — lecture localStorage (immédiat)
@@ -1725,10 +1754,13 @@ const getOptionPrice = (pi, opt) => {
                           <input
                             type="checkbox"
                             checked={modeProjet}
-                            onChange={(e) => setModeProjet(e.target.checked)}
+                            onChange={(e) => toggleModeProjet(e.target.checked)}
+                            disabled={modeProjetSaving}
                             style={{ width: 15, height: 15 }}
                           />
                           Mode projet
+                          {modeProjetSaving && <span style={{ fontSize: 12, color: "#999", marginLeft: 6 }}>Sauvegarde...</span>}
+                          {modeProjetError && <span style={{ fontSize: 12, color: "#b10000", marginLeft: 6 }}>{modeProjetError}</span>}
                         </label>
                       )}
                     </div>
