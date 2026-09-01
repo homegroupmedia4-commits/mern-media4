@@ -161,6 +161,7 @@ const [societeLoading, setSocieteLoading] = useState(false);
   const [apport, setApport] = useState(0);
   const [remise, setRemise] = useState(0);
   const REMISE_MAX = 5;
+  const [remiseChoisie, setRemiseChoisie] = useState(0);
   const [leaseurRates, setLeaseurRates] = useState([]);
 
 
@@ -1370,7 +1371,8 @@ const finPart =
 }, [otherSelections, pitchInstances, serviceSelections, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, remise, leaseurRates, staticVals]);
 
   // ✅ Remise fixe de l'agent (définie par l'admin), appliquée en déduction du total HT général
-  const agentRemise = Number(agent?.remise || 0);
+  const agentRemiseMax = Number(agent?.remise || 0);
+  const agentRemise = Math.min(Number(remiseChoisie) || 0, agentRemiseMax);
   const totalHtApresRemise = recap.totalHt - (recap.totalHt * agentRemise) / 100;
   const tvaApresRemise = totalHtApresRemise * 0.2;
   const ttcApresRemise = totalHtApresRemise + tvaApresRemise;
@@ -2657,6 +2659,35 @@ const getOptionPrice = (pi, opt) => {
 
   {/* E) Totaux */}
   <div style={{ marginTop: 14, borderTop: "1px dashed #e5e7eb", paddingTop: 12 }}>
+    {agentRemiseMax > 0 && (
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ fontWeight: 600, fontSize: 14 }}>
+          Remise (%) — max {agentRemiseMax}% :
+        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+          <input
+            type="number"
+            min="0"
+            max={agentRemiseMax}
+            step="0.1"
+            value={remiseChoisie}
+            onChange={(e) => {
+              let v = parseFloat(e.target.value) || 0;
+              if (v < 0) v = 0;
+              if (v > agentRemiseMax) v = agentRemiseMax;
+              setRemiseChoisie(v);
+            }}
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: "1px solid #d1d5db",
+              borderRadius: 8,
+              fontSize: 15,
+            }}
+          />
+        </div>
+      </div>
+    )}
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
       <span style={{ fontWeight: 700 }}>Montant total HT général :</span>
       <span style={{ fontWeight: 700 }}>{fmtEuro(recap.totalHt)}</span>
