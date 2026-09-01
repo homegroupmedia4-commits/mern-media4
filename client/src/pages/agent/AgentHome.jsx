@@ -159,8 +159,6 @@ const [showSocieteSuggestions, setShowSocieteSuggestions] = useState(false);
 const [societeLoading, setSocieteLoading] = useState(false);
 
   const [apport, setApport] = useState(0);
-  const [remise, setRemise] = useState(0);
-  const REMISE_MAX = 5;
   const [remiseChoisie, setRemiseChoisie] = useState(0);
   const [leaseurRates, setLeaseurRates] = useState([]);
 
@@ -1322,9 +1320,6 @@ const finPart =
       htEcrans += parseEuro(pi.montantHt);
     }
 
-    // Remise sur écrans uniquement
-    const htEcransAvecRemise = htEcrans * (1 - remise / 100);
-
     // Services (abonnements)
     const hasPitch = (pitchInstances || []).some((pi) => parseEuro(pi.montantHt) > 0);
     const hasOther = Object.keys(otherSelections || {}).length > 0;
@@ -1337,7 +1332,7 @@ const finPart =
       return s + Number(sel.prixUnitaireHt || 0) * qty;
     }, 0);
 
-    const htAvantApport = htEcransAvecRemise + htServices + htServicesExtra;
+    const htAvantApport = htEcrans + htServices + htServicesExtra;
 
     // --- Application de l'apport ---
     const dureeSel = String(pitchInstances?.[0]?.financementMonths || "63");
@@ -1368,7 +1363,7 @@ const finPart =
       ttc,
     };
 
-}, [otherSelections, pitchInstances, serviceSelections, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, remise, leaseurRates, staticVals]);
+}, [otherSelections, pitchInstances, serviceSelections, productById, otherSizeById, memById, wallLedsAbonnement, otherAbonnement, apport, leaseurRates, staticVals]);
 
   // ✅ Remise fixe de l'agent (définie par l'admin), appliquée en déduction du total HT général
   const agentRemiseMax = Number(agent?.remise || 0);
@@ -2565,20 +2560,6 @@ const getOptionPrice = (pi, opt) => {
     </ul>
   </div>
 
-  {/* A) Remise */}
-  <div className="agenthome-field" style={{ marginTop: 12 }}>
-    <label>Remise (%) — max {REMISE_MAX}% :</label>
-    <input
-      type="number"
-      min="0"
-      max={REMISE_MAX}
-      step="0.5"
-      value={remise}
-      onChange={(e) => setRemise(Math.min(REMISE_MAX, Math.max(0, Number(e.target.value) || 0)))}
-      className="agenthome-input"
-    />
-  </div>
-
   {/* B) Frais */}
   <div className="agenthome-offers" style={{ marginTop: 10 }}>
     <label className="agenthome-check">
@@ -2634,7 +2615,7 @@ const getOptionPrice = (pi, opt) => {
 
     const optionsDurees = opts.map((opt) => {
       const htPitch = opt === "achat" ? getOptionPrice(pi0, "achat") : getOptionPrice(pi0, opt);
-      const htPitchRemise = htPitch * (1 - remise / 100);
+      const htPitchRemise = htPitch * (1 - agentRemise / 100);
       const htTotal = htPitchRemise + recap.htServices;
       const htFinal = Number(apport) > 0
         ? applyApport({ mensualiteInitiale: htTotal, apport, abattement: AB0, coutLeaseur: CL0, dureeMonths: dureeSel0 })
